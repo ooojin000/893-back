@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: palgoosam
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/palgoosam
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: palgoosam
+    password: palgoosam_893
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        show-sql: true
+        format-sql: true
+    hibernate:
+      ddl-auto: create
