@@ -16,16 +16,15 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     properties:
       hibernate:
-        format_sql: true
+        format-sql: true
     hibernate:
       ddl-auto: create
 
-
-logging:
-  level:
-    org:
-      hibernate:
-        sql: debug
-        type:
-          descriptor:
-            sql: trace
+  logging:
+    level:
+      org:
+        hibernate:
+          sql: debug
+          type:
+            descriptor:
+              sql: trace
