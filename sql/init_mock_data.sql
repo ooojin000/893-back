@@ -1,4 +1,4 @@
-use palgoosam;
+USE palgoosam;
 
 -- 회원
 INSERT INTO user (name, email, profile_image)

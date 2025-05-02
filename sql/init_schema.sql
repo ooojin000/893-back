@@ -1,6 +1,5 @@
 -- 데이터베이스를 완전히 삭제하고 새로 생성하려면 아래 주석을 해제하여 실행하세요.
 -- 기존 데이터가 모두 삭제되므로 주의하세요.
-
 # DROP DATABASE palgoosam;
 # CREATE DATABASE palgoosam DEFAULT CHARACTER SET UTF8;
 
