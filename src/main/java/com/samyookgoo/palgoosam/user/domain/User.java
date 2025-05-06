@@ -9,10 +9,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "user")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,6 +33,12 @@ public class User {
 
     @Column(nullable = false, length = 255)
     private String profileImage;
+
+    @Column(nullable = false)
+    private String provider;
+
+    @Column(nullable = false, unique = true)
+    private String providerId;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
