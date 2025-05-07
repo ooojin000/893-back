@@ -12,7 +12,7 @@ public interface AuctionImageRepository extends JpaRepository<AuctionImage, Long
     @Query(value = """
             SELECT i.*
             FROM auction_image i
-            WHERE i.auction_id IN (:auctionIdList) AND i.is_main = true
+            WHERE i.auction_id IN (:auctionIdList) AND i.image_seq = 0
             """, nativeQuery = true)
     List<AuctionImage> findThumbnailsByAuctionIds(@Param("auctionIdList") List<Long> auctionIdList);
 
