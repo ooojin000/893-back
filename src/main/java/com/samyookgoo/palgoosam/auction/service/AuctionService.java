@@ -14,25 +14,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuctionService {
 
-    @Autowired
-    private AuctionRepository auctionRepository;
-
-    @Autowired
-    private AuctionImageRepository imageRepository;
-
-    @Autowired
-    private ScrapRepository scrapRepository;
-
-    @Autowired
-    private BidRepository bidRepository;
+    private final AuctionRepository auctionRepository;
+    private final AuctionImageRepository imageRepository;
+    private final ScrapRepository scrapRepository;
+    private final BidRepository bidRepository;
 
     public List<AuctionSearchResponseDto> search(AuctionSearchRequestDto auctionSearchRequestDto) {
         log.info("다음 조건을 검색: {}", auctionSearchRequestDto.toString());
