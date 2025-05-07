@@ -12,7 +12,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "category")
 public class Category {
