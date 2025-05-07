@@ -38,20 +38,20 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                           (:#{#request.isHeavilyUsed} IS NULL OR :#{#request.isHeavilyUsed} = FALSE) AND
                           (:#{#request.isDamaged} IS NULL OR :#{#request.isDamaged} = FALSE))
                          OR
-                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = 'brand_new') OR
-                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = 'like_new') OR
-                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = 'gently_used') OR
-                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = 'heavily_used') OR
-                          (:#{#request.isDamaged} = TRUE AND a.item_condition = 'damaged'))
+                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).BRAND_NEW_VALUE}) OR
+                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).LIKE_NEW_VALUE} ) OR
+                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).GENTLY_USED_VALUE} ) OR
+                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).HEAVILY_USED_VALUE} ) OR
+                          (:#{#request.isDamaged} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).DAMAGED_VALUE} ))
                      ) AND
                      (
                          ((:#{#request.isPending} IS NULL OR :#{#request.isPending} = FALSE) AND
                           (:#{#request.isActive} IS NULL OR :#{#request.isActive} = FALSE) AND
                           (:#{#request.isCompleted} IS NULL OR :#{#request.isCompleted} = FALSE))
                          OR
-                         ((:#{#request.isPending} = TRUE AND a.status = 'pending') OR
-                          (:#{#request.isActive} = TRUE AND a.status = 'active') OR
-                          (:#{#request.isCompleted} = TRUE AND a.status = 'completed'))
+                         ((:#{#request.isPending} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).PENDING_VALUE} ) OR
+                          (:#{#request.isActive} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).ACTIVE_VALUE} ) OR
+                          (:#{#request.isCompleted} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).COMPLETED_VALUE} ))
                      )
             ORDER BY
                  CASE
