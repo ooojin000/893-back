@@ -54,7 +54,6 @@ public class AuctionService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .category(category)
-                .basePrice(request.getBasePrice())
                 .itemCondition(request.getItemCondition().name())
                 .startTime(startTime)
                 .endTime(endTime)
