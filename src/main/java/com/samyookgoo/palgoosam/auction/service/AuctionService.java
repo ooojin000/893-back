@@ -10,6 +10,7 @@ import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,7 +48,7 @@ public class AuctionService {
         Map<Long, List<Bid>> bidsByAuctionMap = getBidListByAuctionMap(auctionIdList);
         Map<Long, List<Scrap>> scrapsByAuctionMap = getScrapListByAuctionMap(auctionIdList);
 
-        return auctionList.stream().map(auction -> {
+        List<AuctionSearchResponseDto> resultWithoutSort = auctionList.stream().map(auction -> {
                     Long auctionId = auction.getId();
                     String thumbnailUrl = thumbnailMap.get(auctionId);
                     List<Bid> bids = bidsByAuctionMap.get(auctionId);
@@ -67,6 +68,8 @@ public class AuctionService {
                             .build();
                 }
         ).toList();
+
+        return this.sortAuctionSearchResponseDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy());
     }
 
     private List<Auction> findAuctionList(AuctionSearchRequestDto auctionSearchRequestDto) {
@@ -100,5 +103,25 @@ public class AuctionService {
         List<Scrap> scrapList = scrapRepository.findByAuctionIdList(auctionIdList);
         return scrapList.stream()
                 .collect(Collectors.groupingBy(scrap -> scrap.getAuction().getId()));
+    }
+
+    private List<AuctionSearchResponseDto> sortAuctionSearchResponseDtoList(
+            List<AuctionSearchResponseDto> auctionSearchResponseDtoList, String sortBy
+    ) {
+        if (sortBy.equals("price_asc")) {
+            return auctionSearchResponseDtoList.stream()
+                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getBasePrice)).toList();
+        } else if (sortBy.equals("price_desc")) {
+            return auctionSearchResponseDtoList.stream()
+                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getBasePrice).reversed()).toList();
+        } else if (sortBy.equals("scrap_count_desc")) {
+            return auctionSearchResponseDtoList.stream()
+                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getScrapCount).reversed()).toList();
+        } else if (sortBy.equals("bidder_count_desc")) {
+            return auctionSearchResponseDtoList.stream()
+                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getBidderCount).reversed()).toList();
+        }
+
+        return auctionSearchResponseDtoList;
     }
 }

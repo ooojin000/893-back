@@ -53,14 +53,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                           (:#{#request.isActive} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).ACTIVE_VALUE} ) OR
                           (:#{#request.isCompleted} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).COMPLETED_VALUE} ))
                      )
-            ORDER BY
-                 CASE
-                     WHEN :#{#request.sortBy} = 'latest' THEN a.created_at
-                     WHEN :#{#request.sortBy} = 'price_asc' THEN a.base_price
-                     WHEN :#{#request.sortBy} = 'price_desc' THEN a.base_price * -1
-                     ELSE a.created_at
-                 END DESC
-             LIMIT :#{#request.limit} OFFSET :#{(#request.page - 1) * #request.limit}
+            ORDER BY a.created_at DESC
+            LIMIT :#{#request.limit} OFFSET :#{(#request.page - 1) * #request.limit}
             """, nativeQuery = true)
     List<Auction> findAllWithDetails(@Param("request") AuctionSearchParam auctionSearchParam);
 }
