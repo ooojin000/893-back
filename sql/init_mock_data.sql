@@ -32,9 +32,9 @@ VALUES (1, 3, '삼성 갤럭시 S22 미개봉', '미개봉 갤럭시 S22입니�
 
 -- 경매 이미지
 INSERT INTO auction_image (auction_id, url, original_name, store_name, image_seq, is_main)
-VALUES (1, 'https://img.example.com/auctions/1_1.jpg', 'galaxy.jpg', '1_1.jpg', 1, TRUE),
-       (2, 'https://img.example.com/auctions/2_1.jpg', 'desk.jpg', '2_1.jpg', 1, TRUE),
-       (3, 'https://img.example.com/auctions/3_1.jpg', 'coat.jpg', '3_1.jpg', 1, TRUE);
+VALUES (1, 'https://img.example.com/auctions/1_1.jpg', 'galaxy.jpg', '1_1.jpg', 0, TRUE),
+       (2, 'https://img.example.com/auctions/2_1.jpg', 'desk.jpg', '2_1.jpg', 0, TRUE),
+       (3, 'https://img.example.com/auctions/3_1.jpg', 'coat.jpg', '3_1.jpg', 0, TRUE);
 
 -- 입찰
 INSERT INTO bid (bidder_id, auction_id, price, created_at, cancelled_at, is_winning, is_deleted)
