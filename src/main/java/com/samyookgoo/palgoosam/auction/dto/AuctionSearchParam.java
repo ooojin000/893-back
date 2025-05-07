@@ -22,7 +22,7 @@ public class AuctionSearchParam {
     private Boolean isLikeNew;
     private Boolean isGentlyUsed;
     private Boolean isHeavilyUsed;
-    private Boolean isDefective;
+    private Boolean isDamaged;
 
     private Integer minPrice;
     private Integer maxPrice;

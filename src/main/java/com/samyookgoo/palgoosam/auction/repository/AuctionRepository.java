@@ -36,13 +36,13 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                           (:#{#request.isLikeNew} IS NULL OR :#{#request.isLikeNew} = FALSE) AND
                           (:#{#request.isGentlyUsed} IS NULL OR :#{#request.isGentlyUsed} = FALSE) AND
                           (:#{#request.isHeavilyUsed} IS NULL OR :#{#request.isHeavilyUsed} = FALSE) AND
-                          (:#{#request.isDefective} IS NULL OR :#{#request.isDefective} = FALSE))
+                          (:#{#request.isDamaged} IS NULL OR :#{#request.isDamaged} = FALSE))
                          OR
                          ((:#{#request.isBrandNew} = TRUE AND a.item_condition = 'brand_new') OR
                           (:#{#request.isLikeNew} = TRUE AND a.item_condition = 'like_new') OR
                           (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = 'gently_used') OR
                           (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = 'heavily_used') OR
-                          (:#{#request.isDefective} = TRUE AND a.item_condition = 'defective'))
+                          (:#{#request.isDamaged} = TRUE AND a.item_condition = 'damaged'))
                      ) AND
                      (
                          ((:#{#request.isPending} IS NULL OR :#{#request.isPending} = FALSE) AND

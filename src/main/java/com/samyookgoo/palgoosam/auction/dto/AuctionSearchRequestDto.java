@@ -17,7 +17,7 @@ public class AuctionSearchRequestDto {
     private Boolean isLikeNew;
     private Boolean isGentlyUsed;
     private Boolean isHeavilyUsed;
-    private Boolean isDefective;
+    private Boolean isDamaged;
 
     private Integer priceMin;
     private Integer priceMax;
@@ -45,7 +45,7 @@ public class AuctionSearchRequestDto {
         Boolean isLikeNew = this.isLikeNew;
         Boolean isGentlyUsed = this.isGentlyUsed;
         Boolean isHeavilyUsed = this.isHeavilyUsed;
-        Boolean isDefective = this.isDefective;
+        Boolean isDamaged = this.isDamaged;
 
         Integer priceMin = this.priceMin;
         Integer priceMax = this.priceMax;
@@ -60,7 +60,7 @@ public class AuctionSearchRequestDto {
         String sortBy = this.sortBy;
 
         return new AuctionSearchParam(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
-                isDefective, priceMin,
+                isDamaged, priceMin,
                 priceMax, isPending, isActive, isCompleted, page, limit, sortBy);
 
     }
