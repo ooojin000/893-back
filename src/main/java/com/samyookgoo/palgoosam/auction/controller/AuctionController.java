@@ -8,15 +8,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/auctions")
 public class AuctionController {
 
     @Autowired
     private AuctionService auctionService;
 
-    @GetMapping("/api/auctions/search")
+    @GetMapping("/search")
     public ResponseEntity<List<AuctionSearchResponseDto>> search(AuctionSearchRequestDto auctionSearchRequestDto) {
         return ResponseEntity.status(HttpStatus.OK).body(auctionService.search(auctionSearchRequestDto));
     }
