@@ -15,7 +15,7 @@ public class AuctionSearchRequestDto {
     // 상품 사용감
     private Boolean isBrandNew;
     private Boolean isLikeNew;
-    private Boolean isLightlyUsed;
+    private Boolean isGentlyUsed;
     private Boolean isHeavilyUsed;
     private Boolean isDefective;
 
@@ -43,7 +43,7 @@ public class AuctionSearchRequestDto {
 
         Boolean isBrandNew = this.isBrandNew;
         Boolean isLikeNew = this.isLikeNew;
-        Boolean isLightlyUsed = this.isLightlyUsed;
+        Boolean isGentlyUsed = this.isGentlyUsed;
         Boolean isHeavilyUsed = this.isHeavilyUsed;
         Boolean isDefective = this.isDefective;
 
@@ -59,7 +59,7 @@ public class AuctionSearchRequestDto {
 
         String sortBy = this.sortBy;
 
-        return new AuctionSearchParam(keyword, categoryId, isBrandNew, isLikeNew, isLightlyUsed, isHeavilyUsed,
+        return new AuctionSearchParam(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
                 isDefective, priceMin,
                 priceMax, isPending, isActive, isCompleted, page, limit, sortBy);
 

@@ -20,7 +20,7 @@ public class AuctionSearchParam {
     // 상품 사용감
     private Boolean isBrandNew;
     private Boolean isLikeNew;
-    private Boolean isLightlyUsed;
+    private Boolean isGentlyUsed;
     private Boolean isHeavilyUsed;
     private Boolean isDefective;
 
