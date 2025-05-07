@@ -1,10 +1,10 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
+import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.dto.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ public class AuctionController {
     private final FileStore fileStore;
 
     @PostMapping
-    public ResponseEntity<?> createAuctionWithImages(
+    public ResponseEntity<?> createAuction(
             @RequestPart("request") AuctionCreateRequest request,
             @RequestPart("images") List<MultipartFile> images) {
 
@@ -31,13 +31,9 @@ public class AuctionController {
             return ResponseEntity.badRequest().body("이미지는 최소 1개, 최대 10개까지 업로드 가능합니다.");
         }
 
-        List<ResultFileStore> resultFileStores = new ArrayList<>();
+        List<ResultFileStore> resultFileStores = fileStore.storeFiles(images);
+        Auction savedAuction = auctionService.createAuction(request, resultFileStores);
 
-        if (!images.isEmpty() && !images.get(0).isEmpty()) {
-            resultFileStores = fileStore.storeFiles(images);
-            auctionService.uploadAuctionImages(resultFileStores, request.getMainImageIndex());
-        }
-
-        return ResponseEntity.ok("이미지 등록 성공");
+        return ResponseEntity.ok("경매 상품 등록 성공 !! ID : " + savedAuction.getId());
     }
 }
