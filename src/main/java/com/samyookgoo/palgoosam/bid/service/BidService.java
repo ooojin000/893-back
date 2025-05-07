@@ -1,10 +1,13 @@
 package com.samyookgoo.palgoosam.bid.service;
 
+import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -14,12 +17,16 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class BidService {
     private final BidRepository bidRepository;
+    private final AuctionRepository auctionRepository;
+    private final UserRepository userRepository;
+
 //    TODO: auctionRepository 사용 예정
 //    private final AuctionRepository auctionRepository;
 
@@ -54,6 +61,47 @@ public class BidService {
                 .bids(bids)
                 .cancelledBids(cancelledBids)
                 .build();
+    }
+
+    @Transactional
+    public BidResponse placeBid(Long auctionId, Long userId, int price) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("해당 사용자를 찾을 수 없습니다."));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
+            throw new IllegalStateException("현재는 입찰 가능한 시간이 아닙니다.");
+        }
+
+        if (auction.getBasePrice() > price) {
+            throw new IllegalArgumentException("시작가보다 높은 금액을 입력해야 합니다.");
+        }
+
+        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
+        if (highestPrice != null && price <= highestPrice) {
+            throw new IllegalArgumentException("현재 최고가보다 높은 금액을 입력해야 합니다.");
+        }
+
+        Optional<Bid> prevWinningBidOpt = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId);
+        prevWinningBidOpt.ifPresent(prev -> {
+            prev.setIsWinning(false);
+            bidRepository.save(prev);
+        });
+
+        Bid bid = Bid.builder()
+                .auction(auction)
+                .bidder(user)
+                .price(price)
+                .isWinning(Boolean.TRUE)
+                .isDeleted(Boolean.FALSE)
+                .build();
+
+        Bid savedBid = bidRepository.save(bid);
+
+        return mapToResponse(savedBid);
     }
 
     public void cancelBid(Long auctionId, Long bidId, User currentUser) {

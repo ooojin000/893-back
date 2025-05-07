@@ -17,4 +17,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             "AND b.isDeleted = false " +
             "ORDER BY b.price DESC LIMIT 1")
     Optional<Bid> findTopValidBidByAuctionId(Long auctionId);
+
+    Optional<Bid> findByAuctionIdAndIsWinningTrue(Long auctionId);
 }
