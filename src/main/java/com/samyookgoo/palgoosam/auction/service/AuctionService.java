@@ -62,10 +62,6 @@ public class AuctionService {
                 .status("pending")
                 .build();
 
-        System.out.println("============startTime========= : " + startTime);
-        System.out.println("============durationTime========= : " + request.getDurationTime());
-        System.out.println("============계산된 endTime======== : " + endTime);
-
         List<AuctionImage> auctionImages = new ArrayList<>();
 
         for (int i = 0; i < images.size(); i++) {
@@ -73,7 +69,6 @@ public class AuctionService {
             AuctionImage img = ResultFileStore.toEntity(resultFileStore);
             img.setAuction(auction);
             img.setImageSeq(i);
-            img.setIsMain(request.getMainImageIndex() != null && request.getMainImageIndex() == i);
             auctionImages.add(img);
         }
 
