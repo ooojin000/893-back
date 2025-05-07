@@ -4,10 +4,17 @@ import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.user.domain.User;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +54,41 @@ public class BidService {
                 .bids(bids)
                 .cancelledBids(cancelledBids)
                 .build();
+    }
+
+    public void cancelBid(Long auctionId, Long bidId, User currentUser) {
+        Bid bid = bidRepository.findById(bidId)
+                .orElseThrow(() -> new NoSuchElementException("해당 입찰 내역이 존재하지 않습니다."));
+
+        if (!bid.getBidder().getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 입찰만 취소할 수 있습니다.");
+        }
+
+        if (bid.getCancelledAt() != null || bid.getIsDeleted() == Boolean.TRUE) {
+            throw new IllegalStateException("이미 취소된 입찰입니다.");
+        }
+
+        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+        if (bid.getCreatedAt().isBefore(oneMinuteAgo)) {
+            throw new IllegalStateException("입찰 후 1분 이내에만 취소할 수 있습니다.");
+        }
+
+        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
+        if (!Objects.equals(bid.getPrice(), highestPrice)) {
+            throw new IllegalStateException("최고 입찰가가 아니면 취소할 수 없습니다.");
+        }
+
+        bid.setCancelledAt(LocalDateTime.now());
+        bid.setIsWinning(Boolean.FALSE);
+        bid.setIsDeleted(Boolean.TRUE);
+        bidRepository.save(bid);
+
+        Optional<Bid> newWinningBidOpt = bidRepository.findTopValidBidByAuctionId(auctionId);
+
+        newWinningBidOpt.ifPresent(newWinningBid -> {
+            newWinningBid.setIsWinning(true);
+            bidRepository.save(newWinningBid);
+        });
     }
 
     private BidResponse mapToResponse(Bid bid) {
