@@ -4,8 +4,8 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
+import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
-import com.samyookgoo.palgoosam.auction.repository.ImageRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
@@ -25,7 +25,7 @@ public class AuctionService {
     private AuctionRepository auctionRepository;
 
     @Autowired
-    private ImageRepository imageRepository;
+    private AuctionImageRepository imageRepository;
 
     @Autowired
     private ScrapRepository scrapRepository;

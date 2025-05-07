@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ImageRepository extends JpaRepository<AuctionImage, Long> {
+public interface AuctionImageRepository extends JpaRepository<AuctionImage, Long> {
     @Query(value = """
             SELECT i.*
             FROM auction_image i
