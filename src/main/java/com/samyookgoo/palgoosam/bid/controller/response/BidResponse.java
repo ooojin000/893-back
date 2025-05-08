@@ -10,5 +10,5 @@ public class BidResponse {
     private String bidderEmail;
     private Integer bidPrice;
     private String createdAt;
-    private String cancelledAt;
+    private String updatedAt;
 }

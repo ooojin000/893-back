@@ -68,14 +68,14 @@ CREATE TABLE auction_image
 -- 입찰 테이블
 CREATE TABLE bid
 (
-    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    bidder_id    BIGINT NOT NULL,
-    auction_id   BIGINT NOT NULL,
-    price        INT    NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    cancelled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_winning   BOOLEAN   DEFAULT FALSE,
-    is_deleted   BOOLEAN   DEFAULT FALSE,
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    bidder_id  BIGINT NOT NULL,
+    auction_id BIGINT NOT NULL,
+    price      INT    NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    is_winning BOOLEAN   DEFAULT FALSE,
+    is_deleted BOOLEAN   DEFAULT FALSE,
     FOREIGN KEY (bidder_id) REFERENCES user (id),
     FOREIGN KEY (auction_id) REFERENCES auction (id)
 );
