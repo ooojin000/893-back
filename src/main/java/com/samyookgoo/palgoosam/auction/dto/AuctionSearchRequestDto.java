@@ -38,31 +38,10 @@ public class AuctionSearchRequestDto {
     private Integer limit = 10;
 
     public AuctionSearchParam toAuctionSearchParam() {
-        String keyword = this.keyword;
         Integer categoryId = this.checkCategoryId();
 
-        Boolean isBrandNew = this.isBrandNew;
-        Boolean isLikeNew = this.isLikeNew;
-        Boolean isGentlyUsed = this.isGentlyUsed;
-        Boolean isHeavilyUsed = this.isHeavilyUsed;
-        Boolean isDamaged = this.isDamaged;
-
-        Integer priceMin = this.priceMin;
-        Integer priceMax = this.priceMax;
-
-        Boolean isPending = this.isPending;
-        Boolean isActive = this.isActive;
-        Boolean isCompleted = this.isCompleted;
-
-        Integer page = this.page;
-        Integer limit = this.limit;
-
-        String sortBy = this.sortBy;
-
         return new AuctionSearchParam(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
-                isDamaged, priceMin,
-                priceMax, isPending, isActive, isCompleted, page, limit, sortBy);
-
+                isDamaged, priceMin, priceMax, isPending, isActive, isCompleted, page, limit, sortBy);
     }
 
     private Integer checkCategoryId() {
