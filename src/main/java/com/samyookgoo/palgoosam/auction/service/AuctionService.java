@@ -10,6 +10,7 @@ import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,10 @@ public class AuctionService {
 
         log.info("{}개의 경매를 찾았습니다.", auctionList.size());
 
+        if(auctionList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         auctionList.forEach(auction -> log.debug("찾은 경매 정보: {}", auction.toString()));
 
         List<Long> auctionIdList = getAuctionIdList(auctionList);
@@ -51,13 +56,12 @@ public class AuctionService {
                             .title(auction.getTitle())
                             .startTime(auction.getStartTime())
                             .endTime(auction.getEndTime())
-                            .endTime(auction.getEndTime())
                             .status(auction.getStatus())
                             .basePrice(auction.getBasePrice())
                             .thumbnailUrl(thumbnailUrl)
                             .bidderCount(bids != null ? bids.size() : 0)
                             .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
-                            .scrapCount(scraps.size())
+                            .scrapCount(scraps != null ? scraps.size() : 0)
 //                        .isScrapped(auctionSearchResult.getIsScrapped()) <- 로그인 구현 이후 기능 추가 필요
                             .build();
                 }
