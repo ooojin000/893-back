@@ -19,8 +19,8 @@ public class AuctionSearchResultDto {
 
     private String description;
 
-    private int basePrice;
-    private int currentPrice;
+    private Integer basePrice;
+    private Integer currentPrice;
 
     private String itemCondition;
 
@@ -32,7 +32,7 @@ public class AuctionSearchResultDto {
     private Integer bidderCount;
 
     private Integer scrapCount;
-    
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
