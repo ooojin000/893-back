@@ -1,6 +1,8 @@
 package com.samyookgoo.palgoosam.auction.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.samyookgoo.palgoosam.user.domain.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,19 +10,28 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-@Entity
-@Table(name = "auction")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "auction")
+@Entity
 public class Auction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,7 +57,9 @@ public class Auction {
     @Column(nullable = false, length = 20)
     private String itemCondition; // enum 가능
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
 
     @ColumnDefault("'pending'")
@@ -58,4 +71,7 @@ public class Auction {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AuctionImage> auctionImages = new ArrayList<>();
 }

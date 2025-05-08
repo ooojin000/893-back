@@ -9,8 +9,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+@Setter
 @Entity
 @Table(name = "user")
 public class User {

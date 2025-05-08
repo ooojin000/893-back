@@ -28,3 +28,6 @@ spring:
           type:
             descriptor:
               sql: trace
+
+file:
+  dir: ${IMAGES}
