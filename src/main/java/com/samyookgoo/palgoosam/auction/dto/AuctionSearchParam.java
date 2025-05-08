@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,7 +32,12 @@ public class AuctionSearchParam {
     private Boolean isActive;
     private Boolean isCompleted;
 
+    @Min(1)
+    @NotNull
     private Integer page = 1;
+
+    @Min(5)
+    @NotNull
     private Integer limit = 10;
 
     @NotNull
