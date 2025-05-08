@@ -27,24 +27,20 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
 
-//    TODO: auctionRepository 사용 예정
-//    private final AuctionRepository auctionRepository;
-
     public BidListResponse getBidsByAuctionId(Long auctionId) {
-//        TODO: auctionRepository 사용 예정 - 경매 존재 여부 확인
-//        if (!auctionRepository.existsById(auctionId)) {
-//            throw new IllegalArgumentException("해당 경매를 찾을 수 없습니다.");
-//        }
+        if (!auctionRepository.existsById(auctionId)) {
+            throw new NoSuchElementException("해당 경매를 찾을 수 없습니다.");
+        }
 
         List<Bid> allBids = bidRepository.findByAuctionIdOrderByCreatedAtDesc(auctionId);
 
         List<BidResponse> bids = allBids.stream()
-                .filter(b -> b.getCancelledAt() == null)
+                .filter(b -> !b.getIsDeleted())
                 .map(this::mapToResponse)
                 .toList();
 
         List<BidResponse> cancelledBids = allBids.stream()
-                .filter(b -> b.getCancelledAt() != null)
+                .filter(Bid::getIsDeleted)
                 .map(this::mapToResponse)
                 .toList();
 
@@ -88,7 +84,6 @@ public class BidService {
         Optional<Bid> prevWinningBidOpt = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId);
         prevWinningBidOpt.ifPresent(prev -> {
             prev.setIsWinning(false);
-            bidRepository.save(prev);
         });
 
         Bid bid = Bid.builder()
@@ -101,9 +96,12 @@ public class BidService {
 
         Bid savedBid = bidRepository.save(bid);
 
+        // TODO: MapStruct, ModelMapper 논의 후 사용 예정
+        // 강사님 코멘트 : dto -> entity 그 반대 라이브러리 쓰는거 고민? mapsturct, modelmapper 등 .. 찾아보면 간편하게 쓸수잇습니다.
         return mapToResponse(savedBid);
     }
 
+    @Transactional
     public void cancelBid(Long auctionId, Long bidId, User currentUser) {
         Bid bid = bidRepository.findById(bidId)
                 .orElseThrow(() -> new NoSuchElementException("해당 입찰 내역이 존재하지 않습니다."));
@@ -112,12 +110,12 @@ public class BidService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 입찰만 취소할 수 있습니다.");
         }
 
-        if (bid.getCancelledAt() != null || bid.getIsDeleted() == Boolean.TRUE) {
+        if (bid.getIsDeleted() == Boolean.TRUE) {
             throw new IllegalStateException("이미 취소된 입찰입니다.");
         }
 
-        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
-        if (bid.getCreatedAt().isBefore(oneMinuteAgo)) {
+        LocalDateTime cancellableUntil = bid.getCreatedAt().plusMinutes(1);
+        if (LocalDateTime.now().isAfter(cancellableUntil)) {
             throw new IllegalStateException("입찰 후 1분 이내에만 취소할 수 있습니다.");
         }
 
@@ -126,16 +124,13 @@ public class BidService {
             throw new IllegalStateException("최고 입찰가가 아니면 취소할 수 없습니다.");
         }
 
-        bid.setCancelledAt(LocalDateTime.now());
         bid.setIsWinning(Boolean.FALSE);
         bid.setIsDeleted(Boolean.TRUE);
-        bidRepository.save(bid);
 
         Optional<Bid> newWinningBidOpt = bidRepository.findTopValidBidByAuctionId(auctionId);
 
         newWinningBidOpt.ifPresent(newWinningBid -> {
             newWinningBid.setIsWinning(true);
-            bidRepository.save(newWinningBid);
         });
     }
 
@@ -147,8 +142,7 @@ public class BidService {
                 .bidderEmail(bid.getBidder().getEmail())
                 .bidPrice(bid.getPrice())
                 .createdAt(bid.getCreatedAt().format(formatter))
-                .cancelledAt(bid.getCancelledAt() != null ? bid.getCancelledAt().format(formatter) : null)
+                .updatedAt(bid.getUpdatedAt() != null ? bid.getUpdatedAt().format(formatter) : null)
                 .build();
     }
-
 }
