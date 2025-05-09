@@ -25,10 +25,11 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
-  
+
     @GetMapping("/search")
     public ResponseEntity<List<AuctionSearchResponseDto>> search(AuctionSearchRequestDto auctionSearchRequestDto) {
         return ResponseEntity.status(HttpStatus.OK).body(auctionService.search(auctionSearchRequestDto));
+    }
 
     @PostMapping
     public ResponseEntity<?> createAuction(
