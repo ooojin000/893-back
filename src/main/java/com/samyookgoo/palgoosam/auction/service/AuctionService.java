@@ -3,19 +3,24 @@ package com.samyookgoo.palgoosam.auction.service;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
+import com.samyookgoo.palgoosam.auction.domain.SearchHistory;
 import com.samyookgoo.palgoosam.auction.dto.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
+import com.samyookgoo.palgoosam.auction.dto.SearchHistoryCreateRequestDto;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
+import com.samyookgoo.palgoosam.auction.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +44,8 @@ public class AuctionService {
     private final AuctionImageRepository auctionImageRepository;
     private final ScrapRepository scrapRepository;
     private final BidRepository bidRepository;
+    private final UserRepository userRepository;
+    private final SearchHistoryRepository searchHistoryRepository;
 
     public Auction createAuction(AuctionCreateRequest request, List<ResultFileStore> images) {
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -183,5 +191,37 @@ public class AuctionService {
         }
 
         return auctionSearchResponseDtoList;
+    }
+
+    public void recordUserSearch(SearchHistoryCreateRequestDto requestDto) {
+        /*
+        userService에서 사용자 판별하는 부분 추가
+        if (user != null) 아래 로직 동작하도록
+         */
+        User dummyUser = userRepository.findById(1L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Optional<SearchHistory> processed = processSearchKeyword(requestDto, dummyUser);
+        processed.ifPresent(searchHistoryRepository::save);
+    }
+
+
+    private Optional<SearchHistory> processSearchKeyword(SearchHistoryCreateRequestDto requestDto, User user) {
+        String keyword = requestDto.getKeyword().trim();
+        if (keyword.isEmpty()) {
+            return Optional.empty();
+        }
+        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUserAndIsDeleted(
+                keyword,
+                user.getId(), false);
+
+        if (existingSearch != null) {
+            existingSearch.incrementSearchCount();
+            return Optional.of(existingSearch);
+        }
+
+        return Optional.of(SearchHistory.builder()
+                .keyword(keyword)
+                .user(user)
+                .searchCount(1L)
+                .build());
     }
 }
