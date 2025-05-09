@@ -67,17 +67,12 @@ public class AuctionService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .category(category)
-                .basePrice(request.getBasePrice())
                 .itemCondition(request.getItemCondition().name())
                 .startTime(startTime)
                 .endTime(endTime)
                 .seller(dummyUser)
                 .status("pending")
                 .build();
-
-        System.out.println("============startTime========= : " + startTime);
-        System.out.println("============durationTime========= : " + request.getDurationTime());
-        System.out.println("============계산된 endTime======== : " + endTime);
 
         List<AuctionImage> auctionImages = new ArrayList<>();
 
@@ -86,7 +81,6 @@ public class AuctionService {
             AuctionImage img = ResultFileStore.toEntity(resultFileStore);
             img.setAuction(auction);
             img.setImageSeq(i);
-            img.setIsMain(request.getMainImageIndex() != null && request.getMainImageIndex() == i);
             auctionImages.add(img);
         }
 
