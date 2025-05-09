@@ -1,10 +1,11 @@
 package com.samyookgoo.palgoosam.config;
 
-import com.samyookgoo.palgoosam.auth.service.CustomOAuth2UserService;
-import com.samyookgoo.palgoosam.auth.service.JwtAuthenticationFilter;
-import com.samyookgoo.palgoosam.auth.service.JwtTokenProvider;
+import com.samyookgoo.palgoosam.auth.CustomOidcUserService;
+import com.samyookgoo.palgoosam.auth.JwtAuthenticationFilter;
+import com.samyookgoo.palgoosam.auth.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomOAuth2UserService oauth2UserService;
+    private final CustomOidcUserService customOidcUserService;
     private final OAuth2AuthenticationSuccessHandler successHandler;
     private final OAuth2AuthenticationFailureHandler failureHandler;
     private final JwtTokenProvider jwtProvider;
@@ -28,6 +29,7 @@ public class SecurityConfig {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider);
 
         http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm ->
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -38,7 +40,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth -> oauth
                         .loginPage("/login")
-                        .userInfoEndpoint(ui -> ui.userService(oauth2UserService))
+                        .userInfoEndpoint(ui -> ui.oidcUserService(customOidcUserService))
                         .successHandler(successHandler)
                         .failureHandler(failureHandler)
                 )
