@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auction.domain;
+package com.samyookgoo.palgoosam.search.domain;
 
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
