@@ -78,7 +78,7 @@ VALUES (2, 1),
        (3, 2);
 
 -- 검색 기록
-INSERT INTO search_history (user_id, description)
-VALUES (1, '갤럭시 미개봉'),
-       (2, '책상 중고'),
-       (3, '롱코트 겨울');
+INSERT INTO search_history (user_id, keyword, search_count)
+VALUES (1, '갤럭시 미개봉', 1),
+       (2, '책상 중고', 1),
+       (3, '롱코트 겨울', 1);

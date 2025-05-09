@@ -167,14 +167,16 @@ CREATE TABLE scrap
 -- 검색 기록 테이블
 CREATE TABLE search_history
 (
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id     BIGINT NOT NULL,
-    description VARCHAR(100),
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_deleted  BOOLEAN   DEFAULT FALSE,
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT NOT NULL,
+    keyword      VARCHAR(100),
+    search_count BIGINT NOT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted   BOOLEAN   DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES user (id)
 );
 
-ALTER TABLE auction ADD FULLTEXT(title, description) with parser ngram;
+ALTER TABLE auction
+    ADD FULLTEXT (title, description) with parser ngram;
 
 show databases;
