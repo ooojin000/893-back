@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auth.service;
+package com.samyookgoo.palgoosam.auth;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.*;

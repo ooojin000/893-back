@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auth.service;
+package com.samyookgoo.palgoosam.auth;
 
 import com.samyookgoo.palgoosam.user.domain.User;
 import org.springframework.security.core.GrantedAuthority;

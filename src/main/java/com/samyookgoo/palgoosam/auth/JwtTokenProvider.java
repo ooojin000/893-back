@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auth.service;
+package com.samyookgoo.palgoosam.auth;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
