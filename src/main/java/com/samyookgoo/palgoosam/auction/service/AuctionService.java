@@ -13,11 +13,9 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
-import com.samyookgoo.palgoosam.search.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,8 +38,6 @@ public class AuctionService {
     private final AuctionImageRepository auctionImageRepository;
     private final ScrapRepository scrapRepository;
     private final BidRepository bidRepository;
-    private final UserRepository userRepository;
-    private final SearchHistoryRepository searchHistoryRepository;
 
     public Auction createAuction(AuctionCreateRequest request, List<ResultFileStore> images) {
         Category category = categoryRepository.findById(request.getCategoryId())
