@@ -2,12 +2,16 @@ package com.samyookgoo.palgoosam.auction.controller;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.dto.AuctionCreateRequest;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -21,6 +25,10 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
+  
+    @GetMapping("/search")
+    public ResponseEntity<List<AuctionSearchResponseDto>> search(AuctionSearchRequestDto auctionSearchRequestDto) {
+        return ResponseEntity.status(HttpStatus.OK).body(auctionService.search(auctionSearchRequestDto));
 
     @PostMapping
     public ResponseEntity<?> createAuction(
