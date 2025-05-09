@@ -6,12 +6,14 @@ import com.samyookgoo.palgoosam.auction.dto.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.AuctionDetailResponse;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
+import com.samyookgoo.palgoosam.auction.dto.SearchHistoryCreateRequestDto;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -33,7 +35,7 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
-  private final AuctionRepository auctionRepository;
+    private final AuctionRepository auctionRepository;
     private final AuctionImageRepository auctionImageRepository;
 
     @GetMapping("/search")
@@ -41,6 +43,14 @@ public class AuctionController {
             AuctionSearchRequestDto auctionSearchRequestDto) {
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("정상적으로 조회되었습니다.",
                 auctionService.search(auctionSearchRequestDto)));
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<BaseResponse<ArrayList>> recordUserSearch(
+            SearchHistoryCreateRequestDto requestDto) {
+        auctionService.recordUserSearch(requestDto);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(BaseResponse.success("검색 기록을 정상적으로 저장했습니다.", new ArrayList<>()));
     }
 
     @PostMapping
