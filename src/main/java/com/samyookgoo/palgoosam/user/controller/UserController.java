@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.user.controller;
 
-import com.samyookgoo.palgoosam.auth.service.CustomOauth2UserDetails;
+import com.samyookgoo.palgoosam.auth.CustomOauth2UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
