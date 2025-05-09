@@ -1,22 +1,21 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.dto.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.AuctionDetailResponse;
+import com.samyookgoo.palgoosam.auction.dto.AuctionUpdateRequest;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
-import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,8 +28,6 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
-    private final AuctionRepository auctionRepository;
-    private final AuctionImageRepository auctionImageRepository;
 
     @PostMapping
     public ResponseEntity<?> createAuction(
@@ -50,13 +47,17 @@ public class AuctionController {
 
     @GetMapping("/{auctionId}")
     public ResponseEntity<?> getAuction(@PathVariable Long auctionId) {
-        Auction auction = auctionRepository.findByIdWithCategoryAndSeller(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
-
-        List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
-
-        AuctionDetailResponse response = AuctionDetailResponse.of(auction, images);
-
+        AuctionDetailResponse response = auctionService.getAuctionDetail(auctionId);
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/{auctionId}")
+    public ResponseEntity<AuctionDetailResponse> updateAuction(
+            @PathVariable Long auctionId,
+            @RequestBody AuctionUpdateRequest request) {
+
+        AuctionDetailResponse updatedAuction = auctionService.updateAuction(auctionId, request);
+        return ResponseEntity.ok(updatedAuction);
+    }
+
 }
