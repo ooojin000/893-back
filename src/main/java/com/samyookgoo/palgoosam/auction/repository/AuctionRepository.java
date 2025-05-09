@@ -9,8 +9,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
-    Optional<Auction> findById(Long id);
-
     @Query("SELECT a FROM Auction a " +
             "JOIN FETCH a.category " +
             "JOIN FETCH a.seller " +
