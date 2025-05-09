@@ -1,31 +1,15 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
-import java.time.LocalDateTime;
-import lombok.Builder;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
+@AllArgsConstructor
 public class AuctionSearchResponseDto {
-    private Long id;
-    private String title;
+    private Long totalAuctionsCount;
 
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-
-    private String status;
-
-    private Integer basePrice;
-    private Integer currentPrice;
-
-    private Integer bidderCount;
-
-    private Integer scrapCount;
-
-    private String thumbnailUrl;
-
-    // 로그인 구현에 따라 수정 필요
-    private Boolean isScrapped = false;
+    private List<AuctionListItemDto> auctionList;
 }

@@ -7,6 +7,7 @@ import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
+import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,8 +28,10 @@ public class AuctionController {
     private final FileStore fileStore;
 
     @GetMapping("/search")
-    public ResponseEntity<List<AuctionSearchResponseDto>> search(AuctionSearchRequestDto auctionSearchRequestDto) {
-        return ResponseEntity.status(HttpStatus.OK).body(auctionService.search(auctionSearchRequestDto));
+    public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> search(
+            AuctionSearchRequestDto auctionSearchRequestDto) {
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("정상적으로 조회되었습니다.",
+                auctionService.search(auctionSearchRequestDto)));
     }
 
     @PostMapping
