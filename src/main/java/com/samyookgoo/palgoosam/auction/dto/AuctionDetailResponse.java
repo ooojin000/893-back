@@ -3,6 +3,7 @@ package com.samyookgoo.palgoosam.auction.dto;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +29,9 @@ public class AuctionDetailResponse {
     private String categoryLarge;
     private String categoryMedium;
     private String categorySmall;
+
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 
     private List<ImageDto> imageUrls;
 
@@ -55,6 +59,8 @@ public class AuctionDetailResponse {
                 .categoryLarge(categoryNames.size() > 0 ? categoryNames.get(0) : null)
                 .categoryMedium(categoryNames.size() > 1 ? categoryNames.get(1) : null)
                 .categorySmall(categoryNames.size() > 2 ? categoryNames.get(2) : null)
+                .startTime(auction.getStartTime())
+                .endTime(auction.getEndTime())
                 .imageUrls(imageDtos)
                 .build();
     }
