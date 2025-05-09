@@ -8,9 +8,9 @@ import lombok.Setter;
 public class AuctionCreateRequest {
     private String title;
     private String description;
-    private int basePrice;
-    private itemCondition itemCondition;
-    private int startDelay;
-    private int durationTime;
+    private Integer basePrice;
+    private ItemCondition itemCondition;
+    private Integer startDelay;
+    private Integer durationTime;
     private Long categoryId;
 }
