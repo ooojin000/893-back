@@ -24,6 +24,8 @@ import org.hibernate.annotations.CreationTimestamp;
 @AllArgsConstructor
 @Entity
 @Table(name = "auction_image")
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuctionImage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,6 +50,6 @@ public class AuctionImage {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    //    @Column(nullable = false, length = 255)
-    //    private String url;
+    @Column(nullable = false, length = 255)
+    private String url;
 }

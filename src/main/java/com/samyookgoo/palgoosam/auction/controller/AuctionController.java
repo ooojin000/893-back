@@ -11,6 +11,7 @@ import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
+import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -32,13 +33,15 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
-    private final AuctionRepository auctionRepository;
+  private final AuctionRepository auctionRepository;
     private final AuctionImageRepository auctionImageRepository;
-  
+
     @GetMapping("/search")
-    public ResponseEntity<List<AuctionSearchResponseDto>> search(AuctionSearchRequestDto auctionSearchRequestDto) {
-        return ResponseEntity.status(HttpStatus.OK).body(auctionService.search(auctionSearchRequestDto));
-  
+    public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> search(
+            AuctionSearchRequestDto auctionSearchRequestDto) {
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("정상적으로 조회되었습니다.",
+                auctionService.search(auctionSearchRequestDto)));
+    }
 
     @PostMapping
     public ResponseEntity<?> createAuction(

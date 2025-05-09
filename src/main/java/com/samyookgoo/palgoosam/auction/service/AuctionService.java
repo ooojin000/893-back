@@ -2,10 +2,11 @@ package com.samyookgoo.palgoosam.auction.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.dto.AuctionCreateRequest;
+import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
@@ -13,16 +14,16 @@ import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
-import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -87,17 +88,17 @@ public class AuctionService {
         auction.setAuctionImages(auctionImages);
         return auctionRepository.save(auction);
     }
-  
-    
-    public List<AuctionSearchResponseDto> search(AuctionSearchRequestDto auctionSearchRequestDto) {
-        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.toString());
 
+
+    public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
+        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.toString());
         List<Auction> auctionList = findAuctionList(auctionSearchRequestDto);
+        Long auctionCount = Long.valueOf(auctionList.size());
 
         log.info("{}개의 경매를 찾았습니다.", auctionList.size());
 
-        if(auctionList.isEmpty()) {
-            return new ArrayList<>();
+        if (auctionList.isEmpty()) {
+            return new AuctionSearchResponseDto(auctionCount, new ArrayList<>());
         }
 
         auctionList.forEach(auction -> log.debug("찾은 경매 정보: {}", auction.toString()));
@@ -107,12 +108,12 @@ public class AuctionService {
         Map<Long, List<Bid>> bidsByAuctionMap = getBidListByAuctionMap(auctionIdList);
         Map<Long, List<Scrap>> scrapsByAuctionMap = getScrapListByAuctionMap(auctionIdList);
 
-        List<AuctionSearchResponseDto> resultWithoutSort = auctionList.stream().map(auction -> {
+        List<AuctionListItemDto> resultWithoutSort = auctionList.stream().map(auction -> {
                     Long auctionId = auction.getId();
                     String thumbnailUrl = thumbnailMap.get(auctionId);
                     List<Bid> bids = bidsByAuctionMap.get(auctionId);
                     List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
-                    return AuctionSearchResponseDto.builder().id(auction.getId())
+                    return AuctionListItemDto.builder().id(auction.getId())
                             .title(auction.getTitle())
                             .startTime(auction.getStartTime())
                             .endTime(auction.getEndTime())
@@ -127,7 +128,8 @@ public class AuctionService {
                 }
         ).toList();
 
-        return this.sortAuctionSearchResponseDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy());
+        return new AuctionSearchResponseDto(auctionCount,
+                this.sortAuctionListItemDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()));
     }
 
     private List<Auction> findAuctionList(AuctionSearchRequestDto auctionSearchRequestDto) {
@@ -163,21 +165,21 @@ public class AuctionService {
                 .collect(Collectors.groupingBy(scrap -> scrap.getAuction().getId()));
     }
 
-    private List<AuctionSearchResponseDto> sortAuctionSearchResponseDtoList(
-            List<AuctionSearchResponseDto> auctionSearchResponseDtoList, String sortBy
+    private List<AuctionListItemDto> sortAuctionListItemDtoList(
+            List<AuctionListItemDto> auctionSearchResponseDtoList, String sortBy
     ) {
         if (sortBy.equals("price_asc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getBasePrice)).toList();
+                    .sorted(Comparator.comparing(AuctionListItemDto::getBasePrice)).toList();
         } else if (sortBy.equals("price_desc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getBasePrice).reversed()).toList();
+                    .sorted(Comparator.comparing(AuctionListItemDto::getBasePrice).reversed()).toList();
         } else if (sortBy.equals("scrap_count_desc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getScrapCount).reversed()).toList();
+                    .sorted(Comparator.comparing(AuctionListItemDto::getScrapCount).reversed()).toList();
         } else if (sortBy.equals("bidder_count_desc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionSearchResponseDto::getBidderCount).reversed()).toList();
+                    .sorted(Comparator.comparing(AuctionListItemDto::getBidderCount).reversed()).toList();
         }
 
         return auctionSearchResponseDtoList;
