@@ -1,9 +1,8 @@
 package com.samyookgoo.palgoosam.config;
 
-import com.samyookgoo.palgoosam.auth.service.JwtTokenProvider;
+import com.samyookgoo.palgoosam.auth.JwtTokenProvider;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
