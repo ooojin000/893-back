@@ -15,12 +15,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "auction_image")
 @AllArgsConstructor
@@ -45,9 +46,6 @@ public class AuctionImage {
 
     @Column(nullable = false)
     private int imageSeq;
-
-    @ColumnDefault("false")
-    private Boolean isMain = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
