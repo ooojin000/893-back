@@ -48,6 +48,6 @@ public class AuctionImage {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    //    @Column(nullable = false, length = 255)
-    //    private String url;
+    @Column(nullable = false, length = 255)
+    private String url;
 }
