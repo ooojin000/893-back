@@ -5,6 +5,7 @@ import com.samyookgoo.palgoosam.auth.JwtAuthenticationFilter;
 import com.samyookgoo.palgoosam.auth.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -34,6 +35,8 @@ public class SecurityConfig {
                 .sessionManagement(sm ->
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 프리플라이트 OPTIONS 전역 허용 , TODO 추후 삭제
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/login", "/oauth2/**", "/error").permitAll()
                         .requestMatchers("/api/user-info").authenticated()
                         .anyRequest().authenticated()
