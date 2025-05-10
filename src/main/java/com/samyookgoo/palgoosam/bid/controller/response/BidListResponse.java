@@ -8,8 +8,8 @@ import lombok.Getter;
 @Builder
 public class BidListResponse {
     private Long auctionId;
-    private int totalBid;
-    private int totalBidder;
+    private Integer totalBid;
+    private Integer totalBidder;
     private List<BidResponse> bids;
     private List<BidResponse> cancelledBids;
 }
