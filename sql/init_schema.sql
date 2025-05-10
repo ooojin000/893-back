@@ -175,4 +175,6 @@ CREATE TABLE search_history
     FOREIGN KEY (user_id) REFERENCES user (id)
 );
 
+ALTER TABLE auction ADD FULLTEXT(title, description) with parser ngram;
+
 show databases;

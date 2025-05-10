@@ -14,8 +14,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name = "user_notification_token")
-public class UserNotificationToken {
+@Table(name = "user_fcm_token")
+public class UserFcmToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
