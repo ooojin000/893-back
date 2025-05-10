@@ -15,30 +15,73 @@ import java.util.Date;
 @Getter
 public class JwtTokenProvider {
 
-    private final Key key;
-    private final long validityInMilliseconds;
+    private final Key accessKey;
+    private final Key refreshKey;
+    private final long accessValidityMs;
+    private final long refreshValidityMs;
 
     public JwtTokenProvider() {
-        this.key = Keys.hmacShaKeyFor("fnfjhdkdmndnfjcmnaoqndjduekdsndjxjemejwjdsx".getBytes());
-        this.validityInMilliseconds = 86400000;
+        this.accessKey = Keys.hmacShaKeyFor("fnfjhdkdmndnfjcmnaoqndjduekdsndjxjemejwjdsx".getBytes());
+        this.refreshKey = Keys.hmacShaKeyFor("goormdjhwdjfnvjxmxmasjdaksdfdasdmaskdnsadqdwqwdwgfx".getBytes());
+        this.accessValidityMs = 1000 * 60 * 60;
+        this.refreshValidityMs = 1000L * 60 * 60 * 24 * 7;
     }
 
-    public String generateToken(Authentication authentication) {
-        String username = authentication.getName();
+    public String generateAccessToken(Authentication authentication) {
+        String providerId = authentication.getName();
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + validityInMilliseconds);
+        Date expiry = new Date(now.getTime() + accessValidityMs);
 
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(providerId)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .signWith(accessKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public boolean validateToken(String token) {
+    public String generateRefreshToken(Authentication authentication) {
+        String providerId = authentication.getName();
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + refreshValidityMs);
+
+        return Jwts.builder()
+                .setSubject(providerId)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(refreshKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String refreshAccessToken(String providerId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + accessValidityMs);
+
+        return Jwts.builder()
+                .setSubject(providerId)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(accessKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String refreshRefreshToken(String providerId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + refreshValidityMs);
+
+        return Jwts.builder()
+                .setSubject(providerId)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(refreshKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean validateAccessToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build()
+            Jwts.parserBuilder()
+                    .setSigningKey(accessKey)
+                    .build()
                     .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
@@ -46,24 +89,50 @@ public class JwtTokenProvider {
         }
     }
 
-    public String getUsername(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token).getBody().getSubject();
+    public boolean validateRefreshToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(refreshKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public String getUserProviderIdFromAccessToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(accessKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public String getUserProviderIdFromRefreshToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(refreshKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 
     public Authentication getAuthentication(String username) {
-        // 간단하게 UsernamePasswordAuthenticationToken 생성
-        UserDetails user =
-                org.springframework.security.core.userdetails.User
+        UserDetails user = org.springframework.security.core.userdetails.User
                         .withUsername(username)
-                        .password("")          // JWT만으로 인증하므로 빈 비밀번호
+                        .password("")
                         .authorities("ROLE_USER")
                         .build();
-        return new UsernamePasswordAuthenticationToken(
-                user, null, user.getAuthorities());
+        return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
     }
 
-    public long getValidityMs() {
-        return validityInMilliseconds;
+    public long getAccessValidityMs() {
+        return accessValidityMs;
+    }
+
+    public long getRefreshValidityMs() {
+        return refreshValidityMs;
     }
 }
