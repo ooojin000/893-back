@@ -24,8 +24,6 @@ import org.hibernate.annotations.CreationTimestamp;
 @AllArgsConstructor
 @Entity
 @Table(name = "auction_image")
-@AllArgsConstructor
-@NoArgsConstructor
 public class AuctionImage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
