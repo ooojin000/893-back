@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.LastModifiedDate;
 
 @Entity
 @Table(name = "user")
@@ -41,7 +42,11 @@ public class User {
     private String providerId;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private UserOauthToken oauthToken;
