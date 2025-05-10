@@ -1,25 +1,28 @@
 package com.samyookgoo.palgoosam.user.controller;
 
-import com.samyookgoo.palgoosam.auth.CustomOauth2UserDetails;
+import com.samyookgoo.palgoosam.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.samyookgoo.palgoosam.auth.service.AuthService;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserController {
+    private final AuthService authService;
 
     @GetMapping("/user-info")
-    public ResponseEntity<?> getMyInfo(
-            @AuthenticationPrincipal CustomOauth2UserDetails principal
-    ) {
-        return ResponseEntity.ok(
-                new java.util.HashMap<>() {{
-                    put("email", principal.getUserEmail());
-                    put("name",  principal.getName());
-                }}
-        );
+    public ResponseEntity<?> getUserInfo() {
+        User user = authService.getCurrentUser();
+
+        return ResponseEntity.ok(Map.of(
+                "email", user.getEmail(),
+                "name", user.getName(),
+                "profileUrl", user.getProfileImage(),
+                "provider", user.getProvider()
+        ));
     }
 }
