@@ -8,7 +8,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +42,12 @@ public class SearchHistoryController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(BaseResponse.success("자동 완성 목록을 정상적으로 조회했습니다.",
                         searchHistoryService.getSearchSuggestionList(keyword)));
+    }
+
+    @DeleteMapping("/{searchHistoryId}")
+    public ResponseEntity<BaseResponse> getSuggestions(@PathVariable("searchHistoryId") Long searchHistoryId) {
+        searchHistoryService.deleteSearchHistory(searchHistoryId);
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("검색 기록을 삭제했습니다.", null));
     }
 
 }

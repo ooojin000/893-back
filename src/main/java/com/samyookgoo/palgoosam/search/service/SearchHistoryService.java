@@ -57,9 +57,9 @@ public class SearchHistoryService {
         if (keyword.isEmpty()) {
             return Optional.empty();
         }
-        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUserAndIsDeleted(
-                keyword,
-                user.getId(), false);
+
+        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUserAndIsDeleted(keyword, user.getId(),
+                false);
 
         if (existingSearch != null) {
             existingSearch.incrementSearchCount();
@@ -68,6 +68,7 @@ public class SearchHistoryService {
 
         return Optional.of(SearchHistory.builder()
                 .keyword(keyword)
+                .isDeleted(false)
                 .user(user)
                 .searchCount(1L)
                 .build());
@@ -76,5 +77,18 @@ public class SearchHistoryService {
     public List<String> getSearchSuggestionList(String keyword) {
         return searchHistoryRepository.findAllByKeyword(keyword).stream().map(SearchHistory::getKeyword)
                 .collect(Collectors.toList());
+    }
+
+    public void deleteSearchHistory(Long searchHistoryId) {
+        /*
+        userService에서 사용자 판별하는 부분 추가
+        if (user != null) 아래 로직 동작하도록
+         */
+        SearchHistory target = searchHistoryRepository.findById(searchHistoryId)
+                .orElseThrow(() -> new EntityNotFoundException("SearchHistory not found"));
+        target.setIsDeleted(true);
+        if (target.getUser().getId().equals(1L)) {
+            searchHistoryRepository.save(target);
+        }
     }
 }
