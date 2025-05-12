@@ -3,6 +3,7 @@ package com.samyookgoo.palgoosam.auth;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +14,7 @@ import java.util.Date;
 
 @Component
 @Getter
+@Slf4j
 public class JwtTokenProvider {
 
     private final Key accessKey;
@@ -85,6 +87,7 @@ public class JwtTokenProvider {
                     .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            log.error("JWT 검증 실패: {}", e.getMessage(), e);
             return false;
         }
     }

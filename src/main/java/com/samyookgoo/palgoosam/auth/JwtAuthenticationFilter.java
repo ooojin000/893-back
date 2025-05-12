@@ -3,10 +3,12 @@ package com.samyookgoo.palgoosam.auth;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtProvider;
@@ -25,6 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
+
+        log.info("Access token: {}", accessToken);
 
         // 토큰이 없거나 검증에 실패하면 401 + 메시지 응답
         if (accessToken == null || !jwtProvider.validateAccessToken(accessToken)) {
