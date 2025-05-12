@@ -58,10 +58,12 @@ public class SearchHistoryService {
             return Optional.empty();
         }
 
-        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUserAndIsDeleted(keyword, user.getId(),
-                false);
+        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUserAndIsDeleted(keyword, user.getId());
 
         if (existingSearch != null) {
+            if (existingSearch.getIsDeleted()) {
+                existingSearch.setIsDeleted(false);
+            }
             existingSearch.incrementSearchCount();
             return Optional.of(existingSearch);
         }
