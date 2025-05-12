@@ -49,5 +49,5 @@ public class User {
     private LocalDateTime updatedAt;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private UserOauthToken oauthToken;
+    private UserJwtToken oauthToken;
 }

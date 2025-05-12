@@ -14,6 +14,7 @@ import java.util.Map;
 public class UserController {
     private final AuthService authService;
 
+    @CrossOrigin(origins="http://localhost:3000", allowCredentials="true")
     @GetMapping("/user-info")
     public ResponseEntity<?> getUserInfo() {
         User user = authService.getCurrentUser();

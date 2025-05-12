@@ -2,8 +2,8 @@ package com.samyookgoo.palgoosam.config;
 
 import com.samyookgoo.palgoosam.auth.JwtTokenProvider;
 import com.samyookgoo.palgoosam.user.domain.User;
-import com.samyookgoo.palgoosam.user.domain.UserOauthToken;
-import com.samyookgoo.palgoosam.user.repository.UserOauthTokenRepository;
+import com.samyookgoo.palgoosam.user.domain.UserJwtToken;
+import com.samyookgoo.palgoosam.user.repository.UserJwtTokenRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.io.IOException;
 public class  OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtProvider;
-    private final UserOauthTokenRepository userOauthTokenRepository;
+    private final UserJwtTokenRepository userJwtTokenRepository;
     private final UserRepository userRepository;
 
     @Override
@@ -36,7 +36,7 @@ public class  OAuth2AuthenticationSuccessHandler implements AuthenticationSucces
         String accessToken = jwtProvider.generateAccessToken(auth);
         String refreshToken = jwtProvider.generateRefreshToken(auth);
 
-        // 2) 토큰 디비에 저장
+        // 2) JWT 토큰 디비에 저장
 
         // 2-1) 유저 id 찾기
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) auth;
@@ -49,21 +49,21 @@ public class  OAuth2AuthenticationSuccessHandler implements AuthenticationSucces
                 .orElseThrow(() -> new IllegalStateException("가입된 사용자가 아닙니다."));
 
         // 2-2) 업데이트 혹은 저장
-        UserOauthToken userOauthToken = userOauthTokenRepository.findById(user.getId())
+        UserJwtToken userJwtToken = userJwtTokenRepository.findById(user.getId())
                 .map(existing -> {
                     existing.setAuthToken(accessToken);
                     existing.setRefreshToken(refreshToken);
                     return existing;
                 })
                 .orElseGet(() ->
-                        UserOauthToken.builder()
+                        UserJwtToken.builder()
                                 .user(user)
                                 .authToken(accessToken)
                                 .refreshToken(refreshToken)
                                 .build()
                 );
 
-        userOauthTokenRepository.save(userOauthToken);
+        userJwtTokenRepository.save(userJwtToken);
 
         // 3) HttpOnly 쿠키 설정
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)

@@ -3,9 +3,8 @@ package com.samyookgoo.palgoosam.auth.controller;
 import com.samyookgoo.palgoosam.auth.JwtTokenProvider;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.user.domain.User;
-import com.samyookgoo.palgoosam.user.domain.UserOauthToken;
-import com.samyookgoo.palgoosam.user.repository.UserOauthTokenRepository;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
+import com.samyookgoo.palgoosam.user.domain.UserJwtToken;
+import com.samyookgoo.palgoosam.user.repository.UserJwtTokenRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,7 +15,6 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -31,7 +29,7 @@ import java.util.Map;
 @RequestMapping("/api")
 public class AuthController {
     private final JwtTokenProvider jwtProvider;
-    private final UserOauthTokenRepository userOauthTokenRepository;
+    private final UserJwtTokenRepository userJwtTokenRepository;
     private final AuthService authService;
 
     @PostMapping("/auth/refresh")
@@ -54,21 +52,21 @@ public class AuthController {
         }
 
         String newAccessToken = jwtProvider.refreshAccessToken(providerId);
-        String newRefreshToken = jwtProvider.refreshAccessToken(newAccessToken);
+        String newRefreshToken = jwtProvider.refreshRefreshToken(providerId);
 
         User user = authService.getCurrentUser();
 
-        UserOauthToken userOauthToken = userOauthTokenRepository.getReferenceById(user.getId());
+        UserJwtToken userJwtToken = userJwtTokenRepository.getReferenceById(user.getId());
 
         // 디비 검증
-        if(!userOauthToken.getRefreshToken().equals(refreshToken)) {
+        if(!userJwtToken.getRefreshToken().equals(refreshToken)) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "리프레시 토큰이 유효하지 않습니다."));
         }
 
-        userOauthToken.setRefreshToken(newRefreshToken);
-        userOauthTokenRepository.save(userOauthToken);
+        userJwtToken.setRefreshToken(newRefreshToken);
+        userJwtTokenRepository.save(userJwtToken);
 
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", newAccessToken)
                 .httpOnly(true)
@@ -107,7 +105,7 @@ public class AuthController {
         res.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
 
         // DB에 저장된 토큰 삭제
-        userOauthTokenRepository.deleteById(user.getId());
+        userJwtTokenRepository.deleteById(user.getId());
 
         // SecurityContext 비우기
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

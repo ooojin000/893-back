@@ -10,13 +10,13 @@ import jakarta.persistence.Table;
 import lombok.*;
 
 @Entity
-@Table(name = "user_oauth_token")
+@Table(name = "user_jwt_token")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserOauthToken {
+public class UserJwtToken {
     @Id
     private Long id;
 
