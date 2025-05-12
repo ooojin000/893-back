@@ -1,18 +1,23 @@
 package com.samyookgoo.palgoosam.notification.domain;
 
-import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.user.domain.User;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "notification_history")
 public class NotificationHistory {
@@ -20,17 +25,14 @@ public class NotificationHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "user_id")
+    private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "notification_type_id")
-    private NotificationType type;
+    @Column(name = "auction_id")
+    private Long auctionId;
 
-    @ManyToOne
-    @JoinColumn(name = "auction_id")
-    private Auction auction;
+    @Column(name = "message_type")
+    private String messageType;
 
     @ColumnDefault("false")
     private Boolean isRead = false;
