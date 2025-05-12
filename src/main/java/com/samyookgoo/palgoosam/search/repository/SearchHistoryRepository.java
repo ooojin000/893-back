@@ -5,9 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Long> {
 
     @Query(value = """
@@ -18,4 +16,12 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             LIMIT 10
             """, nativeQuery = true)
     List<SearchHistory> findAllByUserId(@Param("userId") Long userId);
+           
+    @Query(value = """
+            SELECT *
+            FROM search_history
+            WHERE keyword = :keyword AND user_id = :userId AND is_deleted = :isDeleted
+            """, nativeQuery = true)
+    SearchHistory findByKeywordAndUserAndIsDeleted(@Param("keyword") String keyword, @Param("userId") Long userId,
+                                                   @Param("isDeleted") boolean isDeleted);
 }

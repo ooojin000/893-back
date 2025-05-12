@@ -22,4 +22,12 @@ public class SearchHistoryController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(BaseResponse.success("검색 기록을 정상적으로 조회했습니다.", searchHistoryService.getSearchHistory()));
     }
+  
+    @GetMapping
+    public ResponseEntity<BaseResponse> recordUserSearch(
+            SearchHistoryCreateRequestDto requestDto) {
+        searchHistoryService.recordUserSearch(requestDto);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(BaseResponse.success("검색 기록을 정상적으로 저장했습니다.", null));
+    }
 }

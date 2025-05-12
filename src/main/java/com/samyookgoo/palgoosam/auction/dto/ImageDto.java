@@ -10,6 +10,5 @@ import lombok.Getter;
 public class ImageDto {
     private String originalName;
     private String storeName;
-    private boolean isMain;
-    private int imageSeq;
+    private Integer imageSeq;
 }
