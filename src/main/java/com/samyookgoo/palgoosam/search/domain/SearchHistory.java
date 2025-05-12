@@ -31,5 +31,5 @@ public class SearchHistory {
     private LocalDateTime createdAt;
 
     @ColumnDefault("false")
-    private boolean isDeleted = false;
+    private Boolean isDeleted = false;
 }
