@@ -186,4 +186,5 @@ dist
 **/.DS_Store
 **/._.DS_Store
 
+src/main/resources/firebase-admin-sdk.json
 src/main/resources/application.yml
