@@ -1,7 +1,7 @@
 -- 데이터베이스를 완전히 삭제하고 새로 생성하려면 아래 주석을 해제하여 실행하세요.
 -- 기존 데이터가 모두 삭제되므로 주의하세요.
 # DROP DATABASE palgoosam;
-# CREATE DATABASE palgoosam DEFAULT CHARACTER SET UTF8;
+CREATE DATABASE palgoosam DEFAULT CHARACTER SET UTF8;
 
 USE palgoosam;
 
@@ -68,14 +68,14 @@ CREATE TABLE auction_image
 -- 입찰 테이블
 CREATE TABLE bid
 (
-    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    bidder_id    BIGINT NOT NULL,
-    auction_id   BIGINT NOT NULL,
-    price        INT    NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    cancelled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_winning   BOOLEAN   DEFAULT FALSE,
-    is_deleted   BOOLEAN   DEFAULT FALSE,
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    bidder_id  BIGINT NOT NULL,
+    auction_id BIGINT NOT NULL,
+    price      INT    NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    is_winning BOOLEAN   DEFAULT FALSE,
+    is_deleted BOOLEAN   DEFAULT FALSE,
     FOREIGN KEY (bidder_id) REFERENCES user (id),
     FOREIGN KEY (auction_id) REFERENCES auction (id)
 );
@@ -140,17 +140,14 @@ CREATE TABLE notification_history
 );
 
 -- 알림 토큰 테이블
-CREATE TABLE user_notification_token
+CREATE TABLE user_fcm_token
 (
-    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id    BIGINT       NOT NULL,
-    token      VARCHAR(500) NOT NULL,
-    is_active  BOOLEAN   DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expired_at TIMESTAMP,
-    is_expired BOOLEAN   DEFAULT FALSE,
-    FOREIGN KEY (user_id) REFERENCES user (id)
+    id          BIGINT PRIMARY KEY,
+    user_id     BIGINT       NOT NULL REFERENCES user (id),
+    token       VARCHAR(500) NOT NULL,
+    device_type VARCHAR(20)  NOT NULL DEFAULT 'WEB',
+    created_at  TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP             DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 찜(스크랩) 테이블
@@ -174,5 +171,8 @@ CREATE TABLE search_history
     is_deleted  BOOLEAN   DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES user (id)
 );
+
+ALTER TABLE auction
+    ADD FULLTEXT (title, description) with parser ngram;
 
 show databases;

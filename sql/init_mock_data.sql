@@ -26,14 +26,15 @@ VALUES (1, NULL, '전자기기'),
 -- 경매
 INSERT INTO auction (seller_id, category_id, title, description, base_price, item_condition, start_time, end_time)
 VALUES (1, 3, '삼성 갤럭시 S22 미개봉', '미개봉 갤럭시 S22입니다.', 850000, 'brand_new', '2025-05-01 09:00:00', '2025-05-01 18:00:00'),
-       (2, 5, '화이트 책상 팝니다', '사용감 거의 없는 화이트 책상입니다.', 50000, 'gently_used', '2025-05-01 10:00:00', '2025-05-01 17:30:00'),
+       (2, 5, '화이트 책상 팝니다', '사용감 거의 없는 화이트 책상입니다.', 50000, 'gently_used', '2025-05-01 10:00:00',
+        '2025-05-01 17:30:00'),
        (3, 8, '겨울용 롱코트', '두 번 착용한 코트입니다.', 60000, 'like_new', '2025-05-01 11:00:00', '2025-05-01 16:00:00');
 
 -- 경매 이미지
-INSERT INTO auction_image (auction_id, url, original_name, store_name, image_seq, is_main)
-VALUES (1, 'https://img.example.com/auctions/1_1.jpg', 'galaxy.jpg', '1_1.jpg', 1, TRUE),
-       (2, 'https://img.example.com/auctions/2_1.jpg', 'desk.jpg', '2_1.jpg', 1, TRUE),
-       (3, 'https://img.example.com/auctions/3_1.jpg', 'coat.jpg', '3_1.jpg', 1, TRUE);
+INSERT INTO auction_image (auction_id, url, original_name, store_name, image_seq)
+VALUES (1, 'https://img.example.com/auctions/1_1.jpg', 'galaxy.jpg', '1_1.jpg', 0),
+       (2, 'https://img.example.com/auctions/2_1.jpg', 'desk.jpg', '2_1.jpg', 0),
+       (3, 'https://img.example.com/auctions/3_1.jpg', 'coat.jpg', '3_1.jpg', 0);
 
 -- 입찰
 INSERT INTO bid (bidder_id, auction_id, price, created_at, cancelled_at, is_winning, is_deleted)
@@ -65,7 +66,7 @@ VALUES (1, 1, 1, FALSE, FALSE),
        (3, 3, 2, TRUE, FALSE);
 
 -- 알림 토큰
-INSERT INTO user_notification_token (user_id, token)
+INSERT INTO user_fcm_token (user_id, token)
 VALUES (1, 'token_user1'),
        (2, 'token_user2'),
        (3, 'token_user3');
@@ -77,7 +78,7 @@ VALUES (2, 1),
        (3, 2);
 
 -- 검색 기록
-INSERT INTO search_history (user_id, description)
+INSERT INTO search_history (user_id, keyword)
 VALUES (1, '갤럭시 미개봉'),
        (2, '책상 중고'),
        (3, '롱코트 겨울');
