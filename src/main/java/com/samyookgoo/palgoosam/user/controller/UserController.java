@@ -1,12 +1,11 @@
 package com.samyookgoo.palgoosam.user.controller;
 
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.dto.UserInfoResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -19,11 +18,13 @@ public class UserController {
     public ResponseEntity<?> getUserInfo() {
         User user = authService.getCurrentUser();
 
-        return ResponseEntity.ok(Map.of(
-                "email", user.getEmail(),
-                "name", user.getName(),
-                "profileUrl", user.getProfileImage(),
-                "provider", user.getProvider()
-        ));
+        UserInfoResponseDto dto = new UserInfoResponseDto(
+                user.getEmail(),
+                user.getName(),
+                user.getProfileImage(),
+                user.getProvider()
+        );
+
+        return ResponseEntity.ok(dto);
     }
 }
