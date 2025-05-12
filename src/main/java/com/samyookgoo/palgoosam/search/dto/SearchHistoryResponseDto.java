@@ -13,7 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SearchHistoryResponseDto {
-
     private Long id;
     private String keyword;
     private LocalDateTime createdAt;
