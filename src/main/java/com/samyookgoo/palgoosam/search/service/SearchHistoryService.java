@@ -1,11 +1,14 @@
 package com.samyookgoo.palgoosam.search.service;
 
+
 import com.samyookgoo.palgoosam.search.domain.SearchHistory;
+import com.samyookgoo.palgoosam.search.dto.SearchHistoryResponseDto;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryCreateRequestDto;
 import com.samyookgoo.palgoosam.search.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +18,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class SearchHistoryService {
-
     private final SearchHistoryRepository searchHistoryRepository;
     private final UserRepository userRepository;
 
