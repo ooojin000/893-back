@@ -43,7 +43,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        .loginPage("/login")
                         .userInfoEndpoint(ui -> ui.oidcUserService(customOidcUserService))
                         .successHandler(successHandler)
                         .failureHandler(failureHandler)
