@@ -8,6 +8,8 @@ import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
+import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
+import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import java.util.List;
