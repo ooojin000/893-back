@@ -51,7 +51,7 @@ public class SearchHistory {
     private LocalDateTime updatedAt;
 
     @ColumnDefault("false")
-    private boolean isDeleted = false;
+    private Boolean isDeleted = false;
 
     public void incrementSearchCount() {
         this.searchCount++;
