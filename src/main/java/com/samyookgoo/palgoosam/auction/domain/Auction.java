@@ -1,6 +1,5 @@
 package com.samyookgoo.palgoosam.auction.domain;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -11,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,7 +39,7 @@ public class Auction {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -57,9 +55,7 @@ public class Auction {
     @Column(nullable = false, length = 20)
     private String itemCondition; // enum 가능
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
 
     @ColumnDefault("'pending'")

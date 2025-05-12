@@ -8,7 +8,6 @@ import lombok.Getter;
 @Getter
 public class AuctionImageResponse {
     private String imageUrl;
-    private Boolean isMain;
 
     public static AuctionImageResponse from(AuctionImage image) {
         return AuctionImageResponse.builder()
