@@ -58,7 +58,7 @@ public class SearchHistoryService {
             return Optional.empty();
         }
 
-        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUser(keyword, user.getId());
+        SearchHistory existingSearch = searchHistoryRepository.findByKeywordAndUserId(keyword, user.getId());
 
         if (existingSearch != null) {
             if (existingSearch.getIsDeleted()) {
@@ -77,7 +77,7 @@ public class SearchHistoryService {
     }
 
     public List<String> getSearchSuggestionList(String keyword) {
-        return searchHistoryRepository.findAllByKeyword(keyword).stream().map(SearchHistory::getKeyword)
+        return searchHistoryRepository.findByFullTextKeyword(keyword).stream().map(SearchHistory::getKeyword)
                 .collect(Collectors.toList());
     }
 

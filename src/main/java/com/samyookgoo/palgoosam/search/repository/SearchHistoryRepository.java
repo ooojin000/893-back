@@ -22,7 +22,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             FROM search_history
             WHERE keyword = :keyword AND user_id = :userId
             """, nativeQuery = true)
-    SearchHistory findByKeywordAndUser(@Param("keyword") String keyword, @Param("userId") Long userId);
+    SearchHistory findByKeywordAndUserId(@Param("keyword") String keyword, @Param("userId") Long userId);
 
     @Query(value = """
             SELECT *
@@ -32,5 +32,5 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             ORDER BY s.search_count DESC
             LIMIT 10;
             """, nativeQuery = true)
-    List<SearchHistory> findAllByKeyword(@Param("keyword") String keyword);
+    List<SearchHistory> findByFullTextKeyword(@Param("keyword") String keyword);
 }
