@@ -45,7 +45,7 @@ public class SearchHistoryController {
     }
 
     @DeleteMapping("/{searchHistoryId}")
-    public ResponseEntity<BaseResponse> getSuggestions(@PathVariable("searchHistoryId") Long searchHistoryId) {
+    public ResponseEntity<BaseResponse> deleteSearchHistory(@PathVariable Long searchHistoryId) {
         searchHistoryService.deleteSearchHistory(searchHistoryId);
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("검색 기록을 삭제했습니다.", null));
     }
