@@ -20,10 +20,9 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
     @Query(value = """
             SELECT *
             FROM search_history
-            WHERE keyword = :keyword AND user_id = :userId AND is_deleted = :isDeleted
+            WHERE keyword = :keyword AND user_id = :userId
             """, nativeQuery = true)
-    SearchHistory findByKeywordAndUserAndIsDeleted(@Param("keyword") String keyword, @Param("userId") Long userId,
-                                                   @Param("isDeleted") boolean isDeleted);
+    SearchHistory findByKeywordAndUserId(@Param("keyword") String keyword, @Param("userId") Long userId);
 
     @Query(value = """
             SELECT *
@@ -33,5 +32,5 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             ORDER BY s.search_count DESC
             LIMIT 10;
             """, nativeQuery = true)
-    List<SearchHistory> findAllByKeyword(@Param("keyword") String keyword);
+    List<SearchHistory> findByFullTextKeyword(@Param("keyword") String keyword);
 }
