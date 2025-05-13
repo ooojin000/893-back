@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.bid.service;
 
-import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
+import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class SseService {
         return emitter;
     }
 
-    public void broadcastBidUpdate(Long auctionId, BidResponse bidResponse) {
+    public void broadcastBidUpdate(Long auctionId, BidEventResponse response) {
         List<SseEmitter> sseEmitters = emitters.getOrDefault(auctionId, new ArrayList<>());
         List<SseEmitter> deadEmitters = new ArrayList<>();
 
@@ -39,7 +39,7 @@ public class SseService {
             try {
                 emitter.send(SseEmitter.event()
                         .name("bid-update")
-                        .data(bidResponse));
+                        .data(response));
             } catch (IOException e) {
                 emitter.completeWithError(e);
                 deadEmitters.add(emitter);
