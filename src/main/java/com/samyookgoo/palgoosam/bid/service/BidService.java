@@ -5,15 +5,15 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,6 +26,16 @@ public class BidService {
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
+
+    public Map<Long, Integer> getAuctionMaxPrices(List<Long> auctionIds) {
+        return bidRepository
+                .findMaxBidPricesByAuctionIds(auctionIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        AuctionMaxBid::getAuctionId,
+                        AuctionMaxBid::getMaxPrice
+                ));
+    }
 
     public BidListResponse getBidsByAuctionId(Long auctionId) {
         if (!auctionRepository.existsById(auctionId)) {
