@@ -20,7 +20,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     Optional<Bid> findTopValidBidByAuctionId(Long auctionId);
 
     Optional<Bid> findByAuctionIdAndIsWinningTrue(Long auctionId);
-  
+
     @Query(value = """
             SELECT * 
             FROM bid b
@@ -28,4 +28,9 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             ORDER BY b.auction_id, b.price DESC
             """, nativeQuery = true)
     List<Bid> findByAuctionIdList(@Param("auctionIdList") List<Long> auctionIdList);
+
+    Integer countByAuctionId(Long auctionId);
+
+    @Query("SELECT COUNT(DISTINCT b.bidder.id) FROM Bid b WHERE b.auction.id = :auctionId")
+    Integer countDistinctBidderByAuctionId(Long auctionId);
 }

@@ -2,9 +2,11 @@ package com.samyookgoo.palgoosam.bid.controller;
 
 import com.samyookgoo.palgoosam.bid.controller.request.BidRequest;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
+import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.service.BidService;
+import com.samyookgoo.palgoosam.bid.service.SseService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class BidController {
 
     private final BidService bidService;
+    private final SseService sseService;
 
     @GetMapping("/{auctionId}/bids")
     public BaseResponse<BidListResponse> auctionBids(@PathVariable Long auctionId) {
@@ -34,8 +37,10 @@ public class BidController {
         // TODO: 인증 사용자 연동 시 수정 필요
         User currentUser = getDummyUser();
 
-        BidResponse response = bidService.placeBid(auctionId, currentUser.getId(), request.getPrice());
-        return BaseResponse.success(response);
+        BidEventResponse response = bidService.placeBid(auctionId, currentUser.getId(), request.getPrice());
+        sseService.broadcastBidUpdate(auctionId, response);
+
+        return BaseResponse.success(response.getBid());
     }
 
 
@@ -44,7 +49,9 @@ public class BidController {
         // TODO: 인증 사용자 연동 시 수정 필요
         User currentUser = getDummyUser();
 
-        bidService.cancelBid(auctionId, bidId, currentUser);
+        BidEventResponse response = bidService.cancelBid(auctionId, bidId, currentUser);
+        sseService.broadcastBidUpdate(auctionId, response);
+
         return BaseResponse.success("입찰 취소 완료");
     }
 
