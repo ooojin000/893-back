@@ -2,6 +2,8 @@ USE palgoosam;
 ALTER TABLE auction
     ADD FULLTEXT (title, description) with parser ngram;
 
+ALTER TABLE search_history
+    ADD FULLTEXT (keyword) with parser ngram;
 
 -- 회원
 INSERT INTO user (name, email, provider, provider_id, profile_image)

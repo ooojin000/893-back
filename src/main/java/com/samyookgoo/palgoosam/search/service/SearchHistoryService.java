@@ -72,4 +72,9 @@ public class SearchHistoryService {
                 .searchCount(1L)
                 .build());
     }
+
+    public List<String> getSearchSuggestionList(String keyword) {
+        return searchHistoryRepository.findAllByKeyword(keyword).stream().map(SearchHistory::getKeyword)
+                .collect(Collectors.toList());
+    }
 }

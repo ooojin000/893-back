@@ -16,7 +16,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             LIMIT 10
             """, nativeQuery = true)
     List<SearchHistory> findAllByUserId(@Param("userId") Long userId);
-           
+
     @Query(value = """
             SELECT *
             FROM search_history
@@ -24,4 +24,14 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             """, nativeQuery = true)
     SearchHistory findByKeywordAndUserAndIsDeleted(@Param("keyword") String keyword, @Param("userId") Long userId,
                                                    @Param("isDeleted") boolean isDeleted);
+
+    @Query(value = """
+            SELECT *
+            FROM search_history s
+            WHERE
+            MATCH(s.keyword) AGAINST (:keyword IN NATURAL LANGUAGE MODE)
+            ORDER BY s.search_count DESC
+            LIMIT 10;
+            """, nativeQuery = true)
+    List<SearchHistory> findAllByKeyword(@Param("keyword") String keyword);
 }
