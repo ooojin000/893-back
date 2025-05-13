@@ -14,7 +14,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -82,10 +81,7 @@ public class BidService {
             throw new IllegalArgumentException("현재 최고가보다 높은 금액을 입력해야 합니다.");
         }
 
-        Optional<Bid> prevWinningBidOpt = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId);
-        prevWinningBidOpt.ifPresent(prev -> {
-            prev.setIsWinning(false);
-        });
+        clearPreviousWinningBid(auctionId);
 
         Bid bid = Bid.builder()
                 .auction(auction)
@@ -128,15 +124,24 @@ public class BidService {
         bid.setIsWinning(Boolean.FALSE);
         bid.setIsDeleted(Boolean.TRUE);
 
-        Optional<Bid> newWinningBidOpt = bidRepository.findTopValidBidByAuctionId(auctionId);
-
-        newWinningBidOpt.ifPresent(newWinningBid -> {
-            newWinningBid.setIsWinning(true);
-        });
+        updateWinningBid(auctionId);
 
         BidResponse bidResponse = mapToResponse(bid);
 
         return createBidEventResponse(auctionId, bidResponse, true);
+    }
+
+    private void clearPreviousWinningBid(Long auctionId) {
+        bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
+                .ifPresent(prev -> prev.setIsWinning(false));
+    }
+
+    private void updateWinningBid(Long auctionId) {
+        bidRepository.findTopValidBidByAuctionId(auctionId)
+                .ifPresent(newWinner -> {
+                    newWinner.setIsWinning(true);
+                    bidRepository.save(newWinner);
+                });
     }
 
     private BidEventResponse createBidEventResponse(Long auctionId, BidResponse bidResponse, boolean isCancelled) {
