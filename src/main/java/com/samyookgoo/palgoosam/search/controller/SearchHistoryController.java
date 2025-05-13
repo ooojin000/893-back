@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,4 +34,12 @@ public class SearchHistoryController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(BaseResponse.success("검색 기록을 정상적으로 저장했습니다.", null));
     }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<BaseResponse> getSuggestions(@RequestParam String keyword) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(BaseResponse.success("자동 완성 목록을 정상적으로 조회했습니다.",
+                        searchHistoryService.getSearchSuggestionList(keyword)));
+    }
+
 }

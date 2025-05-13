@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
-
     @Query(value = """
              SELECT a.*  FROM auction a
              JOIN user u ON a.seller_id = u.id
@@ -63,5 +62,4 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             "JOIN FETCH a.seller " +
             "WHERE a.id = :auctionId")
     Optional<Auction> findByIdWithCategoryAndSeller(@Param("auctionId") Long auctionId);
-
 }

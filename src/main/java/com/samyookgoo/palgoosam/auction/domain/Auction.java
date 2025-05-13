@@ -4,6 +4,8 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -50,17 +52,19 @@ public class Auction {
     private String description;
 
     @Column(nullable = false)
-    private int basePrice;
+    private Integer basePrice;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String itemCondition; // enum 가능
+    private ItemCondition itemCondition;
 
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
+    @Enumerated(EnumType.STRING)
     @ColumnDefault("'pending'")
     @Column(nullable = false, length = 20)
-    private String status = "pending"; // enum 가능
+    private AuctionStatus status;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
