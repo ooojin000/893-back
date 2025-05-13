@@ -4,6 +4,9 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Category;
+import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionImageRequest;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionUpdateRequest;
@@ -14,9 +17,6 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.CategoryResponse;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
-import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
@@ -28,7 +28,6 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -367,9 +366,10 @@ public class AuctionService {
     }
 
     public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
-        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.toString());
+        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getLimit().toString());
+        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getPage().toString());
         List<Auction> auctionList = findAuctionList(auctionSearchRequestDto);
-        Long auctionCount = Long.valueOf(auctionList.size());
+        Long auctionCount = (long) auctionList.size();
 
         log.info("{}개의 경매를 찾았습니다.", auctionList.size());
 
@@ -396,16 +396,19 @@ public class AuctionService {
                             .status(auction.getStatus())
                             .basePrice(auction.getBasePrice())
                             .thumbnailUrl(thumbnailUrl)
-                            .bidderCount(bids != null ? bids.size() : 0)
+                            .bidderCount((long) (bids != null ? bids.size() : 0))
                             .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
-                            .scrapCount(scraps != null ? scraps.size() : 0)
+                            .scrapCount((long) (scraps != null ? scraps.size() : 0))
 //                        .isScrapped(auctionSearchResult.getIsScrapped()) <- 로그인 구현 이후 기능 추가 필요
                             .build();
                 }
         ).toList();
 
         return new AuctionSearchResponseDto(auctionCount,
-                this.sortAuctionListItemDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()));
+                this.sortAuctionListItemDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()).stream()
+                        .skip(auctionSearchRequestDto.getLimit() * (auctionSearchRequestDto.getPage() - 1L))
+                        .limit(auctionSearchRequestDto.getLimit())
+                        .toList());
     }
 
     private List<Auction> findAuctionList(AuctionSearchRequestDto auctionSearchRequestDto) {
