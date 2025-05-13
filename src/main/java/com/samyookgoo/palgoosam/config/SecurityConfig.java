@@ -24,6 +24,11 @@ public class SecurityConfig {
     private final OAuth2AuthenticationFailureHandler failureHandler;
     private final JwtTokenProvider jwtProvider;
 
+    private static final String[] PUBLIC_MATCHERS = {
+            "/", "/login", "/oauth2/**", "/error",
+            "/api/auctions/search", "/api/search/**", "/api/search/suggestions"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider);
@@ -38,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 프리플라이트 OPTIONS 전역 허용 , TODO 추후 삭제
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/", "/login", "/oauth2/**", "/error").permitAll()
+                        .requestMatchers(PUBLIC_MATCHERS).permitAll()
                         .requestMatchers("/api/user-info").authenticated()
                         .anyRequest().authenticated()
                 )
