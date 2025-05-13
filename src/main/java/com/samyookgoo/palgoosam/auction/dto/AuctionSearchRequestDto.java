@@ -19,8 +19,8 @@ public class AuctionSearchRequestDto {
     private Boolean isHeavilyUsed;
     private Boolean isDamaged;
 
-    private Integer priceMin;
-    private Integer priceMax;
+    private Integer minPrice;
+    private Integer maxPrice;
 
     // 경매 진행 상태
     private Boolean isPending;
@@ -30,21 +30,20 @@ public class AuctionSearchRequestDto {
     @NotNull
     private String sortBy = "latest";
 
-    private Integer mainCategoryId;
-    private Integer subCategoryId;
-    private Integer detailCategoryId;
+    private Long mainCategoryId;
+    private Long subCategoryId;
+    private Long detailCategoryId;
 
     private Integer page = 1;
     private Integer limit = 10;
 
     public AuctionSearchParam toAuctionSearchParam() {
-        Integer categoryId = this.checkCategoryId();
-
+        Long categoryId = this.checkCategoryId();
         return new AuctionSearchParam(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
-                isDamaged, priceMin, priceMax, isPending, isActive, isCompleted, page, limit, sortBy);
+                isDamaged, minPrice, maxPrice, isPending, isActive, isCompleted, page, limit, sortBy);
     }
 
-    private Integer checkCategoryId() {
+    private Long checkCategoryId() {
         if (this.detailCategoryId != null) {
             return this.detailCategoryId;
         }
