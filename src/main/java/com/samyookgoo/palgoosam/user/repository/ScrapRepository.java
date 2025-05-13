@@ -1,5 +1,8 @@
 package com.samyookgoo.palgoosam.user.repository;
 
+import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.user.domain.User;
+import java.util.Optional;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,11 +12,16 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ScrapRepository extends JpaRepository<Scrap, Long> {
-
+    int countByAuctionId(Long auctionId);
+  
     @Query(value = """
             SELECT *
             FROM scrap s
             WHERE s.auction_id IN (:auctionIdList)
             """, nativeQuery = true)
     List<Scrap> findByAuctionIdList(@Param("auctionIdList") List<Long> auctionIdList);
+    
+    boolean existsByUserAndAuction(User user, Auction auction);
+
+    Optional<Scrap> findByUserAndAuction(User user, Auction auction);
 }
