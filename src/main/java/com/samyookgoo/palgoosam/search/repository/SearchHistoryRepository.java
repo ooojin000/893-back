@@ -22,7 +22,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             FROM search_history
             WHERE keyword = :keyword AND user_id = :userId
             """, nativeQuery = true)
-    SearchHistory findByKeywordAndUserAndIsDeleted(@Param("keyword") String keyword, @Param("userId") Long userId);
+    SearchHistory findByKeywordAndUser(@Param("keyword") String keyword, @Param("userId") Long userId);
 
     @Query(value = """
             SELECT *
