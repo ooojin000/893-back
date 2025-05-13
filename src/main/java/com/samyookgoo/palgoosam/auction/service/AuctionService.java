@@ -15,6 +15,7 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
@@ -43,6 +44,34 @@ public class AuctionService {
     private final UserRepository userRepository;
     private final ScrapRepository scrapRepository;
     private final BidRepository bidRepository;
+
+    public List<Long> getAuctionIdsByAuctions(List<Auction> auctions) {
+        return auctions.stream()
+                .map(Auction::getId)
+                .distinct()
+                .toList();
+    }
+
+    public List<Long> getAuctionIdsByBids(List<Bid> bids) {
+        return bids.stream()
+                .map(b -> b.getAuction().getId())
+                .distinct()
+                .toList();
+    }
+
+    public List<Long> getAuctionIdsByScarps(List<Scrap> scraps) {
+        return scraps.stream()
+                .map(s -> s.getAuction().getId())
+                .distinct()
+                .toList();
+    }
+
+    public List<Long> getAuctionIdsByPayment(List<Payment> payments) {
+        return payments.stream()
+                .map(p -> p.getAuction().getId())
+                .distinct()
+                .toList();
+    }
 
     public Auction createAuction(AuctionCreateRequest request, List<ResultFileStore> images) {
         Category category = categoryRepository.findById(request.getCategoryId())
