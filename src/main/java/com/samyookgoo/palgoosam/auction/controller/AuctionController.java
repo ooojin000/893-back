@@ -6,12 +6,17 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionCreateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionDetailResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
+import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
+import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
+import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import jakarta.validation.Valid;
+import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +35,15 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
+    private final AuctionRepository auctionRepository;
+    private final AuctionImageRepository auctionImageRepository;
+
+    @GetMapping("/search")
+    public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> search(
+            AuctionSearchRequestDto auctionSearchRequestDto) {
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("정상적으로 조회되었습니다.",
+                auctionService.search(auctionSearchRequestDto)));
+    }
 
     @PostMapping
     public ResponseEntity<AuctionCreateResponse> createAuction(

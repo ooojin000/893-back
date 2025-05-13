@@ -17,6 +17,8 @@ import org.hibernate.annotations.CreationTimestamp;
 @Getter
 @Entity
 @Table(name = "scrap")
+@Getter
+@Setter
 public class Scrap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
