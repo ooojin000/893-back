@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
+    List<Auction> findAllBySeller_Id(Long sellerId);
 
     @Query(value = """
              SELECT a.*  FROM auction a
