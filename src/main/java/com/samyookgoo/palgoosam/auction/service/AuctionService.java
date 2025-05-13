@@ -205,8 +205,8 @@ public class AuctionService {
 
         return new AuctionSearchResponseDto(auctionCount,
                 this.sortAuctionListItemDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()).stream()
-                        .skip(auctionSearchRequestDto.getLimit() * (auctionSearchRequestDto.getLimit() * (
-                                auctionSearchRequestDto.getPage() - 1L))).limit(auctionSearchRequestDto.getLimit())
+                        .skip(auctionSearchRequestDto.getLimit() * (auctionSearchRequestDto.getPage() - 1L))
+                        .limit(auctionSearchRequestDto.getLimit())
                         .toList());
     }
 
