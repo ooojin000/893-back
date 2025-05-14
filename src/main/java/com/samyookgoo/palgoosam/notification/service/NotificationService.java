@@ -10,7 +10,6 @@ import com.samyookgoo.palgoosam.notification.domain.NotificationHistory;
 import com.samyookgoo.palgoosam.notification.domain.NotificationStatus;
 import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageData;
 import com.samyookgoo.palgoosam.notification.fcm.dto.FcmNotificationRequestDto;
-import com.samyookgoo.palgoosam.notification.fcm.dto.FcmTokenSaveRequestDto;
 import com.samyookgoo.palgoosam.notification.fcm.service.FirebaseCloudMessageService;
 import com.samyookgoo.palgoosam.notification.repository.NotificationHistoryRepository;
 import com.samyookgoo.palgoosam.notification.repository.NotificationStatusRepository;
@@ -35,13 +34,12 @@ public class NotificationService {
     private final AuctionSubscriptionService auctionSubscriptionService;
     private final NotificationStatusRepository notificationStatusRepository;
 
-    public BaseResponse saveFcmToken(FcmTokenSaveRequestDto requestDto) {
+    public BaseResponse saveFcmToken(String fcmToken) {
         /*
         사용자 식별을 위한 로직 추가 (userService)
         현재 유저 판별 코드는 임시로 작성되었습니다.
         * */
         User user = userRepository.findById(1L).orElseThrow(() -> new EntityNotFoundException("User not found"));
-        String fcmToken = requestDto.getFcmToken();
 
         if (fcmToken == null || fcmToken.trim().isEmpty()) {
             log.info("FCM token is null or empty");
