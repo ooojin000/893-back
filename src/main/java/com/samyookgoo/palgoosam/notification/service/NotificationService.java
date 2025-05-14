@@ -1,15 +1,14 @@
 package com.samyookgoo.palgoosam.notification.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.notification.constant.NotificationStatusType;
 import com.samyookgoo.palgoosam.notification.domain.NotificationHistory;
 import com.samyookgoo.palgoosam.notification.domain.NotificationStatus;
-import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageData;
-import com.samyookgoo.palgoosam.notification.fcm.dto.FcmNotificationRequestDto;
+import com.samyookgoo.palgoosam.notification.dto.NotificationRequestDto;
+import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageDto;
 import com.samyookgoo.palgoosam.notification.fcm.service.FirebaseCloudMessageService;
 import com.samyookgoo.palgoosam.notification.repository.NotificationHistoryRepository;
 import com.samyookgoo.palgoosam.notification.repository.NotificationStatusRepository;
@@ -54,29 +53,26 @@ public class NotificationService {
         return new BaseResponse(200, "FCM 토큰이 정상적으로 저장되었습니다.", null);
     }
 
-    public void saveAndSendFcmMessage(FcmMessageData messageData) {
-        NotificationHistory created = saveFcmMessage(messageData);
-        Auction auction = auctionRepository.findById(created.getAuctionId())
-                .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        AuctionImage auctionImage = auctionImageRepository.findMainImageByAuctionId(created.getAuctionId())
-                .orElseThrow(() -> new EntityNotFoundException("AuctionImage not found"));
-        FcmNotificationRequestDto requestDto = FcmNotificationRequestDto.builder()
+    public void saveAndSendFcmMessage(NotificationRequestDto notificationRequestDto) {
+        NotificationHistory created = saveFcmMessage(notificationRequestDto);
+        FcmMessageDto requestDto = FcmMessageDto.builder()
                 .auctionId(created.getAuctionId())
                 .notificationId(created.getId())
-                .auctionTitle(auction.getTitle())
-                .message(messageData.getMessage())
+                .auctionTitle(created.getTitle())
+                .message(created.getMessage())
                 .createdAt(created.getCreatedAt())
-//                .messageType(created.getMessageType())
-                .imageUrl(auctionImage.getUrl())
+                .subscriptionType(notificationRequestDto.getSubscriptionType())
+                .imageUrl(notificationRequestDto.getImageUrl())
                 .build();
-        log.info("Sending FCM notification request: {}", requestDto.toString());
+        log.info("{}: Sending FCM notification request", requestDto.getNotificationId());
         fcmService.sendMessage(requestDto);
     }
 
-    private NotificationHistory saveFcmMessage(FcmMessageData messageData) {
+    private NotificationHistory saveFcmMessage(NotificationRequestDto notificationRequestDto) {
         NotificationHistory notification = new NotificationHistory();
-        notification.setAuctionId(messageData.getAuctionId());
-//        notification.setMessageType(messageData.getMessageType());
+        notification.setAuctionId(notificationRequestDto.getAuctionId());
+        notification.setTitle(notificationRequestDto.getTitle());
+        notification.setMessage(notificationRequestDto.getMessage());
         return notificationHistoryRepository.save(notification);
     }
 

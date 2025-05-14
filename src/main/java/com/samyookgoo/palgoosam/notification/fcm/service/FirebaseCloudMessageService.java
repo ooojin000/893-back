@@ -12,10 +12,11 @@ import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
-import com.samyookgoo.palgoosam.notification.fcm.dto.FcmNotificationRequestDto;
+import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageDto;
 import com.samyookgoo.palgoosam.notification.fcm.repository.UserFcmTokenRepository;
 import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +32,7 @@ public class FirebaseCloudMessageService {
     private final UserFcmTokenRepository userFcmTokenRepository;
     private final AuctionRepository auctionRepository;
     private final AuctionImageRepository auctionImageRepository;
+    private final UserRepository userRepository;
 
     public Boolean validateFcmToken(String token) {
         Message message = Message.builder()
@@ -65,24 +67,28 @@ public class FirebaseCloudMessageService {
         userFcmTokenRepository.save(userFcmToken);
     }
 
-    public void sendMessage(FcmNotificationRequestDto requestDto) {
-        List<UserFcmToken> tokenData = userFcmTokenRepository.findUserFcmTokenListByUserId(requestDto.getUserId());
+    public void sendMessage(FcmMessageDto messageDto) {
+        /*
+        User 더미 데이터
+         */
+        User dummyUser = userRepository.findById(1L).orElseThrow(EntityNotFoundException::new);
+
+        List<UserFcmToken> tokenData = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId());
         MulticastMessage message = MulticastMessage.builder()
                 .setNotification(Notification.builder()
-                        .setTitle(requestDto.getAuctionTitle())
-                        .setBody(requestDto.getMessage())
+                        .setTitle(messageDto.getAuctionTitle())
+                        .setBody(messageDto.getMessage())
                         .build())
-                .putData("messageType", requestDto.getMessageType())
-                .putData("imageUrl", requestDto.getImageUrl())
-                .putData("userId", requestDto.getUserId().toString())
-                .putData("auctionId", requestDto.getAuctionId().toString())
-                .putData("notificationId", requestDto.getNotificationId().toString())
-                .putData("createdAt", requestDto.getCreatedAt().toString())
+                .putData("subscriptionType", messageDto.getSubscriptionType().toString())
+                .putData("imageUrl", messageDto.getImageUrl())
+                .putData("auctionId", messageDto.getAuctionId().toString())
+                .putData("notificationId", messageDto.getNotificationId().toString())
+                .putData("createdAt", messageDto.getCreatedAt().toString())
                 .addAllTokens(tokenData.stream().map(UserFcmToken::getToken).collect(Collectors.toList()))
                 .build();
         try {
             FirebaseMessaging.getInstance().sendEachForMulticast(message);
-            log.info("{} Message sent successfully.", requestDto.getAuctionTitle());
+            log.info("{} Message sent successfully.", messageDto.getAuctionTitle());
         } catch (FirebaseMessagingException e) {
             throw new RuntimeException(e);
         }
