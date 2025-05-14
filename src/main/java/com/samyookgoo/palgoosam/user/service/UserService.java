@@ -1,11 +1,16 @@
 package com.samyookgoo.palgoosam.user.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
+import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
+import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.dto.UserAuctionsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserBidsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserPaymentsResponseDto;
+import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +20,11 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private final BidRepository bidRepository;
+    private final AuctionRepository auctionRepository;
+    private final ScrapRepository scrapRepository;
+    private final PaymentRepository paymentRepository;
+
     public List<UserBidsResponseDto> getUserBidsResponse (
             List<Bid> bids,
             Map<Long, String> imageMap,
@@ -55,5 +65,21 @@ public class UserService {
                         p.getAuction().getTitle()
                 ))
                 .toList();
+    }
+
+    public List<Bid> getUserBidsByUserId (Long userId) {
+        return bidRepository.findAllByBidder_Id(userId);
+    }
+
+    public List<Auction> getUserAuctionsByUserId (Long userId) {
+        return auctionRepository.findAllBySeller_Id(userId);
+    }
+
+    public List<Scrap> getUserScrapsByUserId (Long userId) {
+        return scrapRepository.findAllByUser_Id(userId);
+    }
+
+    public List<Payment> getUserPaymentsByUserId (Long userId) {
+        return paymentRepository.findAllByBuyer_Id(userId);
     }
 }

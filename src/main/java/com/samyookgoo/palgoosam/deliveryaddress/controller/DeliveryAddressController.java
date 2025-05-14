@@ -6,6 +6,7 @@ import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressRequestDto;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
+import com.samyookgoo.palgoosam.deliveryaddress.service.DeliveryAddressService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,15 +23,14 @@ import java.util.stream.Collectors;
 // TODO 아래 API를 UserController 에 통합하는게 나을지?
 public class DeliveryAddressController {
     private final AuthService authService;
-    private final DeliveryAddressRepository deliveryAddressRepository;
+    private final DeliveryAddressService deliveryAddressService;
 
     @CrossOrigin(origins="http://localhost:3000", allowCredentials="true")
     @GetMapping("/addresses")
     public ResponseEntity<BaseResponse> getUserDeliveryAddresses() {
         User user = authService.getCurrentUser();
 
-        List<DeliveryAddress> entities =
-                deliveryAddressRepository.findAllByUser_Id(user.getId());
+        List<DeliveryAddress> entities = deliveryAddressService.getDeliveryAddressByUserId(user.getId());
 
         List<DeliveryAddressResponseDto> dtos = entities.stream()
                 .map(DeliveryAddressResponseDto::of)
@@ -48,13 +48,13 @@ public class DeliveryAddressController {
     ) {
         User user = authService.getCurrentUser();
 
-        DeliveryAddress deliveryAddress = deliveryAddressRepository
-                .findByUserAndId(user, id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "삭제할 주소를 찾을 수 없습니다."
-                ));
+        boolean isDeliveryAddressDeleteSuccess = deliveryAddressService.deleteUserDeliveryAddress(user, id);
 
-        deliveryAddressRepository.deleteById(deliveryAddress.getId());
+        if (!isDeliveryAddressDeleteSuccess) {
+            ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(BaseResponse.error("배송지 삭제 에러", null));
+        }
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -76,7 +76,13 @@ public class DeliveryAddressController {
                 .isDefault(req.isDefault())
                 .build();
 
-        DeliveryAddress saved = deliveryAddressRepository.save(entity);
+        boolean isDeliveryAddressSaveSuccess = deliveryAddressService.saveUserDeliveryAddress(entity);
+
+        if (!isDeliveryAddressSaveSuccess) {
+            ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(BaseResponse.error("배송지 등록 에러", null));
+        }
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -90,14 +96,13 @@ public class DeliveryAddressController {
     ) {
         User user = authService.getCurrentUser();
 
-        DeliveryAddress deliveryAddress = deliveryAddressRepository
-                .findByUserAndId(user, id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "변경할 주소를 찾을 수 없습니다."
-                ));
+        boolean isModifySuccess = deliveryAddressService.modifyDefaultDeliveryAddress(user, id);
 
-        deliveryAddressRepository.unsetAllDefaults(user.getId());
-        deliveryAddressRepository.updateDefault(deliveryAddress.getId(), user.getId());
+        if (!isModifySuccess) {
+            ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(BaseResponse.error("기본 배송지 변경 에러", null));
+        }
 
         return ResponseEntity
                 .status(HttpStatus.OK)

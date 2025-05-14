@@ -1,22 +1,18 @@
 package com.samyookgoo.palgoosam.user.controller;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionImageService;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
-import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.bid.service.BidService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
-import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.dto.UserAuctionsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserBidsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserInfoResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserPaymentsResponseDto;
-import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,10 +30,6 @@ public class UserController {
     private final AuthService authService;
     private final UserService userService;
     private final AuctionImageService auctionImageService;
-    private final BidRepository bidRepository;
-    private final AuctionRepository auctionRepository;
-    private final ScrapRepository scrapRepository;
-    private final PaymentRepository paymentRepository;
     private final BidService bidService;
     private final AuctionService auctionService;
 
@@ -63,7 +55,7 @@ public class UserController {
     public ResponseEntity<BaseResponse> getUserBids() {
         User user = authService.getCurrentUser();
 
-        List<Bid> bids = bidRepository.findAllByBidder_Id(user.getId());
+        List<Bid> bids = userService.getUserBidsByUserId(user.getId());
         List<Long> auctionIds = auctionService.getAuctionIdsByBids(bids);
 
         // 메인 이미지 URL
@@ -84,7 +76,7 @@ public class UserController {
     public ResponseEntity<BaseResponse> getUserAuctions() {
         User user = authService.getCurrentUser();
 
-        List<Auction> auctions = auctionRepository.findAllBySeller_Id(user.getId());
+        List<Auction> auctions = userService.getUserAuctionsByUserId(user.getId());
         List<Long> auctionIds = auctionService.getAuctionIdsByAuctions(auctions);
 
         // 메인 이미지 URL
@@ -105,9 +97,9 @@ public class UserController {
     public ResponseEntity<BaseResponse> getUserScraps() {
         User user = authService.getCurrentUser();
 
-        List<Scrap> scraps = scrapRepository.findAllByUser_Id(user.getId());
+        List<Scrap> scraps = userService.getUserScrapsByUserId(user.getId());
         List<Long> auctionIds = auctionService.getAuctionIdsByScarps(scraps);
-        List<Auction> auctions = auctionRepository.findAllById(auctionIds);
+        List<Auction> auctions = auctionService.getAuctionsByAuctionIds(auctionIds);
 
         // 메인 이미지 URL
         Map<Long, String> imageMap = auctionImageService.getAuctionMainImages(auctionIds);
@@ -127,7 +119,7 @@ public class UserController {
     public ResponseEntity<BaseResponse> getUserPayments() {
         User user = authService.getCurrentUser();
 
-        List<Payment> payments = paymentRepository.findAllByBuyer_Id(user.getId());
+        List<Payment> payments = userService.getUserPaymentsByUserId(user.getId());
 
         List<Long> auctionIds = auctionService.getAuctionIdsByPayment(payments);
 

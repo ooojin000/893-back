@@ -73,6 +73,10 @@ public class AuctionService {
                 .toList();
     }
 
+    public List<Auction> getAuctionsByAuctionIds(List<Long> auctionIds) {
+        return auctionRepository.findAllById(auctionIds);
+    }
+
     public Auction createAuction(AuctionCreateRequest request, List<ResultFileStore> images) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new NoSuchElementException("카테고리 없음"));
