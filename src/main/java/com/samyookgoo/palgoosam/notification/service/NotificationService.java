@@ -84,7 +84,7 @@ public class NotificationService {
 
         NotificationHistory createdNotification = saveFcmMessage(notificationRequestDto);
 
-        List<NotificationStatus> notificationStatusList = saveNotificationStatus(createdNotification.getId(),
+        List<NotificationStatus> notificationStatusList = saveNotificationStatusList(createdNotification.getId(),
                 userIdList);
 
         try {
@@ -110,7 +110,7 @@ public class NotificationService {
         }
     }
 
-    private List<NotificationStatus> saveNotificationStatus(Long notificationId, List<Long> userIdList) {
+    private List<NotificationStatus> saveNotificationStatusList(Long notificationId, List<Long> userIdList) {
         List<NotificationStatus> notificationStatusList = userIdList.stream().map(userId -> {
             NotificationStatus notificationStatus = new NotificationStatus();
             notificationStatus.setNotificationHistoryId(notificationId);
