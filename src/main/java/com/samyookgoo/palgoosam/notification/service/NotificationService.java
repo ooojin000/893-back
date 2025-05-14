@@ -163,14 +163,15 @@ public class NotificationService {
         사용자 식별을 위한 로직 추가 (userService)
         현재 유저 판별 코드는 임시로 작성되었습니다.
         * */
-        User user = userRepository.findById(1L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = userRepository.findById(4L).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         return getUserNotifications(user);
     }
 
     private List<NotificationResponseDto> getUserNotifications(User user) {
 
-        List<NotificationStatus> notificationStatusList = notificationStatusRepository.findAllByUserId(user.getId());
+        List<NotificationStatus> notificationStatusList = notificationStatusRepository.findAllByUserIdAndIsDeletedFalse(
+                user.getId());
 
         List<NotificationHistory> notificationHistoryList = notificationHistoryRepository.findAllById(
                 notificationStatusList.stream().map(NotificationStatus::getNotificationHistoryId).toList());
