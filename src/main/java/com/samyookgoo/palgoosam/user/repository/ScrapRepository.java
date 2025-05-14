@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ScrapRepository extends JpaRepository<Scrap, Long> {
+    List<Scrap> findAllByUser_Id(Long auctionId);
+
     int countByAuctionId(Long auctionId);
 
     @Query(value = """
@@ -21,9 +23,9 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
             """, nativeQuery = true)
     List<Scrap> findByAuctionIdList(@Param("auctionIdList") List<Long> auctionIdList);
 
-    boolean existsByUserIdAndAuctionId(Long userId, Long auctionId);
-
     boolean existsByUserAndAuction(User user, Auction auction);
 
     Optional<Scrap> findByUserAndAuction(User user, Auction auction);
+
+    boolean existsByUserIdAndAuctionId(Long userId, Long auctionId);
 }
