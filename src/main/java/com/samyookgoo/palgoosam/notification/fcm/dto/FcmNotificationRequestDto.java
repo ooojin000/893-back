@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.notification.dto;
+package com.samyookgoo.palgoosam.notification.fcm.dto;
 
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

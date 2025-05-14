@@ -1,6 +1,6 @@
-package com.samyookgoo.palgoosam.notification.repository;
+package com.samyookgoo.palgoosam.notification.fcm.repository;
 
-import com.samyookgoo.palgoosam.notification.domain.UserFcmToken;
+import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

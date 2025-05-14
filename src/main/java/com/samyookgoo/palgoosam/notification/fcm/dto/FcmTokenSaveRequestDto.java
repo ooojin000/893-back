@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.notification.dto;
+package com.samyookgoo.palgoosam.notification.fcm.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

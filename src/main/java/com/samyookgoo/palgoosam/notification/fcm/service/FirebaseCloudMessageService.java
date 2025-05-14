@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.notification.service;
+package com.samyookgoo.palgoosam.notification.fcm.service;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -11,10 +11,10 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
-import com.samyookgoo.palgoosam.notification.constant.SubscriptionType;
-import com.samyookgoo.palgoosam.notification.domain.UserFcmToken;
-import com.samyookgoo.palgoosam.notification.dto.FcmNotificationRequestDto;
-import com.samyookgoo.palgoosam.notification.repository.UserFcmTokenRepository;
+import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
+import com.samyookgoo.palgoosam.notification.fcm.dto.FcmNotificationRequestDto;
+import com.samyookgoo.palgoosam.notification.fcm.repository.UserFcmTokenRepository;
+import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;

@@ -1,8 +1,8 @@
-package com.samyookgoo.palgoosam.notification.domain;
+package com.samyookgoo.palgoosam.notification.subscription.domain;
 
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.notification.constant.SubscriptionType;
+import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.notification.dto;
+package com.samyookgoo.palgoosam.notification.fcm.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

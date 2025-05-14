@@ -1,12 +1,13 @@
-package com.samyookgoo.palgoosam.notification.service;
+package com.samyookgoo.palgoosam.notification.subscription.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
-import com.samyookgoo.palgoosam.notification.constant.SubscriptionType;
-import com.samyookgoo.palgoosam.notification.domain.AuctionSubscription;
-import com.samyookgoo.palgoosam.notification.domain.UserFcmToken;
-import com.samyookgoo.palgoosam.notification.repository.AuctionSubscriptionRepository;
-import com.samyookgoo.palgoosam.notification.repository.UserFcmTokenRepository;
+import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
+import com.samyookgoo.palgoosam.notification.fcm.repository.UserFcmTokenRepository;
+import com.samyookgoo.palgoosam.notification.fcm.service.FirebaseCloudMessageService;
+import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
+import com.samyookgoo.palgoosam.notification.subscription.domain.AuctionSubscription;
+import com.samyookgoo.palgoosam.notification.subscription.repository.AuctionSubscriptionRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -46,7 +47,7 @@ public class AuctionSubscriptionService {
 
         List<AuctionSubscription> targetList = getTargetList(subscriptionList, subscriptionType);
 
-        if (targetList.isEmpty()) {
+        if (!subscriptionList.isEmpty() && targetList.isEmpty()) {
             createSubscription(dummyUser, auction, subscriptionType);
         }
     }
@@ -61,7 +62,7 @@ public class AuctionSubscriptionService {
                 .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
         List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(dummyUser,
                 auction);
-        
+
         List<AuctionSubscription> targetList = getTargetList(subscriptionList, subscriptionType);
         auctionSubscriptionRepository.deleteAll(targetList);
         if (subscriptionList.size() == targetList.size()) {

@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.notification.domain;
+package com.samyookgoo.palgoosam.notification.fcm.domain;
 
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
