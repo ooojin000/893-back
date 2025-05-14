@@ -18,7 +18,7 @@ public class FileStore {
     public List<ResultFileStore> storeFiles(List<MultipartFile> multipartFiles) {
         List<ResultFileStore> resultFileStores = new ArrayList<>();
 
-        if (multipartFiles != null || !multipartFiles.isEmpty()) {
+        if (multipartFiles != null && !multipartFiles.isEmpty()) {
             for (MultipartFile multipartFile : multipartFiles) {
                 resultFileStores.add(storeFile(multipartFile));
             }

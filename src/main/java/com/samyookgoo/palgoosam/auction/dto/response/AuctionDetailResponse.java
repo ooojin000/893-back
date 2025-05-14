@@ -17,6 +17,7 @@ public class AuctionDetailResponse {
     private String sellerEmailMasked;
     private AuctionStatus status;
     private ItemCondition itemCondition;
+    private Integer basePrice;
 
     private Boolean isScrap;
     private Integer scrapCount;

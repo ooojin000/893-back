@@ -16,6 +16,7 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionImageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.CategoryResponse;
+import com.samyookgoo.palgoosam.auction.dto.response.RelatedAuctionResponse;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -173,8 +175,7 @@ public class AuctionService {
 
         CategoryResponse categoryResponse = CategoryResponse.from(auction.getCategory());
 
-        String email = auction.getSeller().getEmail();
-        String maskedEmail = maskEmail(email);
+        String maskedEmail = maskEmail(auction.getSeller().getEmail());
 
         boolean isScrap = scrapRepository.existsByUserIdAndAuctionId(loginUserId, auctionId);
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
@@ -187,6 +188,7 @@ public class AuctionService {
                 .sellerEmailMasked(maskedEmail)
                 .status(auction.getStatus())
                 .itemCondition(auction.getItemCondition())
+                .basePrice(auction.getBasePrice())
                 .isScrap(isScrap)
                 .scrapCount(scrapCount)
                 .isSeller(isSeller)
@@ -223,6 +225,7 @@ public class AuctionService {
                 .description(auction.getDescription())
                 .status(auction.getStatus())
                 .itemCondition(auction.getItemCondition())
+                .basePrice(auction.getBasePrice())
                 .category(categoryResponse)
                 .mainImage(mainImage)
                 .images(imageResponses)
@@ -243,16 +246,32 @@ public class AuctionService {
         }
 
         // 2. 필드 수정
-        auction.setTitle(request.getTitle());
-        auction.setDescription(request.getDescription());
-        auction.setBasePrice(request.getBasePrice());
-        auction.setItemCondition(request.getItemCondition());
+        if (request.getTitle() != null) {
+            auction.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            auction.setDescription(request.getDescription());
+        }
+        if (request.getBasePrice() != null) {
+            validateBasePrice(request.getBasePrice());
+            auction.setBasePrice(request.getBasePrice());
+        }
+        if (request.getItemCondition() != null) {
+            auction.setItemCondition(request.getItemCondition());
+        }
 
-        Category category = categoryRepository.findById(request.getCategory().getId())
-                .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+        Category category = auction.getCategory();
 
-        validateLeafCategory(category);
-        auction.setCategory(category);
+        if (request.getCategory() != null && request.getCategory().getId() != null) {
+            category = categoryRepository.findById(request.getCategory().getId())
+                    .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+            validateLeafCategory(category);
+            auction.setCategory(category);
+        }
+
+        if (request.getStartDelay() == null || request.getDurationTime() == null) {
+            throw new IllegalArgumentException("경매 시작 시간 및 경매 소요 시간은 필수입니다.");
+        }
 
         validateAuctionTime(request.getStartDelay(), request.getDurationTime());
 
@@ -263,17 +282,19 @@ public class AuctionService {
         auction.setStartTime(startTime);
         auction.setEndTime(endTime);
 
-        validateBasePrice(request.getBasePrice());
-
         // 3. 기존 이미지 조회
         List<AuctionImage> existingImages = auctionImageRepository.findByAuctionId(auctionId);
 
-        List<Long> requestImageIds = request.getImages().stream()
+        List<AuctionImageRequest> imageRequests = request.getImages() != null ? request.getImages() : List.of();
+
+        List<Long> requestImageIds = imageRequests.stream()
                 .map(AuctionImageRequest::getImageId)
-                .filter(Objects::nonNull).collect(Collectors.toList());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
         List<AuctionImage> imagesToDelete = existingImages.stream()
-                .filter(img -> !requestImageIds.contains(img.getId())).collect(Collectors.toList());
+                .filter(img -> !requestImageIds.contains(img.getId()))
+                .collect(Collectors.toList());
 
         for (AuctionImage image : imagesToDelete) {
             auctionImageRepository.delete(image);
@@ -287,7 +308,7 @@ public class AuctionService {
         int newFileIndex = 0;
 
         try {
-            for (AuctionImageRequest imageRequest : request.getImages()) {
+            for (AuctionImageRequest imageRequest : imageRequests) {
                 if (imageRequest.getImageId() != null) {
                     // 기존 이미지 시퀀스 수정
                     AuctionImage image = existingImages.stream()
@@ -328,12 +349,9 @@ public class AuctionService {
                 .sorted(Comparator.comparingInt(AuctionImage::getImageSeq))
                 .map(AuctionImageResponse::from).toList();
 
-        CategoryResponse categoryResponse = CategoryResponse.builder()
-                .id(category.getId())
-                .mainCategory(request.getCategory().getMainCategory())
-                .subCategory(request.getCategory().getSubCategory())
-                .detailCategory(request.getCategory().getDetailCategory())
-                .build();
+        CategoryResponse categoryResponse = (request.getCategory() != null)
+                ? CategoryResponse.from(category, request.getCategory())
+                : CategoryResponse.from(category);
 
         return AuctionUpdateResponse.builder()
                 .auctionId(auction.getId())
@@ -361,6 +379,58 @@ public class AuctionService {
 
         auctionImageRepository.deleteAll(images);
         auctionRepository.delete(auction);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RelatedAuctionResponse> getRelatedAuctions(Long auctionId) {
+        Auction baseAuction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+
+        Long loginUserId = getLoginUserId();
+
+        Long detailCategoryId = baseAuction.getCategory().getId();
+
+        Long subCategoryId = baseAuction.getCategory().getParent() != null
+                ? baseAuction.getCategory().getParent().getId()
+                : null;
+
+        // 1. 소분류 기준 - 경매중인 상품 (해당 상품 제외)
+        List<Auction> detailCategoryList = auctionRepository.findByCategoryIdAndStatus(detailCategoryId,
+                        AuctionStatus.active)
+                .stream()
+                .filter(a -> !a.getId().equals(auctionId))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        // 2. 중분류 기준 - 경매중인 상품
+        if (detailCategoryList.size() < 10 && subCategoryId != null) {
+            List<Auction> subCategoryList = auctionRepository.findByParentCategoryIdAndStatus(subCategoryId,
+                    AuctionStatus.active);
+
+            Set<Long> existingIds = detailCategoryList.stream().map(Auction::getId).collect(Collectors.toSet());
+
+            for (Auction a : subCategoryList) {
+                if (!existingIds.contains(a.getId()) && !a.getId().equals(auctionId)) {
+                    detailCategoryList.add(a);
+                    if (detailCategoryList.size() == 10) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        List<Long> auctionIds = detailCategoryList.stream().map(Auction::getId).toList();
+        Map<Long, String> auctionIdToImageUrl = auctionImageRepository.findMainImagesByAuctionIds(auctionIds).stream()
+                .collect(Collectors.toMap(a -> a.getAuction().getId(), AuctionImage::getUrl));
+
+        return detailCategoryList.stream()
+                .map(a -> RelatedAuctionResponse.of(
+                        a,
+                        auctionIdToImageUrl.get(a.getId()),
+                        loginUserId,
+                        scrapRepository,
+                        bidRepository))
+                .collect(Collectors.toList());
     }
 
     private static String maskEmail(String email) {

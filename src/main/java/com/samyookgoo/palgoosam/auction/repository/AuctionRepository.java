@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchParam;
 import java.util.List;
 import java.util.Optional;
@@ -59,9 +60,9 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     Optional<Auction> findById(Long id);
 
-    @Query("SELECT a FROM Auction a " +
-            "JOIN FETCH a.category " +
-            "JOIN FETCH a.seller " +
-            "WHERE a.id = :auctionId")
-    Optional<Auction> findByIdWithCategoryAndSeller(@Param("auctionId") Long auctionId);
+    List<Auction> findByCategoryIdAndStatus(Long categoryId, AuctionStatus status);
+
+    @Query("SELECT a FROM Auction a WHERE a.category.parent.id = :parentId AND a.status = :status")
+    List<Auction> findByParentCategoryIdAndStatus(@Param("parentId") Long parentId,
+                                                  @Param("status") AuctionStatus status);
 }
