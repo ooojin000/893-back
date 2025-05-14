@@ -1,20 +1,28 @@
 package com.samyookgoo.palgoosam.notification.service;
 
+import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
+import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.notification.constant.NotificationStatusType;
 import com.samyookgoo.palgoosam.notification.domain.NotificationHistory;
 import com.samyookgoo.palgoosam.notification.domain.NotificationStatus;
 import com.samyookgoo.palgoosam.notification.dto.NotificationRequestDto;
+import com.samyookgoo.palgoosam.notification.dto.NotificationResponseDto;
 import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageDto;
 import com.samyookgoo.palgoosam.notification.fcm.service.FirebaseCloudMessageService;
 import com.samyookgoo.palgoosam.notification.repository.NotificationHistoryRepository;
 import com.samyookgoo.palgoosam.notification.repository.NotificationStatusRepository;
 import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
+import com.samyookgoo.palgoosam.notification.subscription.domain.AuctionSubscription;
+import com.samyookgoo.palgoosam.notification.subscription.repository.AuctionSubscriptionRepository;
 import com.samyookgoo.palgoosam.notification.subscription.service.AuctionSubscriptionService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +37,8 @@ public class NotificationService {
     private final NotificationHistoryRepository notificationHistoryRepository;
     private final AuctionSubscriptionService auctionSubscriptionService;
     private final NotificationStatusRepository notificationStatusRepository;
+    private final AuctionSubscriptionRepository auctionSubscriptionRepository;
+    private final AuctionImageRepository auctionImageRepository;
 
     public BaseResponse saveFcmToken(String fcmToken) {
         /*
@@ -146,5 +156,65 @@ public class NotificationService {
         // FCM 알림 전송이 실패할 수도 있으니 PENDING 으로 저장
 
         return notificationStatusRepository.saveAll(notificationStatusList);
+    }
+
+    public List<NotificationResponseDto> getNotificationList() {
+        /*
+        사용자 식별을 위한 로직 추가 (userService)
+        현재 유저 판별 코드는 임시로 작성되었습니다.
+        * */
+        User user = userRepository.findById(4L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        return getUserNotifications(user);
+    }
+
+    private List<NotificationResponseDto> getUserNotifications(User user) {
+
+        List<NotificationStatus> notificationStatusList = notificationStatusRepository.findAllByUserIdAndIsDeletedFalse(
+                user.getId());
+
+        List<NotificationHistory> notificationHistoryList = notificationHistoryRepository.findAllById(
+                notificationStatusList.stream().map(NotificationStatus::getNotificationHistoryId).toList());
+
+        List<AuctionSubscription> auctionSubscriptionList = auctionSubscriptionRepository.findAllByUser(user);
+
+        Map<Long, NotificationHistory> historyMap = notificationHistoryList.stream()
+                .collect(Collectors.toMap(NotificationHistory::getId, history -> history));
+
+        Map<Long, List<SubscriptionType>> subscriptionTypesByAuctionId = auctionSubscriptionList.stream()
+                .collect(Collectors.groupingBy(
+                        sub -> sub.getAuction().getId(),
+                        Collectors.mapping(AuctionSubscription::getType, Collectors.toList())
+                ));
+
+        return notificationStatusList.stream()
+                .map(status -> {
+
+                    // 해당 status에 매칭되는 history 찾기
+                    NotificationHistory history = historyMap.get(status.getNotificationHistoryId());
+
+                    if (history == null) {
+                        return null;
+                    }
+
+                    // 해당 경매의 구독 타입 목록 찾기
+                    List<SubscriptionType> subscriptionTypes = subscriptionTypesByAuctionId
+                            .getOrDefault(history.getAuctionId(), Collections.emptyList());
+                    AuctionImage image = auctionImageRepository.findMainImageByAuctionId(history.getAuctionId())
+                            .orElse(null);
+
+                    return NotificationResponseDto.builder()
+                            .id(history.getId())
+                            .subscriptionTypeList(subscriptionTypes)
+                            .title(history.getTitle())
+                            .message(history.getMessage())
+                            .createdAt(history.getCreatedAt())
+                            .auctionId(history.getAuctionId())
+                            .isRead(status.getIsRead())
+                            .imageUrl(image != null ? image.getUrl() : null)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

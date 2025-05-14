@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AuctionSubscriptionRepository extends JpaRepository<AuctionSubscription, Long> {
     List<AuctionSubscription> findAllByUserAndAuction(User user, Auction auction);
+
+    List<AuctionSubscription> findAllByUser(User user);
 }
