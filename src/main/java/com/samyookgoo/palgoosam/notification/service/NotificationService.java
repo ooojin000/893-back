@@ -230,4 +230,17 @@ public class NotificationService {
                     notificationStatusRepository.save(notificationStatus);
                 });
     }
+
+    public void deleteNorification(Long notificationId) {
+        /*
+        사용자 식별을 위한 로직 추가 (userService)
+        현재 유저 판별 코드는 임시로 작성되었습니다.
+        * */
+        User user = userRepository.findById(4L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        notificationStatusRepository.findByUserIdAndNotificationHistoryId(user.getId(), notificationId)
+                .ifPresent((notificationStatus) -> {
+                    notificationStatus.setIsDeleted(true);
+                    notificationStatusRepository.save(notificationStatus);
+                });
+    }
 }
