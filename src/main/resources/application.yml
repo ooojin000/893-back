@@ -25,7 +25,7 @@ spring:
       client:
         registration:
           google:
-#            .env 추가 필요
+            #            .env 추가 필요
             client-id: id
             client-secret: pw
             scope:
@@ -47,6 +47,12 @@ spring:
           type:
             descriptor:
               sql: trace
+
+#            .env 추가 필요
+toss:
+  payments:
+    secret-key: key
+    base-url: https://api.tosspayments.com
 
 debug: true
 
