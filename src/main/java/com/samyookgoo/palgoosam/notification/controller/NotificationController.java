@@ -1,9 +1,13 @@
 package com.samyookgoo.palgoosam.notification.controller;
 
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
+import com.samyookgoo.palgoosam.notification.dto.NotificationResponseDto;
 import com.samyookgoo.palgoosam.notification.service.NotificationService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/notification")
+@RequestMapping("api/notifications")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -25,5 +29,10 @@ public class NotificationController {
         return ResponseEntity.badRequest().body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<BaseResponse<List<NotificationResponseDto>>> getNotificationList() {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse<>(200, "알림 내역이 정상적으로 전송되었습니다.", notificationService.getNotificationList()));
+    }
 
 }
