@@ -1,19 +1,20 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionUpdateRequest;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionCreateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionDetailResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
-import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
-import jakarta.validation.Valid;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
