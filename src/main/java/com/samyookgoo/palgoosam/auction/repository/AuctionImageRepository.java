@@ -1,6 +1,8 @@
 package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
+import com.samyookgoo.palgoosam.bid.projection.MainImageProjection;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface AuctionImageRepository extends JpaRepository<AuctionImage, Long> {
     List<AuctionImage> findByAuctionId(Long auctionId);
+
+    @Query("""
+        SELECT ai.auction.id AS auctionId,
+               ai.url          AS url
+        FROM AuctionImage ai
+        WHERE ai.auction.id IN :auctionIds
+          AND ai.imageSeq = 0
+    """)
+    List<MainImageProjection> findMainImagesByAuctionIds(@Param("auctionIds") List<Long> auctionIds);
 
     @Transactional
     @Modifying

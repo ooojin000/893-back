@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
+    List<Auction> findAllBySeller_Id(Long sellerId);
+  
     @Query(value = """
              SELECT a.*  FROM auction a
              JOIN user u ON a.seller_id = u.id

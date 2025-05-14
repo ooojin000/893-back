@@ -23,6 +23,7 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
@@ -54,6 +55,38 @@ public class AuctionService {
     private final ScrapRepository scrapRepository;
     private final FileStore fileStore;
     private final BidRepository bidRepository;
+
+    public List<Long> getAuctionIdsByAuctions(List<Auction> auctions) {
+        return auctions.stream()
+                .map(Auction::getId)
+                .distinct()
+                .toList();
+    }
+
+    public List<Long> getAuctionIdsByBids(List<Bid> bids) {
+        return bids.stream()
+                .map(b -> b.getAuction().getId())
+                .distinct()
+                .toList();
+    }
+
+    public List<Long> getAuctionIdsByScraps(List<Scrap> scraps) {
+        return scraps.stream()
+                .map(s -> s.getAuction().getId())
+                .distinct()
+                .toList();
+    }
+
+    public List<Long> getAuctionIdsByPayment(List<Payment> payments) {
+        return payments.stream()
+                .map(p -> p.getAuction().getId())
+                .distinct()
+                .toList();
+    }
+
+    public List<Auction> getAuctionsByAuctionIds(List<Long> auctionIds) {
+        return auctionRepository.findAllById(auctionIds);
+    }
 
     // 경매 상품 등록
     @Transactional
