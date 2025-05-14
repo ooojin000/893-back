@@ -4,6 +4,8 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -12,10 +14,17 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "payment")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,7 +57,7 @@ public class Payment {
     private String zipCode;
 
     @Column(nullable = false)
-    private int finalPrice;
+    private Integer finalPrice;
 
     private LocalDateTime approvedAt;
 
@@ -58,6 +67,17 @@ public class Payment {
     @Column(nullable = false)
     private String orderNumber;
 
-    @Column(nullable = false)
+    @Column
     private String paymentKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod method;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }
