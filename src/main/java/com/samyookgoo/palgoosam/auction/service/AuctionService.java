@@ -364,15 +364,15 @@ public class AuctionService {
 
     @Transactional(readOnly = true)
     public List<RelatedAuctionResponse> getRelatedAuctions(Long auctionId) {
-        Auction baseAuction = auctionRepository.findById(auctionId)
+        Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
 
         Long loginUserId = getLoginUserId();
 
-        Long detailCategoryId = baseAuction.getCategory().getId();
+        Long detailCategoryId = auction.getCategory().getId();
 
-        Long subCategoryId = baseAuction.getCategory().getParent() != null
-                ? baseAuction.getCategory().getParent().getId()
+        Long subCategoryId = auction.getCategory().getParent() != null
+                ? auction.getCategory().getParent().getId()
                 : null;
 
         List<Auction> detailCategoryList = auctionRepository.findByCategoryIdAndStatus(detailCategoryId,
