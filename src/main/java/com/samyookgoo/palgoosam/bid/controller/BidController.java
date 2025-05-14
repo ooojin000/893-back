@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.bid.controller;
 
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.controller.request.BidRequest;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class BidController {
 
     private final BidService bidService;
+    private final AuthService authService;
     private final SseService sseService;
 
     @GetMapping("/{auctionId}/bids")
@@ -33,9 +35,10 @@ public class BidController {
     }
 
     @PostMapping("/{auctionId}/bids")
-    public BaseResponse<BidResponse> placeBid(@PathVariable Long auctionId, @Valid @RequestBody BidRequest request) {
-        // TODO: 인증 사용자 연동 시 수정 필요
-        User currentUser = getDummyUser();
+    public BaseResponse<BidResponse> placeBid(@PathVariable Long auctionId,
+                                              @Valid @RequestBody BidRequest request) {// TODO: 인증 사용자 연동 시 수정 필요
+
+        User currentUser = authService.getCurrentUser();
 
         BidEventResponse response = bidService.placeBid(auctionId, currentUser.getId(), request.getPrice());
         sseService.broadcastBidUpdate(auctionId, response);
@@ -46,23 +49,12 @@ public class BidController {
 
     @PatchMapping("/{auctionId}/bids/{bidId}")
     public BaseResponse<String> cancelBid(@PathVariable Long auctionId, @PathVariable Long bidId) {
-        // TODO: 인증 사용자 연동 시 수정 필요
-        User currentUser = getDummyUser();
+
+        User currentUser = authService.getCurrentUser();
 
         BidEventResponse response = bidService.cancelBid(auctionId, bidId, currentUser);
         sseService.broadcastBidUpdate(auctionId, response);
 
         return BaseResponse.success("입찰 취소 완료");
-    }
-
-    /**
-     * TODO: 로그인 연동 전 임시 유저 반환 (나중에 제거 예정)
-     */
-    private User getDummyUser() {
-        return User.builder()
-                .name("홍길동")
-                .email("hong@gmail.com")
-                .id(1L) // 실제 인증 시 제거 예정
-                .build();
     }
 }
