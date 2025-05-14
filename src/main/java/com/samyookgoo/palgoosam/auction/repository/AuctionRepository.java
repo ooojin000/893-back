@@ -3,17 +3,12 @@ package com.samyookgoo.palgoosam.auction.repository;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchParam;
 import java.util.List;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
-
     @Query(value = """
              SELECT a.*  FROM auction a
              JOIN user u ON a.seller_id = u.id
@@ -57,10 +52,9 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                           (:#{#request.isCompleted} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).COMPLETED_VALUE} ))
                      )
             ORDER BY a.created_at DESC
-            LIMIT :#{#request.limit} OFFSET :#{(#request.page - 1) * #request.limit}
             """, nativeQuery = true)
     List<Auction> findAllWithDetails(@Param("request") AuctionSearchParam auctionSearchParam);
-           
+
     Optional<Auction> findById(Long id);
 
     @Query("SELECT a FROM Auction a " +
@@ -68,5 +62,4 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             "JOIN FETCH a.seller " +
             "WHERE a.id = :auctionId")
     Optional<Auction> findByIdWithCategoryAndSeller(@Param("auctionId") Long auctionId);
-
 }

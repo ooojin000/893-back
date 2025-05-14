@@ -16,7 +16,7 @@ import lombok.ToString;
 public class AuctionSearchParam {
     private String keyword;
 
-    private Integer categoryId;
+    private Long categoryId;
 
     // 상품 사용감
     private Boolean isBrandNew;

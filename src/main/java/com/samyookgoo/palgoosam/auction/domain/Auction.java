@@ -1,17 +1,17 @@
 package com.samyookgoo.palgoosam.auction.domain;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ public class Auction {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -52,19 +52,19 @@ public class Auction {
     private String description;
 
     @Column(nullable = false)
-    private int basePrice;
+    private Integer basePrice;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String itemCondition; // enum 가능
+    private ItemCondition itemCondition;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
 
+    @Enumerated(EnumType.STRING)
     @ColumnDefault("'pending'")
     @Column(nullable = false, length = 20)
-    private String status = "pending"; // enum 가능
+    private AuctionStatus status;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

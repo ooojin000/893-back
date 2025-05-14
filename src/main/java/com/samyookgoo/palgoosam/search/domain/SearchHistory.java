@@ -9,10 +9,22 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Entity
 @Table(name = "search_history")
 public class SearchHistory {
@@ -24,12 +36,24 @@ public class SearchHistory {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @NotNull
     @Column(length = 100)
-    private String description;
+    private String keyword;
+
+    @Column(name = "search_count")
+    @ColumnDefault("1")
+    private Long searchCount = 1L;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
     @ColumnDefault("false")
-    private boolean isDeleted = false;
+    private Boolean isDeleted = false;
+
+    public void incrementSearchCount() {
+        this.searchCount++;
+    }
 }

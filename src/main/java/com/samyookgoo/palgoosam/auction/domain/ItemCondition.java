@@ -1,6 +1,6 @@
-package com.samyookgoo.palgoosam.auction.dto;
+package com.samyookgoo.palgoosam.auction.domain;
 
-public enum itemCondition {
+public enum ItemCondition {
     brand_new,
     like_new,
     gently_used,

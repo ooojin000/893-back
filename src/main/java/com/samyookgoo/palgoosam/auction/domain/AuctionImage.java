@@ -43,11 +43,11 @@ public class AuctionImage {
 //    private Long size;
 
     @Column(nullable = false)
-    private int imageSeq;
-
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Integer imageSeq;
 
     @Column(nullable = false, length = 255)
     private String url;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }

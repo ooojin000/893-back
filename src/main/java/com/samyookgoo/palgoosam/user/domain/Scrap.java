@@ -13,10 +13,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "scrap")
-@Getter
-@Setter
 public class Scrap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
