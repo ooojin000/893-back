@@ -1,16 +1,21 @@
 USE palgoosam;
+ALTER TABLE auction
+    ADD FULLTEXT (title, description) with parser ngram;
+
+ALTER TABLE search_history
+    ADD FULLTEXT (keyword) with parser ngram;
 
 -- 회원
-INSERT INTO user (name, email, profile_image)
-VALUES ('김철수', 'chulsoo@example.com', 'https://img.example.com/profiles/1.jpg'),
-       ('이영희', 'younghee@example.com', 'https://img.example.com/profiles/2.jpg'),
-       ('박민수', 'minsoo@example.com', 'https://img.example.com/profiles/3.jpg');
+INSERT INTO user (name, email, provider, provider_id, profile_image)
+VALUES ('김철수', 'chulsoo@example.com', 'google', '1234', 'https://img.example.com/profiles/1.jpg'),
+       ('이영희', 'younghee@example.com', 'google', '4567', 'https://img.example.com/profiles/2.jpg'),
+       ('박민수', 'minsoo@example.com', 'google', '12321415', 'https://img.example.com/profiles/3.jpg');
 
 -- OAuth 토큰
-INSERT INTO user_oauth_token (id, refresh_token)
-VALUES (1, 'refresh_token_1'),
-       (2, 'refresh_token_2'),
-       (3, 'refresh_token_3');
+INSERT INTO user_jwt_token (id, auth_token, refresh_token)
+VALUES (1, '1234', 'refresh_token_1'),
+       (2, '2345', 'refresh_token_2'),
+       (3, '3456', 'refresh_token_3');
 
 -- 카테고리 (재귀)
 INSERT INTO category (id, parent_id, name)
@@ -37,10 +42,10 @@ VALUES (1, 'https://img.example.com/auctions/1_1.jpg', 'galaxy.jpg', '1_1.jpg', 
        (3, 'https://img.example.com/auctions/3_1.jpg', 'coat.jpg', '3_1.jpg', 0);
 
 -- 입찰
-INSERT INTO bid (bidder_id, auction_id, price, created_at, cancelled_at, is_winning, is_deleted)
-VALUES (2, 1, 860000, '2025-05-01 10:00:00', NULL, FALSE, FALSE),
-       (3, 1, 870000, '2025-05-01 11:00:00', NULL, TRUE, FALSE),
-       (1, 2, 51000, '2025-05-01 12:00:00', NULL, TRUE, FALSE);
+INSERT INTO bid (bidder_id, auction_id, price, created_at, is_winning, is_deleted)
+VALUES (2, 1, 860000, '2025-05-01 10:00:00', FALSE, FALSE),
+       (3, 1, 870000, '2025-05-01 11:00:00', TRUE, FALSE),
+       (1, 2, 51000, '2025-05-01 12:00:00', TRUE, FALSE);
 
 -- 결제
 INSERT INTO payment (buyer_id, seller_id, auction_id, recipient_name, phone_number, address_line1, address_line2,
@@ -66,10 +71,10 @@ VALUES (1, 1, 1, FALSE, FALSE),
        (3, 3, 2, TRUE, FALSE);
 
 -- 알림 토큰
-INSERT INTO user_fcm_token (user_id, token)
-VALUES (1, 'token_user1'),
-       (2, 'token_user2'),
-       (3, 'token_user3');
+INSERT INTO user_fcm_token (user_id, token, device_type)
+VALUES (1, 'token_user1', "WEB"),
+       (2, 'token_user2', "WEB"),
+       (3, 'token_user3', "WEB");
 
 -- 스크랩
 INSERT INTO scrap (user_id, auction_id)
@@ -78,7 +83,7 @@ VALUES (2, 1),
        (3, 2);
 
 -- 검색 기록
-INSERT INTO search_history (user_id, keyword)
-VALUES (1, '갤럭시 미개봉'),
-       (2, '책상 중고'),
-       (3, '롱코트 겨울');
+INSERT INTO search_history (user_id, keyword, search_count)
+VALUES (1, '갤럭시 미개봉', 1),
+       (2, '책상 중고', 1),
+       (3, '롱코트 겨울', 1);

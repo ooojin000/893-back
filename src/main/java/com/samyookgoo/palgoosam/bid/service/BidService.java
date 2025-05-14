@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.bid.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
@@ -13,7 +14,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -70,7 +70,7 @@ public class BidService {
     }
 
     @Transactional
-    public BidResponse placeBid(Long auctionId, Long userId, int price) {
+    public BidEventResponse placeBid(Long auctionId, Long userId, int price) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
 
@@ -91,10 +91,7 @@ public class BidService {
             throw new IllegalArgumentException("현재 최고가보다 높은 금액을 입력해야 합니다.");
         }
 
-        Optional<Bid> prevWinningBidOpt = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId);
-        prevWinningBidOpt.ifPresent(prev -> {
-            prev.setIsWinning(false);
-        });
+        clearPreviousWinningBid(auctionId);
 
         Bid bid = Bid.builder()
                 .auction(auction)
@@ -105,14 +102,14 @@ public class BidService {
                 .build();
 
         Bid savedBid = bidRepository.save(bid);
-
         // TODO: MapStruct, ModelMapper 논의 후 사용 예정
-        // 강사님 코멘트 : dto -> entity 그 반대 라이브러리 쓰는거 고민? mapsturct, modelmapper 등 .. 찾아보면 간편하게 쓸수잇습니다.
-        return mapToResponse(savedBid);
+        BidResponse bidResponse = mapToResponse(savedBid);
+
+        return createBidEventResponse(auctionId, bidResponse, false);
     }
 
     @Transactional
-    public void cancelBid(Long auctionId, Long bidId, User currentUser) {
+    public BidEventResponse cancelBid(Long auctionId, Long bidId, User currentUser) {
         Bid bid = bidRepository.findById(bidId)
                 .orElseThrow(() -> new NoSuchElementException("해당 입찰 내역이 존재하지 않습니다."));
 
@@ -137,11 +134,38 @@ public class BidService {
         bid.setIsWinning(Boolean.FALSE);
         bid.setIsDeleted(Boolean.TRUE);
 
-        Optional<Bid> newWinningBidOpt = bidRepository.findTopValidBidByAuctionId(auctionId);
+        updateWinningBid(auctionId);
 
-        newWinningBidOpt.ifPresent(newWinningBid -> {
-            newWinningBid.setIsWinning(true);
-        });
+        BidResponse bidResponse = mapToResponse(bid);
+
+        return createBidEventResponse(auctionId, bidResponse, true);
+    }
+
+    private void clearPreviousWinningBid(Long auctionId) {
+        bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
+                .ifPresent(prev -> prev.setIsWinning(false));
+    }
+
+    private void updateWinningBid(Long auctionId) {
+        bidRepository.findTopValidBidByAuctionId(auctionId)
+                .ifPresent(newWinner -> {
+                    newWinner.setIsWinning(true);
+                    bidRepository.save(newWinner);
+                });
+    }
+
+    private BidEventResponse createBidEventResponse(Long auctionId, BidResponse bidResponse, boolean isCancelled) {
+        Integer currentPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
+        int totalBid = bidRepository.countByAuctionId(auctionId);
+        int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
+
+        return BidEventResponse.builder()
+                .currentPrice(currentPrice)
+                .totalBid(totalBid)
+                .totalBidder(totalBidder)
+                .isCancelled(isCancelled)
+                .bid(bidResponse)
+                .build();
     }
 
     private BidResponse mapToResponse(Bid bid) {

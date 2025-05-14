@@ -1,13 +1,18 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
+import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuctionListItemDto {
     private Long id;
     private String title;
@@ -15,14 +20,14 @@ public class AuctionListItemDto {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    private String status;
+    private AuctionStatus status;
 
     private Integer basePrice;
     private Integer currentPrice;
 
-    private Integer bidderCount;
+    private Long bidderCount;
 
-    private Integer scrapCount;
+    private Long scrapCount;
 
     private String thumbnailUrl;
 

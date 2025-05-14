@@ -16,15 +16,15 @@ public class FileStore {
     private String uploadPath;
 
     public List<ResultFileStore> storeFiles(List<MultipartFile> multipartFiles) {
-        List<ResultFileStore> storeFileResult = new ArrayList<>();
+        List<ResultFileStore> resultFileStores = new ArrayList<>();
 
-        if (multipartFiles != null && !multipartFiles.isEmpty()) {
+        if (multipartFiles != null || !multipartFiles.isEmpty()) {
             for (MultipartFile multipartFile : multipartFiles) {
-                storeFileResult.add(storeFile(multipartFile));
+                resultFileStores.add(storeFile(multipartFile));
             }
         }
 
-        return storeFileResult;
+        return resultFileStores;
     }
 
     public ResultFileStore storeFile(MultipartFile multipartFile) {
@@ -32,19 +32,19 @@ public class FileStore {
             throw new IllegalArgumentException("빈 파일은 저장할 수 없습니다.");
         }
 
-        String originalFilename = multipartFile.getOriginalFilename();      // 파일 이름
-        String storeFileName = createStoreFileName(originalFilename);       // 파일 저장 이름
-        String folderPath = makeFolder();                                   // 폴더 생성
+        String originalFileName = multipartFile.getOriginalFilename();
+        String storeFileName = createStoreFileName(originalFileName);
+        String folderPath = makeFolder();
 
-        String fullPath = folderPath + File.separator + storeFileName;      // 이미지 저장
+        String fullPath = folderPath + File.separator + storeFileName;
 
         try {
             multipartFile.transferTo(new File(fullPath));
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장 실패: " + originalFilename, e);
+            throw new RuntimeException("파일 저장 실패 : " + originalFileName, e);
         }
 
-        return new ResultFileStore(folderPath, storeFileName, originalFilename);
+        return new ResultFileStore(folderPath, originalFileName, storeFileName);
     }
 
     private String createStoreFileName(String originalFileName) {
@@ -53,13 +53,19 @@ public class FileStore {
     }
 
     private String makeFolder() {
-        String folderPath = uploadPath;
-        File uploadPathFolder = new File(folderPath);
+        File file = new File(uploadPath);
 
-        if (!uploadPathFolder.exists()) {
-            uploadPathFolder.mkdirs();
+        if (!file.exists()) {
+            file.mkdirs();
         }
 
-        return folderPath;
+        return uploadPath;
+    }
+
+    public void delete(String storeFileName) {
+        File file = new File(uploadPath + File.separator + storeFileName);
+        if (file.exists()) {
+            file.delete();
+        }
     }
 }
