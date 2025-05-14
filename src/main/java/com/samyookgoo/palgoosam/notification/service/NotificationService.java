@@ -14,6 +14,7 @@ import com.samyookgoo.palgoosam.notification.subscription.service.AuctionSubscri
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,7 +49,7 @@ public class NotificationService {
         return new BaseResponse(200, "FCM 토큰이 정상적으로 저장되었습니다.", null);
     }
 
-    public void saveAndSendFcmMessage(NotificationRequestDto notificationRequestDto) {
+    public void saveAndSendFcmMessage(NotificationRequestDto notificationRequestDto, Long userId) {
         NotificationHistory created = saveFcmMessage(notificationRequestDto);
         FcmMessageDto requestDto = FcmMessageDto.builder()
                 .auctionId(created.getAuctionId())
@@ -79,15 +80,12 @@ public class NotificationService {
         auctionSubscriptionService.unsubscribe(auctionId, subscriptionType);
     }
 
-    public void sendTopicMessage(NotificationRequestDto notificationRequestDto) {
-        /*
-        사용자 식별을 위한 로직 추가 (userService)
-        현재 유저 판별 코드는 임시로 작성되었습니다.
-        * */
-        User dummyUser = userRepository.findById(1L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+    public void sendTopicMessage(NotificationRequestDto notificationRequestDto, List<Long> userIdList) {
+
         NotificationHistory createdNotification = saveFcmMessage(notificationRequestDto);
 
-        NotificationStatus notificationStatus = saveNotificationStatus(createdNotification.getId(), dummyUser.getId());
+        List<NotificationStatus> notificationStatusList = saveNotificationStatus(createdNotification.getId(),
+                userIdList);
 
         try {
             // 알림 전송
@@ -97,25 +95,32 @@ public class NotificationService {
                     notificationRequestDto.getImageUrl());
 
             // 알림이 정상적으로 전송되면 해당 알림의 상태를 SUCCESS로 변경
-            notificationStatus.setNotificationStatusType(NotificationStatusType.SUCCESS);
-            notificationStatusRepository.save(notificationStatus);
+            notificationStatusList.forEach(
+                    notificationStatus -> notificationStatus.setNotificationStatusType(NotificationStatusType.SUCCESS));
+            notificationStatusRepository.saveAll(notificationStatusList);
         } catch (RuntimeException e) {
-            // 알림 실패 시 3번 더 호출하는 로직 작성해야 함.
+            // TODO: 알림 실패 시 3번 더 호출하는 로직 작성해야 함.
             // 알림이 3번 더 전송해도 실패하면, 실패 상태로 데이터베이스에 저장
-            if (notificationStatus.getRetryCount() > 3) {
-                notificationStatus.setNotificationStatusType(NotificationStatusType.FAILED);
-            }
-            notificationStatusRepository.save(notificationStatus);
+//            if () {
+//                notificationStatusList.forEach(
+//                        notificationStatus -> notificationStatus.setNotificationStatusType(
+//                                NotificationStatusType.FAILED));
+//                notificationStatusRepository.saveAll(notificationStatusList);
+//            }
         }
     }
 
-    private NotificationStatus saveNotificationStatus(Long notificationId, Long userId) {
-        NotificationStatus notificationStatus = new NotificationStatus();
-        notificationStatus.setNotificationHistoryId(notificationId);
-        notificationStatus.setUserId(userId);
+    private List<NotificationStatus> saveNotificationStatus(Long notificationId, List<Long> userIdList) {
+        List<NotificationStatus> notificationStatusList = userIdList.stream().map(userId -> {
+            NotificationStatus notificationStatus = new NotificationStatus();
+            notificationStatus.setNotificationHistoryId(notificationId);
+            notificationStatus.setUserId(userId);
+            notificationStatus.setNotificationStatusType(NotificationStatusType.PENDING);
+            return notificationStatus;
+        });
 
         // FCM 알림 전송이 실패할 수도 있으니 PENDING 으로 저장
-        notificationStatus.setNotificationStatusType(NotificationStatusType.PENDING);
-        return notificationStatusRepository.save(notificationStatus);
+
+        return notificationStatusRepository.saveAll(notificationStatusList);
     }
 }
