@@ -1,11 +1,10 @@
 package com.samyookgoo.palgoosam.user.dto;
 
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -35,7 +34,7 @@ public class UserBidsResponseDto {
                 bid.getAuction().getTitle(),
                 bid.getAuction().getEndTime(),
                 bid.getAuction().getStartTime(),
-                bid.getAuction().getStatus(),
+                bid.getAuction().getStatus().toString(),
                 bid.getAuction().getId(),
                 mainImageUrl
         );
