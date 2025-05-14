@@ -3,12 +3,11 @@ package com.samyookgoo.palgoosam.auction.dto.response;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
 @Builder
 public class AuctionImageResponse {
+    private Long imageId;
     private String originalName;
     private String storeName;
     private String url;
@@ -16,6 +15,7 @@ public class AuctionImageResponse {
 
     public static AuctionImageResponse from(AuctionImage image) {
         return AuctionImageResponse.builder()
+                .imageId(image.getId())
                 .originalName(image.getOriginalName())
                 .storeName(image.getStoreName())
                 .url(image.getUrl())
