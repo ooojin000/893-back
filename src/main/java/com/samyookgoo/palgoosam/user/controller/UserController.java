@@ -98,7 +98,7 @@ public class UserController {
         User user = authService.getCurrentUser();
 
         List<Scrap> scraps = userService.getUserScrapsByUserId(user.getId());
-        List<Long> auctionIds = auctionService.getAuctionIdsByScarps(scraps);
+        List<Long> auctionIds = auctionService.getAuctionIdsByScraps(scraps);
         List<Auction> auctions = auctionService.getAuctionsByAuctionIds(auctionIds);
 
         // 메인 이미지 URL

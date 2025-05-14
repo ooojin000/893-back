@@ -59,7 +59,7 @@ public class AuctionService {
                 .toList();
     }
 
-    public List<Long> getAuctionIdsByScarps(List<Scrap> scraps) {
+    public List<Long> getAuctionIdsByScraps(List<Scrap> scraps) {
         return scraps.stream()
                 .map(s -> s.getAuction().getId())
                 .distinct()
