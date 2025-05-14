@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -236,16 +237,13 @@ public class AuctionService {
     @Transactional
     public AuctionUpdateResponse updateAuction(Long auctionId, AuctionUpdateRequest request,
                                                List<MultipartFile> images) {
-        // 1. 경매 상품 조회
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
 
-        // 경매 시작 10분 전이면 수정 불가
         if (auction.getStartTime().minusMinutes(10).isBefore(LocalDateTime.now())) {
             throw new IllegalStateException("경매 시작 10분 전부터는 수정이 불가능합니다.");
         }
 
-        // 2. 필드 수정
         if (request.getTitle() != null) {
             auction.setTitle(request.getTitle());
         }
@@ -265,6 +263,7 @@ public class AuctionService {
         if (request.getCategory() != null && request.getCategory().getId() != null) {
             category = categoryRepository.findById(request.getCategory().getId())
                     .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+
             validateLeafCategory(category);
             auction.setCategory(category);
         }
@@ -282,18 +281,26 @@ public class AuctionService {
         auction.setStartTime(startTime);
         auction.setEndTime(endTime);
 
-        // 3. 기존 이미지 조회
         List<AuctionImage> existingImages = auctionImageRepository.findByAuctionId(auctionId);
+        Map<Long, AuctionImage> existingImageMap = existingImages.stream()
+                .collect(Collectors.toMap(AuctionImage::getId, Function.identity()));
 
         List<AuctionImageRequest> imageRequests = request.getImages() != null ? request.getImages() : List.of();
 
-        List<Long> requestImageIds = imageRequests.stream()
+        boolean hasMainImage = imageRequests.stream()
+                .anyMatch(img -> img.getImageSeq() != null && img.getImageSeq() == 0);
+
+        if (!hasMainImage) {
+            throw new IllegalArgumentException("대표 이미지를 반드시 포함해야 합니다. (imageSeq == 0)");
+        }
+
+        Set<Long> requestedIds = imageRequests.stream()
                 .map(AuctionImageRequest::getImageId)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
         List<AuctionImage> imagesToDelete = existingImages.stream()
-                .filter(img -> !requestImageIds.contains(img.getId()))
+                .filter(img -> !requestedIds.contains(img.getId()))
                 .collect(Collectors.toList());
 
         for (AuctionImage image : imagesToDelete) {
@@ -301,53 +308,27 @@ public class AuctionService {
             fileStore.delete(image.getStoreName());
         }
 
-        // 4. 새 이미지 저장
-        List<ResultFileStore> storedFiles = fileStore.storeFiles(images != null ? images : List.of());
-        List<AuctionImage> finalImages = new ArrayList<>();
-
+        List<ResultFileStore> storedFiles = fileStore.storeFiles(images);
         int newFileIndex = 0;
 
-        try {
-            for (AuctionImageRequest imageRequest : imageRequests) {
-                if (imageRequest.getImageId() != null) {
-                    // 기존 이미지 시퀀스 수정
-                    AuctionImage image = existingImages.stream()
-                            .filter(i -> i.getId().equals(imageRequest.getImageId())).findFirst()
-                            .orElseThrow(() -> new NoSuchElementException("기존 이미지가 존재하지 않습니다."));
+        List<AuctionImageResponse> imageResponses = new ArrayList<>();
 
-                    image.setImageSeq(imageRequest.getImageSeq());
-                    image.setAuction(auction);
-                    auctionImageRepository.save(image);
-                    finalImages.add(image);
+        for (AuctionImageRequest imageRequest : imageRequests) {
+            Long imageId = imageRequest.getImageId();
+            Integer imageSeq = imageRequest.getImageSeq();
 
-                } else {
-                    // 새 이미지 요청이 있는 경우에만 저장 시도
-                    if (storedFiles.isEmpty()) {
-                        throw new IllegalStateException("새 이미지 요청이 있으나 업로드된 파일이 없습니다.");
-                    }
+            if (imageId != null && existingImageMap.containsKey(imageId)) {
+                AuctionImage existing = existingImageMap.get(imageId);
+                existing.setImageSeq(imageSeq);
+                imageResponses.add(AuctionImageResponse.from(existing));
 
-                    if (newFileIndex >= storedFiles.size()) {
-                        throw new IllegalStateException("업로드된 새 이미지 수가 부족합니다.");
-                    }
-
-                    ResultFileStore file = storedFiles.get(newFileIndex++);
-                    AuctionImage image = ResultFileStore.toEntity(file, auction, imageRequest.getImageSeq());
-                    auctionImageRepository.save(image);
-                    finalImages.add(image);
-                }
+            } else {
+                ResultFileStore file = storedFiles.get(newFileIndex++);
+                AuctionImage newImage = ResultFileStore.toEntity(file, auction, imageSeq);
+                auctionImageRepository.save(newImage);
+                imageResponses.add(AuctionImageResponse.from(newImage));
             }
-        } catch (Exception e) {
-            // 예외 발생 시 업로드된 새 이미지 파일 삭제
-            for (ResultFileStore file : storedFiles) {
-                fileStore.delete(file.getStoreFileName());
-            }
-            throw e;
         }
-
-        // 5. 응답 DTO 구성
-        List<AuctionImageResponse> imageResponses = finalImages.stream()
-                .sorted(Comparator.comparingInt(AuctionImage::getImageSeq))
-                .map(AuctionImageResponse::from).toList();
 
         CategoryResponse categoryResponse = (request.getCategory() != null)
                 ? CategoryResponse.from(category, request.getCategory())
@@ -394,7 +375,6 @@ public class AuctionService {
                 ? baseAuction.getCategory().getParent().getId()
                 : null;
 
-        // 1. 소분류 기준 - 경매중인 상품 (해당 상품 제외)
         List<Auction> detailCategoryList = auctionRepository.findByCategoryIdAndStatus(detailCategoryId,
                         AuctionStatus.active)
                 .stream()
@@ -402,7 +382,6 @@ public class AuctionService {
                 .limit(10)
                 .collect(Collectors.toList());
 
-        // 2. 중분류 기준 - 경매중인 상품
         if (detailCategoryList.size() < 10 && subCategoryId != null) {
             List<Auction> subCategoryList = auctionRepository.findByParentCategoryIdAndStatus(subCategoryId,
                     AuctionStatus.active);
