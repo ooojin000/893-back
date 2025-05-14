@@ -2,11 +2,13 @@ package com.samyookgoo.palgoosam.deliveryaddress.dto;
 
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 public class DeliveryAddressResponseDto {
     private Long id;
