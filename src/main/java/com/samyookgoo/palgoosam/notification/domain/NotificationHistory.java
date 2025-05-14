@@ -11,7 +11,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
@@ -25,20 +24,12 @@ public class NotificationHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
-    private Long userId;
-
     @Column(name = "auction_id")
     private Long auctionId;
 
-    @Column(name = "message_type")
-    private String messageType;
-
-    @ColumnDefault("false")
-    private Boolean isRead = false;
-
-    @ColumnDefault("false")
-    private Boolean isDeleted = false;
+    private String title;
+    
+    private String message;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
