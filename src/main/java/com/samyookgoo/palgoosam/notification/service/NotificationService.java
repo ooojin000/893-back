@@ -1,7 +1,5 @@
 package com.samyookgoo.palgoosam.notification.service;
 
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
-import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.notification.constant.NotificationStatusType;
 import com.samyookgoo.palgoosam.notification.domain.NotificationHistory;
@@ -27,8 +25,6 @@ public class NotificationService {
     private final FirebaseCloudMessageService fcmService;
     private final UserRepository userRepository;
     private final NotificationHistoryRepository notificationHistoryRepository;
-    private final AuctionRepository auctionRepository;
-    private final AuctionImageRepository auctionImageRepository;
     private final AuctionSubscriptionService auctionSubscriptionService;
     private final NotificationStatusRepository notificationStatusRepository;
 
