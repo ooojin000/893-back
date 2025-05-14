@@ -15,6 +15,7 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,18 +51,30 @@ public class NotificationService {
     }
 
     public void saveAndSendFcmMessage(NotificationRequestDto notificationRequestDto, Long userId) {
-        NotificationHistory created = saveFcmMessage(notificationRequestDto);
+        NotificationHistory createdNotification = saveFcmMessage(notificationRequestDto);
         FcmMessageDto requestDto = FcmMessageDto.builder()
-                .auctionId(created.getAuctionId())
-                .notificationId(created.getId())
-                .auctionTitle(created.getTitle())
-                .message(created.getMessage())
-                .createdAt(created.getCreatedAt())
+                .auctionId(createdNotification.getAuctionId())
+                .notificationId(createdNotification.getId())
+                .auctionTitle(createdNotification.getTitle())
+                .message(createdNotification.getMessage())
+                .createdAt(createdNotification.getCreatedAt())
                 .subscriptionType(notificationRequestDto.getSubscriptionType())
                 .imageUrl(notificationRequestDto.getImageUrl())
                 .build();
         log.info("{}: Sending FCM notification request", requestDto.getNotificationId());
-        fcmService.sendMessage(requestDto);
+
+        NotificationStatus notificationStatus = saveNotificationStatus(createdNotification.getId(), userId);
+
+        try {
+            // 알림 전송
+            fcmService.sendMessage(requestDto);
+
+            // 알림이 정상적으로 전송되면 해당 알림의 상태를 SUCCESS로 변경
+            notificationStatus.setNotificationStatusType(NotificationStatusType.SUCCESS);
+            notificationStatusRepository.save(notificationStatus);
+        } catch (RuntimeException e) {
+            // TODO: 알림 실패 시 3번 더 호출하는 로직 작성해야 함.
+        }
     }
 
     private NotificationHistory saveFcmMessage(NotificationRequestDto notificationRequestDto) {
@@ -110,6 +123,17 @@ public class NotificationService {
         }
     }
 
+    private NotificationStatus saveNotificationStatus(Long notificationId, Long userId) {
+        NotificationStatus notificationStatus = new NotificationStatus();
+        notificationStatus.setNotificationHistoryId(notificationId);
+        notificationStatus.setUserId(userId);
+        notificationStatus.setNotificationStatusType(NotificationStatusType.PENDING);
+
+        // FCM 알림 전송이 실패할 수도 있으니 PENDING 으로 저장
+
+        return notificationStatusRepository.save(notificationStatus);
+    }
+
     private List<NotificationStatus> saveNotificationStatusList(Long notificationId, List<Long> userIdList) {
         List<NotificationStatus> notificationStatusList = userIdList.stream().map(userId -> {
             NotificationStatus notificationStatus = new NotificationStatus();
@@ -117,7 +141,7 @@ public class NotificationService {
             notificationStatus.setUserId(userId);
             notificationStatus.setNotificationStatusType(NotificationStatusType.PENDING);
             return notificationStatus;
-        });
+        }).collect(Collectors.toList());
 
         // FCM 알림 전송이 실패할 수도 있으니 PENDING 으로 저장
 
