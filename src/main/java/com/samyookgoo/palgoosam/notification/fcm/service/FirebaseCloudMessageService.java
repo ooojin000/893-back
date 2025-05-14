@@ -7,10 +7,6 @@ import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.MulticastMessage;
 import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.TopicManagementResponse;
-import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
-import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
 import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageDto;
 import com.samyookgoo.palgoosam.notification.fcm.repository.UserFcmTokenRepository;
@@ -30,8 +26,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class FirebaseCloudMessageService {
     private final UserFcmTokenRepository userFcmTokenRepository;
-    private final AuctionRepository auctionRepository;
-    private final AuctionImageRepository auctionImageRepository;
     private final UserRepository userRepository;
 
     public Boolean validateFcmToken(String token) {
@@ -115,11 +109,7 @@ public class FirebaseCloudMessageService {
     }
 
     public void sendTopicMessage(Long auctionId, String topic, SubscriptionType subscriptionType, String message,
-                                 String title) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        AuctionImage auctionImage = auctionImageRepository.findMainImageByAuctionId(auctionId)
-                .orElseThrow(() -> new EntityNotFoundException("AuctionImage not found"));
+                                 String title, String imageUrl) {
 
         Message fcmMessage = Message.builder()
                 .setNotification(
@@ -129,8 +119,8 @@ public class FirebaseCloudMessageService {
                                 .build()
                 )
                 .putData("subscriptionType", subscriptionType.toString())
-                .putData("imageUrl", auctionImage.getUrl())
-                .putData("auctionId", auction.getId().toString())
+                .putData("imageUrl", imageUrl)
+                .putData("auctionId", auctionId.toString())
                 .putData("createdAt", LocalDateTime.now().toString())
                 .setTopic(topic).build();
 

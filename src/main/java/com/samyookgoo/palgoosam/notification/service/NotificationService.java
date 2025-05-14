@@ -93,7 +93,8 @@ public class NotificationService {
             // 알림 전송
             fcmService.sendTopicMessage(createdNotification.getAuctionId(),
                     "Auction_" + createdNotification.getAuctionId(), notificationRequestDto.getSubscriptionType(),
-                    createdNotification.getMessage(), createdNotification.getTitle());
+                    createdNotification.getMessage(), createdNotification.getTitle(),
+                    notificationRequestDto.getImageUrl());
 
             // 알림이 정상적으로 전송되면 해당 알림의 상태를 SUCCESS로 변경
             notificationStatus.setNotificationStatusType(NotificationStatusType.SUCCESS);
