@@ -104,7 +104,7 @@ public class NotificationService {
             notificationStatusRepository.save(notificationStatus);
         } catch (RuntimeException e) {
             // 알림 실패 시 3번 더 호출하는 로직 작성해야 함.
-            // 알림이 정상적으로 전송되면 해당 알림의 상태를 SUCCESS로 변경
+            // 알림이 3번 더 전송해도 실패하면, 실패 상태로 데이터베이스에 저장
             if (notificationStatus.getRetryCount() > 3) {
                 notificationStatus.setNotificationStatusType(NotificationStatusType.FAILED);
             }
