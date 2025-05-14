@@ -34,18 +34,20 @@ public class AuctionSubscriptionService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        AuctionSubscription existing = auctionSubscriptionRepository.findByUserAndAuction(dummyUser, auction)
-                .orElse(null);
+        List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(dummyUser,
+                auction);
 
-        if (existing == null) {
-            AuctionSubscription createdSubscription = new AuctionSubscription();
-            createdSubscription.setUser(dummyUser);
-            createdSubscription.setAuction(auction);
-            createdSubscription.setType(subscriptionType);
-            auctionSubscriptionRepository.save(createdSubscription);
+        if (subscriptionList.isEmpty()) {
+            createSubscription(dummyUser, auction, subscriptionType);
             List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId()).stream()
                     .map(UserFcmToken::getToken).collect(Collectors.toList());
             fcmService.subscribeAuction("Auction_" + auction.getId(), fcmTokenList);
+        }
+
+        List<AuctionSubscription> targetList = getTargetList(subscriptionList, subscriptionType);
+
+        if (targetList.isEmpty()) {
+            createSubscription(dummyUser, auction, subscriptionType);
         }
     }
 
@@ -57,11 +59,29 @@ public class AuctionSubscriptionService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        auctionSubscriptionRepository.findByUserAndAuction(dummyUser, auction)
-                .ifPresent(auctionSubscriptionRepository::delete);
-        List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId()).stream()
-                .map(UserFcmToken::getToken).collect(Collectors.toList());
-        fcmService.unSubscribeAuction("Auction_" + auction.getId(), fcmTokenList);
+        List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(dummyUser,
+                auction);
+        
+        List<AuctionSubscription> targetList = getTargetList(subscriptionList, subscriptionType);
+        auctionSubscriptionRepository.deleteAll(targetList);
+        if (subscriptionList.size() == targetList.size()) {
+            List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId()).stream()
+                    .map(UserFcmToken::getToken).collect(Collectors.toList());
+            fcmService.unSubscribeAuction("Auction_" + auction.getId(), fcmTokenList);
+        }
+    }
 
+    private void createSubscription(User user, Auction auction, SubscriptionType subscriptionType) {
+        AuctionSubscription createdSubscription = new AuctionSubscription();
+        createdSubscription.setUser(user);
+        createdSubscription.setAuction(auction);
+        createdSubscription.setType(subscriptionType);
+        auctionSubscriptionRepository.save(createdSubscription);
+    }
+
+    private List<AuctionSubscription> getTargetList(List<AuctionSubscription> subscriptionList,
+                                                    SubscriptionType subscriptionType) {
+        return subscriptionList.stream()
+                .filter(existing -> existing.getType().equals(subscriptionType)).toList();
     }
 }
