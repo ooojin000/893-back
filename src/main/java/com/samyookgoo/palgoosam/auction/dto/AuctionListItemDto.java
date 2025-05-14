@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
+import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +20,7 @@ public class AuctionListItemDto {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    private String status;
+    private AuctionStatus status;
 
     private Integer basePrice;
     private Integer currentPrice;
