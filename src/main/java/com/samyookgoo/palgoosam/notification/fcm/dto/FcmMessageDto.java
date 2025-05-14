@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.notification.fcm.dto;
 
+import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,13 +13,12 @@ import lombok.ToString;
 @NoArgsConstructor
 @Builder
 @ToString
-public class FcmNotificationRequestDto {
-    private Long userId;
+public class FcmMessageDto {
     private Long auctionId;
     private Long notificationId;
     private String auctionTitle;
     private String message;
     private LocalDateTime createdAt;
-    private String messageType;
+    private SubscriptionType subscriptionType;
     private String imageUrl;
 }
