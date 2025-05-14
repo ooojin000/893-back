@@ -58,12 +58,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     Optional<Auction> findById(Long id);
 
-    @Query("SELECT a FROM Auction a " +
-            "JOIN FETCH a.category " +
-            "JOIN FETCH a.seller " +
-            "WHERE a.id = :auctionId")
-    Optional<Auction> findByIdWithCategoryAndSeller(@Param("auctionId") Long auctionId);
-
     List<Auction> findByCategoryIdAndStatus(Long categoryId, AuctionStatus status);
 
     @Query("SELECT a FROM Auction a WHERE a.category.parent.id = :parentId AND a.status = :status")
