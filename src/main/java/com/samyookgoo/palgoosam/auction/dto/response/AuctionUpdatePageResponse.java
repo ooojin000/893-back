@@ -15,6 +15,7 @@ public class AuctionUpdatePageResponse {
     private String description;
     private ItemCondition itemCondition;
     private AuctionStatus status;
+    private Integer basePrice;
 
     private CategoryResponse category;
 

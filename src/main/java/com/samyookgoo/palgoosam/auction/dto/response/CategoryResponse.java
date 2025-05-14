@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auction.dto.response;
 
 import com.samyookgoo.palgoosam.auction.domain.Category;
+import com.samyookgoo.palgoosam.auction.dto.request.CategoryRequest;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -28,6 +29,15 @@ public class CategoryResponse {
                 .mainCategory(names.size() > 0 ? names.get(0) : null)
                 .subCategory(names.size() > 1 ? names.get(1) : null)
                 .detailCategory(names.size() > 2 ? names.get(2) : null)
+                .build();
+    }
+
+    public static CategoryResponse from(Category category, CategoryRequest request) {
+        return CategoryResponse.builder()
+                .id(category != null ? category.getId() : null)
+                .mainCategory(request.getMainCategory())
+                .subCategory(request.getSubCategory())
+                .detailCategory(request.getDetailCategory())
                 .build();
     }
 }

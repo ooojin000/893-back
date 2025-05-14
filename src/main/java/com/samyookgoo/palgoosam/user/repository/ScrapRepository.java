@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ScrapRepository extends JpaRepository<Scrap, Long> {
+    List<Scrap> findAllByUser_Id(Long auctionId);
+
     int countByAuctionId(Long auctionId);
 
     @Query(value = """

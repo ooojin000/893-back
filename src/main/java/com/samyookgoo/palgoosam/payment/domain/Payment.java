@@ -22,9 +22,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "payment")
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

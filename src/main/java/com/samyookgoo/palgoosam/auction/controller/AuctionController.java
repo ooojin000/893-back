@@ -8,10 +8,9 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionCreateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionDetailResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
+import com.samyookgoo.palgoosam.auction.dto.response.RelatedAuctionResponse;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
-import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import jakarta.validation.Valid;
@@ -36,8 +35,6 @@ public class AuctionController {
 
     private final AuctionService auctionService;
     private final FileStore fileStore;
-    private final AuctionRepository auctionRepository;
-    private final AuctionImageRepository auctionImageRepository;
 
     @GetMapping("/search")
     public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> search(
@@ -47,44 +44,57 @@ public class AuctionController {
     }
 
     @PostMapping
-    public ResponseEntity<AuctionCreateResponse> createAuction(
+    public ResponseEntity<BaseResponse<AuctionCreateResponse>> createAuction(
             @RequestPart("request") @Valid AuctionCreateRequest request,
             @RequestPart("images") List<MultipartFile> images) {
 
         if (images == null || images.size() < 1 || images.size() > 10) {
-            throw new IllegalArgumentException("이미지는 최소 1개, 최대 10개까지 업로드 가능합니다.");
+            return ResponseEntity.badRequest()
+                    .body(BaseResponse.error("이미지는 최소 1개, 최대 10개까지 업로드 가능합니다.", null));
         }
 
         List<ResultFileStore> storedImages = fileStore.storeFiles(images);
         AuctionCreateResponse response = auctionService.createAuction(request, storedImages);
-        return ResponseEntity.ok(response);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(BaseResponse.success("경매 상품 등록 성공", response));
     }
 
     @GetMapping("/{auctionId}")
-    public ResponseEntity<AuctionDetailResponse> getAuction(@PathVariable long auctionId) {
+    public ResponseEntity<BaseResponse<AuctionDetailResponse>> getAuction(@PathVariable long auctionId) {
         AuctionDetailResponse response = auctionService.getAuctionDetail(auctionId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                BaseResponse.success("경매 상품 상세 조회 성공", response)
+        );
     }
 
     @GetMapping("/{auctionId}/update")
-    public ResponseEntity<AuctionUpdatePageResponse> getAuctionUpdatePage(@PathVariable long auctionId) {
+    public ResponseEntity<BaseResponse<AuctionUpdatePageResponse>> getAuctionUpdatePage(@PathVariable long auctionId) {
         AuctionUpdatePageResponse response = auctionService.getAuctionUpdate(auctionId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(BaseResponse.success("경매 상품 수정페이지 조회 성공", response));
     }
 
     @PatchMapping("/{auctionId}")
-    public ResponseEntity<AuctionUpdateResponse> updateAuction(
+    public ResponseEntity<BaseResponse<AuctionUpdateResponse>> updateAuction(
             @PathVariable Long auctionId,
-            @RequestPart("request") @Valid AuctionUpdateRequest request,
+            @RequestPart(value = "request", required = false) AuctionUpdateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
         AuctionUpdateResponse updated = auctionService.updateAuction(auctionId, request, images);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(
+                BaseResponse.success("경매 상품 수정 성공", updated)
+        );
     }
 
     @DeleteMapping("/{auctionId}")
-    public ResponseEntity<?> deleteAuction(@PathVariable long auctionId) {
+    public ResponseEntity<BaseResponse<Void>> deleteAuction(@PathVariable long auctionId) {
         auctionService.deleteAuction(auctionId);
-        return ResponseEntity.ok("삭제 완료");
+        return ResponseEntity.ok(BaseResponse.success("경매 상품 삭제 성공", null));
+    }
+
+    @GetMapping("/{auctionId}/related")
+    public ResponseEntity<BaseResponse<List<RelatedAuctionResponse>>> getRelatedAuctions(@PathVariable Long auctionId) {
+        List<RelatedAuctionResponse> related = auctionService.getRelatedAuctions(auctionId);
+        return ResponseEntity.ok(BaseResponse.success("연관 경매 상품 조회 성공", related));
     }
 }
