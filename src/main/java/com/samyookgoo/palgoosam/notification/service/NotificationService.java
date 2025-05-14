@@ -1,6 +1,5 @@
 package com.samyookgoo.palgoosam.notification.service;
 
-import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
@@ -84,30 +83,42 @@ public class NotificationService {
         auctionSubscriptionService.unsubscribe(auctionId, subscriptionType);
     }
 
-    public void sendTopicMessage(Long auctionId, SubscriptionType subscriptionType, String message,
-                                 NotificationStatusType notificationStatusType, String title) {
+    public void sendTopicMessage(NotificationRequestDto notificationRequestDto) {
         /*
         사용자 식별을 위한 로직 추가 (userService)
         현재 유저 판별 코드는 임시로 작성되었습니다.
         * */
         User dummyUser = userRepository.findById(1L).orElseThrow(() -> new EntityNotFoundException("User not found"));
-        NotificationHistory notificationHistory = new NotificationHistory();
-        notificationHistory.setAuctionId(auctionId);
-        notificationHistory.setTitle(title);
-        notificationHistory.setMessage(message);
-        NotificationHistory savedNotification = notificationHistoryRepository.save(notificationHistory);
+        NotificationHistory createdNotification = saveFcmMessage(notificationRequestDto);
 
+        NotificationStatus notificationStatus = saveNotificationStatus(createdNotification.getId(), dummyUser.getId());
+
+        try {
+            // 알림 전송
+            fcmService.sendTopicMessage(createdNotification.getAuctionId(),
+                    "Auction_" + createdNotification.getAuctionId(), notificationRequestDto.getSubscriptionType(),
+                    createdNotification.getMessage(), createdNotification.getTitle());
+
+            // 알림이 정상적으로 전송되면 해당 알림의 상태를 SUCCESS로 변경
+            notificationStatus.setNotificationStatusType(NotificationStatusType.SUCCESS);
+            notificationStatusRepository.save(notificationStatus);
+        } catch (RuntimeException e) {
+            // 알림 실패 시 3번 더 호출하는 로직 작성해야 함.
+            // 알림이 정상적으로 전송되면 해당 알림의 상태를 SUCCESS로 변경
+            if (notificationStatus.getRetryCount() > 3) {
+                notificationStatus.setNotificationStatusType(NotificationStatusType.FAILED);
+            }
+            notificationStatusRepository.save(notificationStatus);
+        }
+    }
+
+    private NotificationStatus saveNotificationStatus(Long notificationId, Long userId) {
         NotificationStatus notificationStatus = new NotificationStatus();
-        notificationStatus.setNotificationHistoryId(savedNotification.getId());
-        notificationStatus.setUserId(dummyUser.getId());
-        notificationStatus.setNotificationStatusType(notificationStatusType);
-        notificationStatusRepository.save(notificationStatus);
+        notificationStatus.setNotificationHistoryId(notificationId);
+        notificationStatus.setUserId(userId);
 
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        fcmService.sendTopicMessage(auctionId, "Auction_" + auction.getId(), subscriptionType, message, title);
-        notificationStatus.setNotificationStatusType(NotificationStatusType.SUCCESS);
-        notificationStatusRepository.save(notificationStatus);
-
+        // FCM 알림 전송이 실패할 수도 있으니 PENDING 으로 저장
+        notificationStatus.setNotificationStatusType(NotificationStatusType.PENDING);
+        return notificationStatusRepository.save(notificationStatus);
     }
 }
