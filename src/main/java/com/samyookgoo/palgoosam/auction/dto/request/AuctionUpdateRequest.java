@@ -25,12 +25,12 @@ public class AuctionUpdateRequest {
     @NotNull
     private ItemCondition itemCondition;
 
-    @NotNull
+    @NotNull(message = "경매 오픈 시간은 필수입니다.")
     @Min(0)
     @Max(1440)
     private Integer startDelay;
 
-    @NotNull
+    @NotNull(message = "경매 소요 시간은 필수입니다.")
     @Min(10)
     @Max(1440)
     private Integer durationTime;
