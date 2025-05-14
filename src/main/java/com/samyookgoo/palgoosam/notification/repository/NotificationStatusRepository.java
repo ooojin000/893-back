@@ -12,5 +12,5 @@ public interface NotificationStatusRepository extends JpaRepository<Notification
             FROM notification_status
             WHERE user_id = :userId AND is_deleted = false
             """, nativeQuery = true)
-    List<NotificationStatus> findAllByUserId(Long userId);
+    List<NotificationStatus> findAllByUserIdAndIsDeletedFalse(Long userId);
 }
