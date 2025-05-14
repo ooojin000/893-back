@@ -1,7 +1,6 @@
 package com.samyookgoo.palgoosam.notification.controller;
 
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
-import com.samyookgoo.palgoosam.notification.dto.FcmTokenSaveRequestDto;
 import com.samyookgoo.palgoosam.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +17,8 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @PostMapping("/fcm-token")
-    public ResponseEntity<BaseResponse> saveFcmToken(@RequestBody FcmTokenSaveRequestDto requestDto) {
-        BaseResponse response = notificationService.saveFcmToken(requestDto);
+    public ResponseEntity<BaseResponse> saveFcmToken(@RequestBody String fcmToken) {
+        BaseResponse response = notificationService.saveFcmToken(fcmToken);
         if (response.getCode() == 200) {
             return ResponseEntity.ok().body(response);
         }

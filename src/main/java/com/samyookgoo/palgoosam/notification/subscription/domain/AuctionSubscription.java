@@ -1,15 +1,18 @@
-package com.samyookgoo.palgoosam.notification.domain;
+package com.samyookgoo.palgoosam.notification.subscription.domain;
 
+
+import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
 import com.samyookgoo.palgoosam.user.domain.User;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,33 +20,31 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
-@Table(name = "user_fcm_token")
-public class UserFcmToken {
+@Table(name = "auction_subscription")
+public class AuctionSubscription {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    private String token;
+    @ManyToOne
+    @JoinColumn(name = "auction_id", nullable = false)
+    private Auction auction;
 
-    @NotNull
-    private String deviceType = "WEB";
+    @Enumerated(EnumType.STRING)
+    private SubscriptionType type;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 }
