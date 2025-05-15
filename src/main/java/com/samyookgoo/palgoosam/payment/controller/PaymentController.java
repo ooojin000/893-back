@@ -4,6 +4,8 @@ import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
+import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
 import com.samyookgoo.palgoosam.payment.service.PaymentService;
 import com.samyookgoo.palgoosam.user.domain.User;
@@ -16,12 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auctions")
+@RequestMapping("/api")
 public class PaymentController {
     private final PaymentService paymentService;
     private final AuthService authService;
 
-    @PostMapping("/{auctionId}/payments")
+    @PostMapping("/auctions/{auctionId}/payments")
     public BaseResponse<PaymentResponse> create(@PathVariable Long auctionId,
                                                 @RequestBody CreatePaymentRequest request) {
 
@@ -36,6 +38,15 @@ public class PaymentController {
         paymentService.handlePaymentFailure(request);
 
         return BaseResponse.success(null);
+    }
+  
+    // TODO: 클라이언트와 연동 후 테스트 필요
+    @PostMapping("/payments/confirm")
+    public BaseResponse<PaymentConfirmResponse> confirmPayment(@RequestBody PaymentConfirmRequest request) {
+
+        PaymentConfirmResponse response = paymentService.confirmPayment(request);
+
+        return BaseResponse.success(response);
     }
 
 }

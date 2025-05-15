@@ -44,14 +44,14 @@ VALUES (1, 'https://img.example.com/auctions/1_1.jpg', 'galaxy.jpg', '1_1.jpg', 
 -- 입찰
 INSERT INTO bid (bidder_id, auction_id, price, created_at, is_winning, is_deleted)
 VALUES (2, 1, 860000, '2025-05-01 10:00:00', FALSE, FALSE),
-       (3, 1, 870000, '2025-05-01 11:00:00', TRUE, FALSE),
-       (1, 2, 51000, '2025-05-01 12:00:00', TRUE, FALSE);
+       (3, 2, 870000, '2025-05-01 11:00:00', TRUE, FALSE),
+       (1, 3, 51000, '2025-05-01 12:00:00', TRUE, FALSE);
 
 -- 결제
 INSERT INTO payment (buyer_id, seller_id, auction_id, recipient_name, phone_number, address_line1, address_line2,
-                     zip_code, final_price, order_number, payment_key)
-VALUES (3, 1, 1, '박민수', '010-1111-2222', '서울시 중구 세종대로 123', NULL, '04520', 870000, 'ORD123456', 'PK123456'),
-       (1, 2, 2, '김철수', '010-2222-3333', '서울시 강남구 테헤란로 456', '101호', '06120', 51000, 'ORD123457', 'PK123457');
+                     zip_code, final_price, created_at, order_number, payment_key, status, method, updated_at)
+VALUES (1, 3, 3, '홍길동', '010-1234-5678', '서울시 강남구 역삼동 123-45', '201호', '06234', 51000, CURRENT_TIMESTAMP, 'ORDER12345',
+        'testPaymentKey', 'READY', 'CREDIT_CARD', CURRENT_TIMESTAMP);
 
 -- 배송 주소
 INSERT INTO delivery_address (user_id, name, phone_number, address_line1, address_line2, zip_code, is_default)
@@ -87,3 +87,5 @@ INSERT INTO search_history (user_id, keyword, search_count)
 VALUES (1, '갤럭시 미개봉', 1),
        (2, '책상 중고', 1),
        (3, '롱코트 겨울', 1);
+
+
