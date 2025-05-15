@@ -1,7 +1,6 @@
 package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
-import com.samyookgoo.palgoosam.bid.projection.MainImageProjection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,15 +12,6 @@ public interface AuctionImageRepository extends JpaRepository<AuctionImage, Long
 
     @Query("SELECT a FROM AuctionImage a WHERE a.auction.id IN :auctionIds AND a.imageSeq = 0")
     List<AuctionImage> findMainImagesByAuctionIds(@Param("auctionIds") List<Long> auctionIds);
-
-    @Query("""
-                SELECT ai.auction.id AS auctionId,
-                       ai.url          AS url
-                FROM AuctionImage ai
-                WHERE ai.auction.id IN :auctionIds
-                  AND ai.imageSeq = 0
-            """)
-    List<MainImageProjection> findPrjMainImagesByAuctionIds(@Param("auctionIds") List<Long> auctionIds);
 
     @Query("SELECT a FROM AuctionImage a " +
             "WHERE a.auction.id = :auctionId AND a.imageSeq = 0")
