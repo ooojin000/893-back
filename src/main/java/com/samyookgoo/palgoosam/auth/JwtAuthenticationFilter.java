@@ -42,7 +42,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String p = request.getRequestURI();
-        return p.startsWith("/login") || p.startsWith("/oauth2");
+        String path = request.getRequestURI();
+        log.info("path: {}", path, path.startsWith("/api/auctions/search"));
+        // 로그인·OAuth2 콜백
+        if (path.startsWith("/login") || path.startsWith("/oauth2")) {
+            return true;
+        }
+
+        // 검색 API → JWT 검증 건너뛰기
+        if ("GET".equals(request.getMethod()) && "/api/auctions/search".equals(path)) {
+            return true;
+        }
+
+        // 업로드된 이미지
+        if ("GET".equals(request.getMethod()) && path.startsWith("/uploads/")) {
+            return true;
+        }
+        return false;
     }
 }
