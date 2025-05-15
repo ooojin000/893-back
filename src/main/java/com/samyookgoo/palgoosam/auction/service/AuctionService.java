@@ -29,7 +29,6 @@ import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ public class AuctionService {
     private final AuctionImageRepository auctionImageRepository;
     private final AuctionRepository auctionRepository;
     private final CategoryRepository categoryRepository;
-    private final UserRepository userRepository;
     private final ScrapRepository scrapRepository;
     private final FileStore fileStore;
     private final BidRepository bidRepository;
