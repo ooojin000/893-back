@@ -52,7 +52,7 @@ public class PaymentService {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
 
-        String orderNumber = generateOrderNumber(auctionId);
+//        String orderNumber = generateOrderNumber(auctionId); TODO 추후 삭제
         Payment payment = Payment.builder()
                 .buyer(buyer)
                 .seller(auction.getSeller())
@@ -63,7 +63,8 @@ public class PaymentService {
                 .addressLine2(request.getAddressLine2())
                 .zipCode(request.getZipCode())
                 .finalPrice(winningBid.getPrice())
-                .orderNumber(orderNumber)
+                .orderNumber(request.getOrderId())
+                .paymentKey(request.getPaymentKey())
                 .status(PaymentStatus.READY)
                 .method(request.getPaymentMethod())
                 .build();
@@ -71,7 +72,7 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         return PaymentResponse.builder()
-                .orderId(orderNumber)
+                .orderId(request.getOrderId()) // TODO 추후 삭제. orderId 는 프론트쪽에서 생성하는 것
                 .orderName(auction.getTitle())
                 .successUrl(request.getSuccessUrl())
                 .failUrl(request.getFailUrl())
