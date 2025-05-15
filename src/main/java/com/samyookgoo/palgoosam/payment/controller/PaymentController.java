@@ -3,6 +3,7 @@ package com.samyookgoo.palgoosam.payment.controller;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
 import com.samyookgoo.palgoosam.payment.service.PaymentService;
 import com.samyookgoo.palgoosam.user.domain.User;
@@ -28,6 +29,13 @@ public class PaymentController {
 
         PaymentResponse response = paymentService.createPayment(auctionId, currentUser, request);
         return BaseResponse.success(response);
+    }
+
+    @PostMapping("/payments/fail")
+    public BaseResponse<Void> failPayment(@RequestBody PaymentFailRequest request) {
+        paymentService.handlePaymentFailure(request);
+
+        return BaseResponse.success(null);
     }
 
 }

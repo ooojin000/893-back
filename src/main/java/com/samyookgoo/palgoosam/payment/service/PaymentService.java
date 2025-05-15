@@ -5,6 +5,7 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.domain.PaymentStatus;
@@ -71,6 +72,15 @@ public class PaymentService {
                 .customerMobilePhone(request.getPhoneNumber())
                 .finalPrice(request.getFinalPrice())
                 .build();
+    }
+
+    public void handlePaymentFailure(PaymentFailRequest request) {
+        Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
+                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+
+        if (payment.getStatus() == PaymentStatus.READY) {
+            payment.setStatus(PaymentStatus.FAILED);
+        }
     }
 
     private String generateOrderNumber(Long auctionId) {
