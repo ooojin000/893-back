@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.notification.subscription.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
 import com.samyookgoo.palgoosam.notification.fcm.repository.UserFcmTokenRepository;
 import com.samyookgoo.palgoosam.notification.fcm.service.FirebaseCloudMessageService;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,21 +28,21 @@ public class AuctionSubscriptionService {
     private final AuctionSubscriptionRepository auctionSubscriptionRepository;
     private final FirebaseCloudMessageService fcmService;
     private final UserFcmTokenRepository userFcmTokenRepository;
+    private final AuthService authService;
 
     public void subscribe(Long auctionId, SubscriptionType subscriptionType) {
-        /*
-        로그인에 따라 User를 가져오는 로직
-         */
-        User dummyUser = userRepository.findById(1L)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(dummyUser,
+        List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(user,
                 auction);
 
         if (subscriptionList.isEmpty()) {
-            createSubscription(dummyUser, auction, subscriptionType);
-            List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId()).stream()
+            createSubscription(user, auction, subscriptionType);
+            List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(user.getId()).stream()
                     .map(UserFcmToken::getToken).collect(Collectors.toList());
             fcmService.subscribeAuction("Auction_" + auction.getId(), fcmTokenList);
         }
@@ -48,25 +50,24 @@ public class AuctionSubscriptionService {
         List<AuctionSubscription> targetList = getTargetList(subscriptionList, subscriptionType);
 
         if (!subscriptionList.isEmpty() && targetList.isEmpty()) {
-            createSubscription(dummyUser, auction, subscriptionType);
+            createSubscription(user, auction, subscriptionType);
         }
     }
 
     public void unsubscribe(Long auctionId, SubscriptionType subscriptionType) {
-        /*
-        로그인에 따라 User를 가져오는 로직
-         */
-        User dummyUser = userRepository.findById(1L)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new EntityNotFoundException("Auction not found"));
-        List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(dummyUser,
+        List<AuctionSubscription> subscriptionList = auctionSubscriptionRepository.findAllByUserAndAuction(user,
                 auction);
 
         List<AuctionSubscription> targetList = getTargetList(subscriptionList, subscriptionType);
         auctionSubscriptionRepository.deleteAll(targetList);
         if (subscriptionList.size() == targetList.size()) {
-            List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId()).stream()
+            List<String> fcmTokenList = userFcmTokenRepository.findUserFcmTokenListByUserId(user.getId()).stream()
                     .map(UserFcmToken::getToken).collect(Collectors.toList());
             fcmService.unSubscribeAuction("Auction_" + auction.getId(), fcmTokenList);
         }

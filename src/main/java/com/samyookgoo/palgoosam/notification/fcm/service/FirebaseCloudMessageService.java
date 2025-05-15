@@ -7,18 +7,18 @@ import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.MulticastMessage;
 import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.TopicManagementResponse;
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.notification.fcm.domain.UserFcmToken;
 import com.samyookgoo.palgoosam.notification.fcm.dto.FcmMessageDto;
 import com.samyookgoo.palgoosam.notification.fcm.repository.UserFcmTokenRepository;
 import com.samyookgoo.palgoosam.notification.subscription.constant.SubscriptionType;
 import com.samyookgoo.palgoosam.user.domain.User;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class FirebaseCloudMessageService {
     private final UserFcmTokenRepository userFcmTokenRepository;
-    private final UserRepository userRepository;
+    private final AuthService authService;
 
     public Boolean validateFcmToken(String token) {
         Message message = Message.builder()
@@ -62,12 +62,12 @@ public class FirebaseCloudMessageService {
     }
 
     public void sendMessage(FcmMessageDto messageDto) {
-        /*
-        User 더미 데이터
-         */
-        User dummyUser = userRepository.findById(1L).orElseThrow(EntityNotFoundException::new);
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
 
-        List<UserFcmToken> tokenData = userFcmTokenRepository.findUserFcmTokenListByUserId(dummyUser.getId());
+        List<UserFcmToken> tokenData = userFcmTokenRepository.findUserFcmTokenListByUserId(user.getId());
         MulticastMessage message = MulticastMessage.builder()
                 .setNotification(Notification.builder()
                         .setTitle(messageDto.getAuctionTitle())
