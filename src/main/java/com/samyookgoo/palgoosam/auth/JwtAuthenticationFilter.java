@@ -8,10 +8,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.util.List;
+
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtProvider;
+
+    private static final List<String> WHITELIST = List.of(
+            "/", "/login", "/oauth2/", "/error", "/api/search", "/api/auctions/search", "//api/search/suggestions"
+    );
 
     @Override
     protected void doFilterInternal(
@@ -49,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String p = request.getRequestURI();
-        return p.startsWith("/login") || p.startsWith("/oauth2");
+        String path = request.getRequestURI();
+        return WHITELIST.stream().anyMatch(path::startsWith);
     }
 }

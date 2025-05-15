@@ -18,6 +18,5 @@ public class OAuth2AuthenticationFailureHandler
             AuthenticationException ex
     ) throws IOException {
         log.error("OAuth2 로그인 실패", ex);
-        res.sendRedirect("/login?error");
     }
 }
