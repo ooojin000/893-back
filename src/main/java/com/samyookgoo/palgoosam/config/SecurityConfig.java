@@ -26,7 +26,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_MATCHERS = {
             "/", "/login", "/oauth2/**", "/error",
-            "/api/auctions/search", "/api/search/**", "/api/search/suggestions"
+            "/api/auctions/search/**", "/api/search/**", "/api/search/suggestions"
     };
 
     @Bean
