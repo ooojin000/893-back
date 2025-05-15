@@ -28,6 +28,12 @@ public class CreatePaymentRequest {
     @NotNull(message = "결제 수단을 선택해주세요.")
     private PaymentMethod paymentMethod;
 
+    @NotNull(message = "주문번호는 필수입니다.")
+    private String orderId;
+
+    @NotNull(message = "페이먼트키는 필수입니다.")
+    private String paymentKey;
+    
     @NotNull(message = "결제 금액은 필수입니다.")
     @Min(value = 0, message = "결제 금액은 0원 이상이어야 합니다.")
     private Integer finalPrice;

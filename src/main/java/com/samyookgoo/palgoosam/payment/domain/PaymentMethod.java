@@ -5,5 +5,6 @@ public enum PaymentMethod {
     NAVER_PAY,
     KAKAO_PAY,
     PHONE,
-    BANK_TRANSFER
+    BANK_TRANSFER,
+    NORMAL
 }
