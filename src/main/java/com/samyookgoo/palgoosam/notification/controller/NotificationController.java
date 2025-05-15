@@ -1,5 +1,7 @@
 package com.samyookgoo.palgoosam.notification.controller;
 
+import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
+import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.notification.dto.NotificationResponseDto;
 import com.samyookgoo.palgoosam.notification.service.NotificationService;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final AuctionRepository auctionRepository;
+    private final AuctionImageRepository auctionImageRepository;
 
     @PostMapping("/fcm-token")
     public ResponseEntity<BaseResponse> saveFcmToken(@RequestBody String fcmToken) {
@@ -39,14 +43,14 @@ public class NotificationController {
     }
 
     @PatchMapping("/{notificationId}")
-    public ResponseEntity<BaseResponse> readNotification(@PathVariable Long notificationId) {
+    public ResponseEntity<BaseResponse<Void>> readNotification(@PathVariable Long notificationId) {
         notificationService.readNotification(notificationId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new BaseResponse<>(200, "알림이 정상적으로 읽음 처리되었습니다.", null));
     }
 
     @DeleteMapping("/{notificationId}")
-    public ResponseEntity<BaseResponse> deleteNotification(@PathVariable Long notificationId) {
+    public ResponseEntity<BaseResponse<Void>> deleteNotification(@PathVariable Long notificationId) {
         notificationService.deleteNorification(notificationId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new BaseResponse<>(200, "알림이 정상적으로 삭제되었습니다.", null));
