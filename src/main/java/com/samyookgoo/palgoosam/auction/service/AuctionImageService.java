@@ -1,7 +1,7 @@
 package com.samyookgoo.palgoosam.auction.service;
 
+import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
-import com.samyookgoo.palgoosam.bid.projection.MainImageProjection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,11 +15,10 @@ public class AuctionImageService {
 
     public Map<Long, String> getAuctionMainImages(List<Long> auctionIds) {
         return auctionImageRepository
-                .findPrjMainImagesByAuctionIds(auctionIds)
+                .findMainImagesByAuctionIds(auctionIds)
                 .stream()
                 .collect(Collectors.toMap(
-                        MainImageProjection::getAuctionId,
-                        MainImageProjection::getImageUrl
-                ));
+                        auctionImage -> auctionImage.getAuction().getId(),
+                        AuctionImage::getUrl));
     }
 }
