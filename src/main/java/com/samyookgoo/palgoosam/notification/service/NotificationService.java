@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.notification.service;
 
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.notification.constant.NotificationStatusType;
 import com.samyookgoo.palgoosam.notification.domain.NotificationHistory;
@@ -18,7 +19,6 @@ import com.samyookgoo.palgoosam.notification.subscription.repository.AuctionSubs
 import com.samyookgoo.palgoosam.notification.subscription.service.AuctionSubscriptionService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,25 +40,24 @@ public class NotificationService {
     private final NotificationStatusRepository notificationStatusRepository;
     private final AuctionSubscriptionRepository auctionSubscriptionRepository;
     private final AuctionImageRepository auctionImageRepository;
+    private final AuthService authService;
 
-    public BaseResponse saveFcmToken(String fcmToken) {
-        /*
-        사용자 식별을 위한 로직 추가 (userService)
-        현재 유저 판별 코드는 임시로 작성되었습니다.
-        * */
-        User user = userRepository.findById(1L).orElseThrow(() -> new EntityNotFoundException("User not found"));
-
+    public BaseResponse<Void> saveFcmToken(String fcmToken) {
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            return new BaseResponse<>(401, "클라이언트 인증 부재, 로그인 해주세요.", null);
+        }
         if (fcmToken == null || fcmToken.trim().isEmpty()) {
             log.info("FCM token is null or empty");
-            return new BaseResponse(404, "토큰이 없습니다.", null);
+            return new BaseResponse<>(404, "토큰이 없습니다.", null);
         }
 
         if (!fcmService.validateFcmToken(fcmToken)) {
-            return new BaseResponse(400, "유효하지 않은 토큰입니다.", null);
+            return new BaseResponse<>(400, "유효하지 않은 토큰입니다.", null);
         }
 
         fcmService.saveFcmToken(fcmToken, user);
-        return new BaseResponse(200, "FCM 토큰이 정상적으로 저장되었습니다.", null);
+        return new BaseResponse<>(200, "FCM 토큰이 정상적으로 저장되었습니다.", null);
     }
 
     public void saveAndSendFcmMessage(NotificationRequestDto notificationRequestDto, Long userId) {
@@ -159,12 +159,10 @@ public class NotificationService {
     }
 
     public List<NotificationResponseDto> getNotificationList() {
-        /*
-        사용자 식별을 위한 로직 추가 (userService)
-        현재 유저 판별 코드는 임시로 작성되었습니다.
-        * */
-        User user = userRepository.findById(4L).orElseThrow(() -> new EntityNotFoundException("User not found"));
-
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
         return getUserNotifications(user);
     }
 
@@ -219,11 +217,10 @@ public class NotificationService {
     }
 
     public void readNotification(Long notificationId) {
-        /*
-        사용자 식별을 위한 로직 추가 (userService)
-        현재 유저 판별 코드는 임시로 작성되었습니다.
-        * */
-        User user = userRepository.findById(4L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
         notificationStatusRepository.findByUserIdAndNotificationHistoryId(user.getId(), notificationId)
                 .ifPresent((notificationStatus) -> {
                     notificationStatus.setIsRead(true);
@@ -231,12 +228,11 @@ public class NotificationService {
                 });
     }
 
-    public void deleteNorification(Long notificationId) {
-        /*
-        사용자 식별을 위한 로직 추가 (userService)
-        현재 유저 판별 코드는 임시로 작성되었습니다.
-        * */
-        User user = userRepository.findById(4L).orElseThrow(() -> new EntityNotFoundException("User not found"));
+    public void deleteNotification(Long notificationId) {
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
         notificationStatusRepository.findByUserIdAndNotificationHistoryId(user.getId(), notificationId)
                 .ifPresent((notificationStatus) -> {
                     notificationStatus.setIsDeleted(true);

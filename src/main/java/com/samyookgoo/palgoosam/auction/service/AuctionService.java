@@ -22,6 +22,7 @@ import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
@@ -58,6 +59,7 @@ public class AuctionService {
     private final ScrapRepository scrapRepository;
     private final FileStore fileStore;
     private final BidRepository bidRepository;
+    private final AuthService authService;
 
     public List<Long> getAuctionIdsByAuctions(List<Auction> auctions) {
         return auctions.stream()
@@ -91,15 +93,14 @@ public class AuctionService {
         return auctionRepository.findAllById(auctionIds);
     }
 
-    // 경매 상품 등록
     @Transactional
     public AuctionCreateResponse createAuction(AuctionCreateRequest request, List<ResultFileStore> resultFileStores) {
+        User user = authService.getCurrentUser();
+
         Category category = categoryRepository.findById(request.getCategory().getId())
                 .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
 
         validateLeafCategory(category);
-
-        User user = userRepository.findById(1L).orElseThrow(() -> new NoSuchElementException("사용자가 존재하지 않습니다."));
 
         validateAuctionTime(request.getStartDelay(), request.getDurationTime());
 
@@ -154,15 +155,14 @@ public class AuctionService {
                 .build();
     }
 
-    // 경매 상품 상세 조회
     @Transactional(readOnly = true)
     public AuctionDetailResponse getAuctionDetail(Long auctionId) {
-        Long loginUserId = getLoginUserId();
+        User user = authService.getCurrentUser();
 
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
 
-        boolean isSeller = auction.getSeller().getId().equals(loginUserId);
+        boolean isSeller = auction.getSeller().getId().equals(user.getId());
 
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
 
@@ -178,7 +178,7 @@ public class AuctionService {
 
         String maskedEmail = maskEmail(auction.getSeller().getEmail());
 
-        boolean isScrap = scrapRepository.existsByUserIdAndAuctionId(loginUserId, auctionId);
+        boolean isScrap = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
 
         return AuctionDetailResponse.builder()
@@ -201,7 +201,6 @@ public class AuctionService {
                 .build();
     }
 
-    // 경매 상품 수정페이지 조회
     @Transactional(readOnly = true)
     public AuctionUpdatePageResponse getAuctionUpdate(Long auctionId) {
         Auction auction = auctionRepository.findById(auctionId)
@@ -233,7 +232,6 @@ public class AuctionService {
                 .build();
     }
 
-    // 경매 상품 수정
     @Transactional
     public AuctionUpdateResponse updateAuction(Long auctionId, AuctionUpdateRequest request,
                                                List<MultipartFile> images) {
@@ -364,15 +362,15 @@ public class AuctionService {
 
     @Transactional(readOnly = true)
     public List<RelatedAuctionResponse> getRelatedAuctions(Long auctionId) {
-        Auction baseAuction = auctionRepository.findById(auctionId)
+        Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
 
-        Long loginUserId = getLoginUserId();
+        User userId = authService.getCurrentUser();
 
-        Long detailCategoryId = baseAuction.getCategory().getId();
+        Long detailCategoryId = auction.getCategory().getId();
 
-        Long subCategoryId = baseAuction.getCategory().getParent() != null
-                ? baseAuction.getCategory().getParent().getId()
+        Long subCategoryId = auction.getCategory().getParent() != null
+                ? auction.getCategory().getParent().getId()
                 : null;
 
         List<Auction> detailCategoryList = auctionRepository.findByCategoryIdAndStatus(detailCategoryId,
@@ -406,7 +404,7 @@ public class AuctionService {
                 .map(a -> RelatedAuctionResponse.of(
                         a,
                         auctionIdToImageUrl.get(a.getId()),
-                        loginUserId,
+                        userId.getId(),
                         scrapRepository,
                         bidRepository))
                 .collect(Collectors.toList());
@@ -435,17 +433,14 @@ public class AuctionService {
     }
 
     private void validateAuctionTime(int startDelay, int durationTime) {
-        if (startDelay <= 0 || startDelay >= 1440) {
+        if (startDelay < 0 || startDelay > 1440) {
             throw new IllegalArgumentException("경매 오픈 시간은 현재 시각 이후부터 24시간 이내여야 합니다.");
         }
-        if (durationTime <= 10 || durationTime >= 1440) {
+        if (durationTime < 10 || durationTime > 1440) {
             throw new IllegalArgumentException("경매 소요 시간은 10분 이상, 24시간(1440분) 이내여야 합니다.");
         }
     }
 
-    private Long getLoginUserId() {
-        return 1L; // 임시 더미 로그인 사용자 ID
-    }
 
     public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
         log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getLimit().toString());
@@ -465,26 +460,52 @@ public class AuctionService {
         Map<Long, String> thumbnailMap = getThumbnailMap(auctionIdList);
         Map<Long, List<Bid>> bidsByAuctionMap = getBidListByAuctionMap(auctionIdList);
         Map<Long, List<Scrap>> scrapsByAuctionMap = getScrapListByAuctionMap(auctionIdList);
+        User user = authService.getCurrentUser();
+        List<AuctionListItemDto> resultWithoutSort;
+        if (user == null) {
+            resultWithoutSort = auctionList.stream().map(auction -> {
+                        Long auctionId = auction.getId();
+                        String thumbnailUrl = thumbnailMap.get(auctionId);
+                        List<Bid> bids = bidsByAuctionMap.get(auctionId);
+                        List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
+                        return AuctionListItemDto.builder().id(auction.getId())
+                                .title(auction.getTitle())
+                                .startTime(auction.getStartTime())
+                                .endTime(auction.getEndTime())
+                                .status(auction.getStatus())
+                                .basePrice(auction.getBasePrice())
+                                .thumbnailUrl(thumbnailUrl)
+                                .bidderCount((long) (bids != null ? bids.size() : 0))
+                                .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
+                                .scrapCount((long) (scraps != null ? scraps.size() : 0))
+                                .isScrapped(false)
+                                .build();
+                    }
+            ).toList();
+        } else {
+            Map<Long, Scrap> isScrappedMap = scrapRepository.findAllByUser_Id(user.getId()).stream()
+                    .collect(Collectors.toMap(scrap -> scrap.getAuction().getId(), scrap -> scrap));
+            resultWithoutSort = auctionList.stream().map(auction -> {
+                        Long auctionId = auction.getId();
+                        String thumbnailUrl = thumbnailMap.get(auctionId);
+                        List<Bid> bids = bidsByAuctionMap.get(auctionId);
+                        List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
 
-        List<AuctionListItemDto> resultWithoutSort = auctionList.stream().map(auction -> {
-                    Long auctionId = auction.getId();
-                    String thumbnailUrl = thumbnailMap.get(auctionId);
-                    List<Bid> bids = bidsByAuctionMap.get(auctionId);
-                    List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
-                    return AuctionListItemDto.builder().id(auction.getId())
-                            .title(auction.getTitle())
-                            .startTime(auction.getStartTime())
-                            .endTime(auction.getEndTime())
-                            .status(auction.getStatus())
-                            .basePrice(auction.getBasePrice())
-                            .thumbnailUrl(thumbnailUrl)
-                            .bidderCount((long) (bids != null ? bids.size() : 0))
-                            .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
-                            .scrapCount((long) (scraps != null ? scraps.size() : 0))
-//                        .isScrapped(auctionSearchResult.getIsScrapped()) <- 로그인 구현 이후 기능 추가 필요
-                            .build();
-                }
-        ).toList();
+                        return AuctionListItemDto.builder().id(auction.getId())
+                                .title(auction.getTitle())
+                                .startTime(auction.getStartTime())
+                                .endTime(auction.getEndTime())
+                                .status(auction.getStatus())
+                                .basePrice(auction.getBasePrice())
+                                .thumbnailUrl(thumbnailUrl)
+                                .bidderCount((long) (bids != null ? bids.size() : 0))
+                                .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
+                                .scrapCount((long) (scraps != null ? scraps.size() : 0))
+                                .isScrapped(isScrappedMap.get(auctionId) != null)
+                                .build();
+                    }
+            ).toList();
+        }
 
         return new AuctionSearchResponseDto(auctionCount,
                 this.sortAuctionListItemDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()).stream()
