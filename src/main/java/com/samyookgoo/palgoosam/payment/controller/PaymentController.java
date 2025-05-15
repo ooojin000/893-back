@@ -3,6 +3,7 @@ package com.samyookgoo.palgoosam.payment.controller;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
@@ -32,6 +33,13 @@ public class PaymentController {
         return BaseResponse.success(response);
     }
 
+    @PostMapping("/payments/fail")
+    public BaseResponse<Void> failPayment(@RequestBody PaymentFailRequest request) {
+        paymentService.handlePaymentFailure(request);
+
+        return BaseResponse.success(null);
+    }
+  
     // TODO: 클라이언트와 연동 후 테스트 필요
     @PostMapping("/payments/confirm")
     public BaseResponse<PaymentConfirmResponse> confirmPayment(@RequestBody PaymentConfirmRequest request) {

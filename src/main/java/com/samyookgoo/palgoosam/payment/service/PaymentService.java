@@ -15,6 +15,7 @@ import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
@@ -97,6 +98,15 @@ public class PaymentService {
                 .build();
     }
 
+     public void handlePaymentFailure(PaymentFailRequest request) {
+        Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
+                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+
+        if (payment.getStatus() == PaymentStatus.READY) {
+            payment.setStatus(PaymentStatus.FAILED);
+        }
+    }
+  
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
                 .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
@@ -181,6 +191,7 @@ public class PaymentService {
                 .paymentStatus(PaymentStatus.READY)
                 .build();
     }
+
 
     private String generateOrderNumber(Long auctionId) {
         return String.format("ORD-%d-%s", auctionId, UUID.randomUUID().toString().substring(0, 8));
