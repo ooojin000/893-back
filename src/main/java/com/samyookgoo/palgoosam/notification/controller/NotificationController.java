@@ -51,7 +51,7 @@ public class NotificationController {
 
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<BaseResponse<Void>> deleteNotification(@PathVariable Long notificationId) {
-        notificationService.deleteNorification(notificationId);
+        notificationService.deleteNotification(notificationId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new BaseResponse<>(200, "알림이 정상적으로 삭제되었습니다.", null));
     }
