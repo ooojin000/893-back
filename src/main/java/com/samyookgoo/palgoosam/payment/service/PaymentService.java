@@ -1,11 +1,16 @@
 package com.samyookgoo.palgoosam.payment.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.config.TossPaymentsConfig;
+import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
+import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
@@ -16,20 +21,30 @@ import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.domain.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
+import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+    private final RestTemplate tossRestTemplate;
+    private final TossPaymentsConfig config;
     private final PaymentRepository paymentRepository;
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
+    private final ObjectMapper objectMapper;
     private final DeliveryAddressRepository deliveryAddressRepository;
     private final AuctionImageRepository auctionImageRepository;
 
@@ -80,6 +95,59 @@ public class PaymentService {
                 .customerMobilePhone(request.getPhoneNumber())
                 .finalPrice(request.getFinalPrice())
                 .build();
+    }
+
+    public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request) {
+        Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
+                .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
+
+        if (!payment.getStatus().equals(PaymentStatus.READY)) {
+            throw new IllegalStateException("이미 결제 처리된 주문입니다.");
+        }
+
+        if (payment.getFinalPrice() != request.getAmount()) {
+            throw new IllegalArgumentException("결제 금액이 일치하지 않습니다.");
+        }
+
+        String url = config.getBaseUrl() + "/v1/payments/confirm";
+        try {
+            @SuppressWarnings("unchecked")
+            PaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
+                    PaymentConfirmResponse.class);
+
+            if (tossResponse == null) {
+                payment.setStatus(PaymentStatus.FAILED);
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "토스 응답이 비어 있습니다.");
+            }
+
+            payment.setStatus(PaymentStatus.PAID);
+            payment.setApprovedAt(LocalDateTime.parse(tossResponse.getApprovedAt()));
+
+            return tossResponse;
+
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            payment.setStatus(PaymentStatus.FAILED);
+
+            String responseBody = ex.getResponseBodyAsString();
+            String code = "UNKNOWN";
+            String message = "Toss 결제 오류가 발생했습니다.";
+
+            try {
+                Map<String, Object> errorMap = objectMapper.readValue(responseBody, Map.class);
+                code = errorMap.getOrDefault("code", code).toString();
+                message = errorMap.getOrDefault("message", message).toString();
+            } catch (Exception parseEx) {
+                log.warn("Toss 결제 오류 응답 파싱 실패: {}", parseEx.getMessage());
+            }
+
+            log.error("Toss 결제 승인 실패 - code: {}, message: {}", code, message);
+            throw new ResponseStatusException(ex.getStatusCode(), "[" + code + "] " + message);
+
+        } catch (Exception ex) {
+            payment.setStatus(PaymentStatus.FAILED);
+            log.error("Toss 결제 처리 중 예외 발생", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Toss 결제 오류가 발생했습니다.");
+        }
     }
 
     @Transactional(readOnly = true)

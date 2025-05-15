@@ -68,7 +68,8 @@ public class Payment {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    // TODO: orderId로 네이밍 변경 고려
+    @Column(nullable = false, unique = true)
     private String orderNumber;
 
     @Column
