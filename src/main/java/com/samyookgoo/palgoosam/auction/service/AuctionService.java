@@ -441,8 +441,6 @@ public class AuctionService {
 
 
     public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
-        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getLimit().toString());
-        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getPage().toString());
         List<Auction> auctionList = findAuctionList(auctionSearchRequestDto);
         Long auctionCount = (long) auctionList.size();
 
