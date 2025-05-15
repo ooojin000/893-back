@@ -1,5 +1,4 @@
 package com.samyookgoo.palgoosam.auth;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
@@ -8,24 +7,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.util.List;
-
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtProvider;
 
-    private static final List<String> WHITELIST = List.of(
-            "/", "/login", "/oauth2/", "/error", "/api/search", "/api/auctions/search", "//api/search/suggestions"
-    );
-
     @Override
     protected void doFilterInternal(
             HttpServletRequest req, HttpServletResponse res, FilterChain chain
     ) throws java.io.IOException, jakarta.servlet.ServletException {
-
         String accessToken = null;
-
         if (req.getCookies() != null) {
             for (Cookie cookie : req.getCookies()) {
                 if ("accessToken".equals(cookie.getName())) {
@@ -33,9 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
-
         log.info("Access token: {}", accessToken);
-
         // 토큰이 없거나 검증에 실패하면 401 + 메시지 응답
         if (accessToken == null || !jwtProvider.validateAccessToken(accessToken)) {
             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -44,18 +33,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             res.getWriter().write(body);
             return;
         }
-
         // 검증 성공 시에만 인증 세팅
         String providerId = jwtProvider.getUserProviderIdFromAccessToken(accessToken);
         Authentication auth = jwtProvider.getAuthentication(providerId);
         SecurityContextHolder.getContext().setAuthentication(auth);
-
         chain.doFilter(req, res);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return WHITELIST.stream().anyMatch(path::startsWith);
+        String p = request.getRequestURI();
+        return p.startsWith("/login") || p.startsWith("/oauth2");
     }
 }
