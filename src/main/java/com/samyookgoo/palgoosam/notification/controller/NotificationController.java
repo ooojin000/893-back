@@ -1,7 +1,5 @@
 package com.samyookgoo.palgoosam.notification.controller;
 
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
-import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.notification.dto.NotificationResponseDto;
 import com.samyookgoo.palgoosam.notification.service.NotificationService;
@@ -24,8 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private final AuctionRepository auctionRepository;
-    private final AuctionImageRepository auctionImageRepository;
 
     @PostMapping("/fcm-token")
     public ResponseEntity<BaseResponse> saveFcmToken(@RequestBody String fcmToken) {
