@@ -30,7 +30,6 @@ import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
-import com.samyookgoo.palgoosam.user.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -60,7 +59,6 @@ public class AuctionService {
     private final ScrapRepository scrapRepository;
     private final FileStore fileStore;
     private final BidRepository bidRepository;
-    private final UserService userService;
     private final AuthService authService;
 
     public List<Long> getAuctionIdsByAuctions(List<Auction> auctions) {
