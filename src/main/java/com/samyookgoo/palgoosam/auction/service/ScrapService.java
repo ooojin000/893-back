@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.auction.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
@@ -19,11 +20,11 @@ public class ScrapService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final ScrapRepository scrapRepository;
+    private final AuthService authService;
 
     @Transactional
     public boolean addScrap(Long auctionId) {
-        User user = userRepository.findById(1L)
-                .orElseThrow(() -> new EntityNotFoundException("사용자 없음"));
+        User user = authService.getCurrentUser();
 
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new EntityNotFoundException("경매 상품 없음"));
@@ -41,8 +42,7 @@ public class ScrapService {
 
     @Transactional
     public boolean removeScrap(Long auctionId) {
-        User user = userRepository.findById(1L)
-                .orElseThrow(() -> new EntityNotFoundException("사용자 없음"));
+        User user = authService.getCurrentUser();
 
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new EntityNotFoundException("경매 상품 없음"));
