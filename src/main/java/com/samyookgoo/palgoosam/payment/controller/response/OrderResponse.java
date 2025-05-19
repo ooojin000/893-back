@@ -1,8 +1,8 @@
 package com.samyookgoo.palgoosam.payment.controller.response;
 
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
-import com.samyookgoo.palgoosam.payment.domain.PaymentMethod;
 import com.samyookgoo.palgoosam.payment.domain.PaymentStatus;
+import com.samyookgoo.palgoosam.payment.domain.PaymentType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,6 +15,6 @@ public class OrderResponse {
     private String auctionThumbnail;
     private Integer finalPrice;
     private DeliveryAddressResponseDto deliveryAddress;
-    private PaymentMethod paymentMethod;
+    private PaymentType paymentType;
     private PaymentStatus paymentStatus;
 }

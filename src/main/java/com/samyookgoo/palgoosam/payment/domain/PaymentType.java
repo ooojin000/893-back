@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.payment.domain;
 
-public enum PaymentMethod {
+public enum PaymentType {
     CREDIT_CARD,
     NAVER_PAY,
     KAKAO_PAY,

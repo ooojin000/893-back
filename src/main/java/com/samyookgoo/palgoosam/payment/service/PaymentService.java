@@ -185,7 +185,7 @@ public class PaymentService {
                 .auctionThumbnail(image != null ? image.getUrl() : null)
                 .finalPrice(winningBid.getPrice())
                 .deliveryAddress(DeliveryAddressResponseDto.of(deliveryAddress))
-                .paymentMethod(null) // 아직 선택되지 않음
+                .paymentType(null) // 아직 선택되지 않음
                 .paymentStatus(PaymentStatus.READY)
                 .build();
     }

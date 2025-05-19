@@ -80,8 +80,8 @@ public class Payment {
     private PaymentStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentMethod method;
+    @Column
+    private PaymentType type;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
