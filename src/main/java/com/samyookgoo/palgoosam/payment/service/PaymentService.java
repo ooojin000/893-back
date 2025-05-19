@@ -73,6 +73,7 @@ public class PaymentService {
                 .seller(auction.getSeller())
                 .auction(auction)
                 .recipientName(request.getRecipientName())
+                .recipientEmail(buyer.getEmail())
                 .phoneNumber(request.getPhoneNumber())
                 .addressLine1(request.getAddressLine1())
                 .addressLine2(request.getAddressLine2())
@@ -128,9 +129,13 @@ public class PaymentService {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "토스 응답이 비어 있습니다.");
             }
 
+            payment.setType(request.getPaymentType());
             payment.setStatus(PaymentStatus.PAID);
             payment.setApprovedAt(OffsetDateTime.parse(tossResponse.getApprovedAt()).toLocalDateTime());
 
+            tossResponse.setCustomerEmail(payment.getRecipientEmail());
+            tossResponse.setCustomerName(payment.getRecipientName());
+            tossResponse.setCustomerMobilePhone(payment.getPhoneNumber());
             return tossResponse;
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {

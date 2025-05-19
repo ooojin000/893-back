@@ -50,6 +50,9 @@ public class Payment {
     private String recipientName;
 
     @Column(nullable = false)
+    private String recipientEmail;
+
+    @Column(nullable = false)
     private String phoneNumber;
 
     @Column(nullable = false)
