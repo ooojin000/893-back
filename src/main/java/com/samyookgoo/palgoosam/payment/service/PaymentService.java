@@ -8,20 +8,19 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.config.TossPaymentsConfig;
-import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
+import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.domain.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -29,10 +28,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
@@ -121,7 +120,7 @@ public class PaymentService {
             }
 
             payment.setStatus(PaymentStatus.PAID);
-            payment.setApprovedAt(LocalDateTime.parse(tossResponse.getApprovedAt()));
+            payment.setApprovedAt(OffsetDateTime.parse(tossResponse.getApprovedAt()).toLocalDateTime());
 
             return tossResponse;
 
