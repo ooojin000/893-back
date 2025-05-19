@@ -48,6 +48,7 @@ public class PaymentService {
     private final DeliveryAddressRepository deliveryAddressRepository;
     private final AuctionImageRepository auctionImageRepository;
 
+    @Transactional
     public PaymentResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
@@ -67,33 +68,35 @@ public class PaymentService {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
 
-        String orderNumber = generateOrderNumber(auctionId);
-        Payment payment = Payment.builder()
-                .buyer(buyer)
-                .seller(auction.getSeller())
-                .auction(auction)
-                .recipientName(request.getRecipientName())
-                .recipientEmail(buyer.getEmail())
-                .phoneNumber(request.getPhoneNumber())
-                .addressLine1(request.getAddressLine1())
-                .addressLine2(request.getAddressLine2())
-                .zipCode(request.getZipCode())
-                .finalPrice(winningBid.getPrice())
-                .orderNumber(orderNumber)
-                .status(PaymentStatus.READY)
-                .build();
-
-        paymentRepository.save(payment);
+        Payment payment = paymentRepository.findByAuctionIdAndStatus(auctionId, PaymentStatus.READY)
+                .orElseGet(() -> {
+                    String orderNumber = generateOrderNumber(auctionId);
+                    Payment newPayment = Payment.builder()
+                            .buyer(buyer)
+                            .seller(auction.getSeller())
+                            .auction(auction)
+                            .recipientName(request.getRecipientName())
+                            .recipientEmail(buyer.getEmail())
+                            .phoneNumber(request.getPhoneNumber())
+                            .addressLine1(request.getAddressLine1())
+                            .addressLine2(request.getAddressLine2())
+                            .zipCode(request.getZipCode())
+                            .finalPrice(winningBid.getPrice())
+                            .orderNumber(orderNumber)
+                            .status(PaymentStatus.READY)
+                            .build();
+                    return paymentRepository.save(newPayment);
+                });
 
         return PaymentResponse.builder()
-                .orderId(orderNumber)
-                .orderName(auction.getTitle())
+                .orderId(payment.getOrderNumber())
+                .orderName(payment.getOrderNumber())
                 .successUrl(request.getSuccessUrl())
                 .failUrl(request.getFailUrl())
-                .customerEmail(buyer.getEmail())
-                .customerName(buyer.getName())
-                .customerMobilePhone(request.getPhoneNumber())
-                .finalPrice(request.getFinalPrice())
+                .customerEmail(payment.getRecipientEmail())
+                .customerName(payment.getRecipientName())
+                .customerMobilePhone(payment.getPhoneNumber())
+                .finalPrice(payment.getFinalPrice())
                 .build();
     }
 
