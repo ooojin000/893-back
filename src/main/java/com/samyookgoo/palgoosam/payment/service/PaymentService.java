@@ -13,6 +13,7 @@ import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
@@ -66,7 +67,7 @@ public class PaymentService {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
 
-        String orderNumber = generateOrderNumber(auctionId);
+//        String orderNumber = generateOrderNumber(auctionId); TODO 추후 삭제
         Payment payment = Payment.builder()
                 .buyer(buyer)
                 .seller(auction.getSeller())
@@ -77,7 +78,8 @@ public class PaymentService {
                 .addressLine2(request.getAddressLine2())
                 .zipCode(request.getZipCode())
                 .finalPrice(winningBid.getPrice())
-                .orderNumber(orderNumber)
+                .orderNumber(request.getOrderId())
+                .paymentKey(request.getPaymentKey())
                 .status(PaymentStatus.READY)
                 .method(request.getPaymentMethod())
                 .build();
@@ -85,7 +87,7 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         return PaymentResponse.builder()
-                .orderId(orderNumber)
+                .orderId(request.getOrderId()) // TODO 추후 삭제. orderId 는 프론트쪽에서 생성하는 것
                 .orderName(auction.getTitle())
                 .successUrl(request.getSuccessUrl())
                 .failUrl(request.getFailUrl())
@@ -96,6 +98,15 @@ public class PaymentService {
                 .build();
     }
 
+     public void handlePaymentFailure(PaymentFailRequest request) {
+        Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
+                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+
+        if (payment.getStatus() == PaymentStatus.READY) {
+            payment.setStatus(PaymentStatus.FAILED);
+        }
+    }
+  
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
                 .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
@@ -180,6 +191,7 @@ public class PaymentService {
                 .paymentStatus(PaymentStatus.READY)
                 .build();
     }
+
 
     private String generateOrderNumber(Long auctionId) {
         return String.format("ORD-%d-%s", auctionId, UUID.randomUUID().toString().substring(0, 8));

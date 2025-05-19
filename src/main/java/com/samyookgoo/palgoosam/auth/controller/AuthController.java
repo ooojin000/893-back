@@ -8,6 +8,7 @@ import com.samyookgoo.palgoosam.user.repository.UserJwtTokenRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,14 +16,13 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -55,11 +55,14 @@ public class AuthController {
         String newRefreshToken = jwtProvider.refreshRefreshToken(providerId);
 
         User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
 
         UserJwtToken userJwtToken = userJwtTokenRepository.getReferenceById(user.getId());
 
         // 디비 검증
-        if(!userJwtToken.getRefreshToken().equals(refreshToken)) {
+        if (!userJwtToken.getRefreshToken().equals(refreshToken)) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "리프레시 토큰이 유효하지 않습니다."));
@@ -91,7 +94,9 @@ public class AuthController {
     @PostMapping("/auth/logout")
     public ResponseEntity<?> logout(HttpServletRequest req, HttpServletResponse res) {
         User user = authService.getCurrentUser();
-
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
         // 쿠키 삭제
         ResponseCookie deleteAccess = ResponseCookie.from("accessToken", "")
                 .httpOnly(true).secure(true).path("/")

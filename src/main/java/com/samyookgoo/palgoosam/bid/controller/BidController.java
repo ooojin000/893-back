@@ -11,6 +11,7 @@ import com.samyookgoo.palgoosam.bid.service.SseService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,9 +39,11 @@ public class BidController {
     public BaseResponse<BidResponse> placeBid(@PathVariable Long auctionId,
                                               @Valid @RequestBody BidRequest request) {// TODO: 인증 사용자 연동 시 수정 필요
 
-        User currentUser = authService.getCurrentUser();
-
-        BidEventResponse response = bidService.placeBid(auctionId, currentUser.getId(), request.getPrice());
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
+        BidEventResponse response = bidService.placeBid(auctionId, user.getId(), request.getPrice());
         sseService.broadcastBidUpdate(auctionId, response);
 
         return BaseResponse.success(response.getBid());
@@ -50,9 +53,11 @@ public class BidController {
     @PatchMapping("/{auctionId}/bids/{bidId}")
     public BaseResponse<String> cancelBid(@PathVariable Long auctionId, @PathVariable Long bidId) {
 
-        User currentUser = authService.getCurrentUser();
-
-        BidEventResponse response = bidService.cancelBid(auctionId, bidId, currentUser);
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
+        BidEventResponse response = bidService.cancelBid(auctionId, bidId, user);
         sseService.broadcastBidUpdate(auctionId, response);
 
         return BaseResponse.success("입찰 취소 완료");

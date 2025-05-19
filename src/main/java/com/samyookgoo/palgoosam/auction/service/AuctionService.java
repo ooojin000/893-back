@@ -29,7 +29,6 @@ import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,6 +42,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,7 +55,6 @@ public class AuctionService {
     private final AuctionImageRepository auctionImageRepository;
     private final AuctionRepository auctionRepository;
     private final CategoryRepository categoryRepository;
-    private final UserRepository userRepository;
     private final ScrapRepository scrapRepository;
     private final FileStore fileStore;
     private final BidRepository bidRepository;
@@ -96,6 +95,9 @@ public class AuctionService {
     @Transactional
     public AuctionCreateResponse createAuction(AuctionCreateRequest request, List<ResultFileStore> resultFileStores) {
         User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+        }
 
         Category category = categoryRepository.findById(request.getCategory().getId())
                 .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
@@ -162,8 +164,6 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
 
-        boolean isSeller = auction.getSeller().getId().equals(user.getId());
-
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
 
         List<AuctionImageResponse> imageResponses = images.stream()
@@ -175,30 +175,51 @@ public class AuctionService {
                 .orElse(null);
 
         CategoryResponse categoryResponse = CategoryResponse.from(auction.getCategory());
-
-        String maskedEmail = maskEmail(auction.getSeller().getEmail());
-
-        boolean isScrap = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
+        String maskedEmail = maskEmail(auction.getSeller().getEmail());
+        if (user != null) {
+            boolean isScrap = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
+            boolean isSeller = auction.getSeller().getId().equals(user.getId());
 
-        return AuctionDetailResponse.builder()
-                .auctionId(auction.getId())
-                .categoryId(auction.getCategory().getId())
-                .title(auction.getTitle())
-                .description(auction.getDescription())
-                .sellerEmailMasked(maskedEmail)
-                .status(auction.getStatus())
-                .itemCondition(auction.getItemCondition())
-                .basePrice(auction.getBasePrice())
-                .isScrap(isScrap)
-                .scrapCount(scrapCount)
-                .isSeller(isSeller)
-                .category(categoryResponse)
-                .startTime(auction.getStartTime())
-                .endTime(auction.getEndTime())
-                .mainImage(mainImage)
-                .images(imageResponses)
-                .build();
+            return AuctionDetailResponse.builder()
+                    .auctionId(auction.getId())
+                    .categoryId(auction.getCategory().getId())
+                    .title(auction.getTitle())
+                    .description(auction.getDescription())
+                    .sellerEmailMasked(maskedEmail)
+                    .status(auction.getStatus())
+                    .itemCondition(auction.getItemCondition())
+                    .basePrice(auction.getBasePrice())
+                    .isScrap(isScrap)
+                    .scrapCount(scrapCount)
+                    .isSeller(isSeller)
+                    .category(categoryResponse)
+                    .startTime(auction.getStartTime())
+                    .endTime(auction.getEndTime())
+                    .mainImage(mainImage)
+                    .images(imageResponses)
+                    .build();
+        } else {
+            return AuctionDetailResponse.builder()
+                    .auctionId(auction.getId())
+                    .categoryId(auction.getCategory().getId())
+                    .title(auction.getTitle())
+                    .description(auction.getDescription())
+                    .sellerEmailMasked(maskedEmail)
+                    .status(auction.getStatus())
+                    .itemCondition(auction.getItemCondition())
+                    .basePrice(auction.getBasePrice())
+                    .isScrap(false)
+                    .scrapCount(scrapCount)
+                    .isSeller(false)
+                    .category(categoryResponse)
+                    .startTime(auction.getStartTime())
+                    .endTime(auction.getEndTime())
+                    .mainImage(mainImage)
+                    .images(imageResponses)
+                    .build();
+        }
+
     }
 
     @Transactional(readOnly = true)
@@ -365,7 +386,7 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
 
-        User userId = authService.getCurrentUser();
+        User user = authService.getCurrentUser();
 
         Long detailCategoryId = auction.getCategory().getId();
 
@@ -404,7 +425,7 @@ public class AuctionService {
                 .map(a -> RelatedAuctionResponse.of(
                         a,
                         auctionIdToImageUrl.get(a.getId()),
-                        userId.getId(),
+                        user != null ? user.getId() : null,
                         scrapRepository,
                         bidRepository))
                 .collect(Collectors.toList());
@@ -443,8 +464,6 @@ public class AuctionService {
 
 
     public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
-        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getLimit().toString());
-        log.info("다음 조건을 검색: {}", auctionSearchRequestDto.getPage().toString());
         List<Auction> auctionList = findAuctionList(auctionSearchRequestDto);
         Long auctionCount = (long) auctionList.size();
 
