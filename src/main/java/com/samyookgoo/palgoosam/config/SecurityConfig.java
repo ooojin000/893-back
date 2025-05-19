@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auctions/**").permitAll()
                         .requestMatchers("/", "/login", "/oauth2/**", "/error").permitAll()
                         .requestMatchers("/api/user-info").authenticated()
                         .anyRequest().authenticated()
