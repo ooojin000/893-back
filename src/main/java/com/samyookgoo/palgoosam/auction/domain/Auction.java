@@ -1,6 +1,5 @@
 package com.samyookgoo.palgoosam.auction.domain;
 
-import com.samyookgoo.palgoosam.auction.category.domain.Category;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

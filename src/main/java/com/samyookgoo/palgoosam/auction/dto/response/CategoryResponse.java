@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto.response;
 
-import com.samyookgoo.palgoosam.auction.category.domain.Category;
+import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.dto.request.CategoryRequest;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;

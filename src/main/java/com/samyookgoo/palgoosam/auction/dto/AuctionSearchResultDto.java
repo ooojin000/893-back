@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
-import com.samyookgoo.palgoosam.auction.category.domain.Category;
+import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.user.domain.User;
 import java.time.LocalDateTime;
 import lombok.Getter;

@@ -1,8 +1,8 @@
-package com.samyookgoo.palgoosam.auction.category.service;
+package com.samyookgoo.palgoosam.auction.service;
 
-import com.samyookgoo.palgoosam.auction.category.domain.Category;
-import com.samyookgoo.palgoosam.auction.category.dto.CategoryResponseDto;
-import com.samyookgoo.palgoosam.auction.category.repository.CategoryRepository;
+import com.samyookgoo.palgoosam.auction.domain.Category;
+import com.samyookgoo.palgoosam.auction.dto.response.CategoryResponseDto;
+import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;

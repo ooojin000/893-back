@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auction.category.dto;
+package com.samyookgoo.palgoosam.auction.dto.response;
 
 import java.util.List;
 import lombok.Getter;

@@ -1,10 +1,9 @@
 package com.samyookgoo.palgoosam.auction.service;
 
-import com.samyookgoo.palgoosam.auction.category.domain.Category;
-import com.samyookgoo.palgoosam.auction.category.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
+import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
@@ -22,6 +21,7 @@ import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
