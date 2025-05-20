@@ -15,6 +15,9 @@ import com.samyookgoo.palgoosam.user.dto.UserBidsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserInfoResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserPaymentsResponseDto;
 import com.samyookgoo.palgoosam.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "회원", description = "회원 관련 정보 조회 API")
 public class UserController {
     private final AuthService authService;
     private final UserService userService;
@@ -36,6 +40,11 @@ public class UserController {
     private final BidService bidService;
     private final AuctionService auctionService;
 
+    @Operation(
+            summary = "회원 기본 정보 조회",
+            description = "로그인한 사용자의 이메일, 이름, 프로필 이미지, 소셜 로그인 제공자 정보를 반환합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "사용자 정보 조회 성공")
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @GetMapping("/user-info")
     public ResponseEntity<BaseResponse<UserInfoResponseDto>> getUserInfo() {
@@ -55,6 +64,11 @@ public class UserController {
                 .body(BaseResponse.success("사용자 정보가 성공적으로 조회됐습니다.", dto));
     }
 
+    @Operation(
+            summary = "회원 입찰 목록 조회",
+            description = "로그인한 사용자가 입찰에 참여한 경매 내역을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "입찰 목록 조회 성공")
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @GetMapping("/bids")
     public ResponseEntity<BaseResponse<List<UserBidsResponseDto>>> getUserBids() {
@@ -78,6 +92,11 @@ public class UserController {
                 .body(BaseResponse.success("내 입찰이 성공적으로 조회됐습니다.", dtos));
     }
 
+    @Operation(
+            summary = "회원 등록 경매 목록 조회",
+            description = "로그인한 사용자가 등록한 경매 상품 목록을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "등록 경매 조회 성공")
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @GetMapping("/auctions")
     public ResponseEntity<BaseResponse<List<UserAuctionsResponseDto>>> getUserAuctions() {
@@ -101,6 +120,11 @@ public class UserController {
                 .body(BaseResponse.success("내 경매가 성공적으로 조회됐습니다.", dtos));
     }
 
+    @Operation(
+            summary = "회원 스크랩 목록 조회",
+            description = "사용자가 스크랩한(찜한) 경매 목록을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "스크랩 경매 조회 성공")
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @GetMapping("/scraps")
     public ResponseEntity<BaseResponse<List<UserAuctionsResponseDto>>> getUserScraps() {
@@ -125,6 +149,11 @@ public class UserController {
                 .body(BaseResponse.success("스크랩 경매가 성공적으로 조회됐습니다.", dtoList));
     }
 
+    @Operation(
+            summary = "회원 결제 내역 조회",
+            description = "로그인한 사용자의 결제 내역을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "결제 내역 조회 성공")
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @GetMapping("/payments")
     public ResponseEntity<BaseResponse<List<UserPaymentsResponseDto>>> getUserPayments() {

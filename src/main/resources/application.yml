@@ -58,3 +58,7 @@ debug: true
 
 file:
   dir: ${IMAGES}
+
+springdoc:
+  swagger-ui:
+    path: /swagger

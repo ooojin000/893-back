@@ -60,7 +60,10 @@ public class Auction {
     @Column(nullable = false, length = 20)
     private ItemCondition itemCondition;
 
+    @Column(nullable = false)
     private LocalDateTime startTime;
+
+    @Column(nullable = false)
     private LocalDateTime endTime;
 
     @Enumerated(EnumType.STRING)
