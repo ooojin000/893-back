@@ -24,6 +24,14 @@ public class PaymentCreateRequest {
     @Pattern(regexp = "^\\d{5}$", message = "우편번호는 숫자 5자리여야 합니다.")
     private String zipCode;
 
+    @NotNull(message = "경매 상품 금액은 필수입니다.")
+    @Min(value = 0, message = "경매 상품 금액은 0원 이상이어야 합니다.")
+    private Integer itemPrice;
+
+    @NotNull(message = "배송비는 필수입니다.")
+    @Min(value = 0, message = "배송비는 0원 이상이어야 합니다.")
+    private Integer deliveryFee;
+
     @NotNull(message = "결제 금액은 필수입니다.")
     @Min(value = 0, message = "결제 금액은 0원 이상이어야 합니다.")
     private Integer finalPrice;

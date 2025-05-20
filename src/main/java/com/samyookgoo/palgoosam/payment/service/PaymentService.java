@@ -81,7 +81,9 @@ public class PaymentService {
                             .addressLine1(request.getAddressLine1())
                             .addressLine2(request.getAddressLine2())
                             .zipCode(request.getZipCode())
-                            .finalPrice(winningBid.getPrice())
+                            .itemPrice(request.getItemPrice())
+                            .deliveryFee(request.getDeliveryFee())
+                            .finalPrice(winningBid.getPrice() + request.getDeliveryFee())
                             .orderNumber(orderNumber)
                             .status(PaymentStatus.READY)
                             .build();
@@ -181,20 +183,21 @@ public class PaymentService {
         DeliveryAddress deliveryAddress = deliveryAddressRepository.findDefaultByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("기본 배송지가 없습니다."));
 
-        String orderNumber = generateOrderNumber(auctionId);
-
         AuctionImage image = auctionImageRepository.findMainImageByAuctionId(auctionId)
                 .orElseThrow(() -> new IllegalStateException("해당 경매에 대한 대표 이미지가 존재하지 않습니다."));
 
+        int itemPrice = winningBid.getPrice();
+        int deliveryFee = itemPrice >= 50000 ? 0 : 2500; // TODO: 추후 리팩토링 필요
+        int finalPrice = itemPrice + deliveryFee;
+
         return OrderResponse.builder()
-                .orderId(orderNumber)
                 .auctionId(auction.getId())
                 .auctionTitle(auction.getTitle())
                 .auctionThumbnail(image != null ? image.getUrl() : null)
-                .finalPrice(winningBid.getPrice())
+                .itemPrice(itemPrice)
+                .deliveryFee(deliveryFee)
+                .finalPrice(finalPrice)
                 .deliveryAddress(DeliveryAddressResponseDto.of(deliveryAddress))
-                .paymentType(null) // 아직 선택되지 않음
-                .paymentStatus(PaymentStatus.READY)
                 .build();
     }
 

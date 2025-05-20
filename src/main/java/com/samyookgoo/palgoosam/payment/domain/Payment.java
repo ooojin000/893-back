@@ -64,6 +64,12 @@ public class Payment {
     private String zipCode;
 
     @Column(nullable = false)
+    private Integer itemPrice;
+
+    @Column(nullable = false)
+    private Integer deliveryFee;
+
+    @Column(nullable = false)
     private Integer finalPrice;
 
     private LocalDateTime approvedAt;
