@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auction.dto;
+package com.samyookgoo.palgoosam.auction.service.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +13,7 @@ import lombok.ToString;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuctionSearchParam {
+public class AuctionSearchDto {
     private String keyword;
 
     private Long categoryId;
