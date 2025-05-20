@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.payment.domain;
+package com.samyookgoo.palgoosam.payment.constant;
 
 public enum PaymentType {
     CREDIT_CARD,

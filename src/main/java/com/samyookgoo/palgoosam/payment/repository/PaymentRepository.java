@@ -1,7 +1,7 @@
 package com.samyookgoo.palgoosam.payment.repository;
 
+import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
-import com.samyookgoo.palgoosam.payment.domain.PaymentStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

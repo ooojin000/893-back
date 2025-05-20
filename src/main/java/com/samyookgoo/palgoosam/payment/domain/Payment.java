@@ -1,6 +1,8 @@
 package com.samyookgoo.palgoosam.payment.domain;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
+import com.samyookgoo.palgoosam.payment.constant.PaymentType;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
