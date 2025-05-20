@@ -1,4 +1,4 @@
-package com.samyookgoo.palgoosam.auction.domain;
+package com.samyookgoo.palgoosam.auction.category.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
