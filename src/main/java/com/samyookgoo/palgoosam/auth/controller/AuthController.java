@@ -6,6 +6,10 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.domain.UserJwtToken;
 import com.samyookgoo.palgoosam.user.repository.UserJwtTokenRepository;
 import io.jsonwebtoken.JwtException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -27,11 +31,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
+@Tag(name = "인증", description = "JWT 인증 및 로그아웃 관련 API")
 public class AuthController {
     private final JwtTokenProvider jwtProvider;
     private final UserJwtTokenRepository userJwtTokenRepository;
     private final AuthService authService;
 
+    @Operation(
+            summary = "액세스 토큰 갱신",
+            description = "리프레시 토큰이 유효한 경우 새로운 액세스 토큰과 리프레시 토큰을 발급합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
+            @ApiResponse(responseCode = "401", description = "리프레시 토큰이 유효하지 않거나 사용자 조회 실패")
+    })
     @PostMapping("/auth/refresh")
     public ResponseEntity<?> refreshAccessToken(
             @CookieValue("refreshToken") String refreshToken
@@ -90,6 +103,14 @@ public class AuthController {
                 .build();
     }
 
+    @Operation(
+            summary = "로그아웃",
+            description = "로그인한 사용자의 토큰을 만료시키고, 관련된 쿠키와 DB 정보를 삭제합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없음")
+    })
     @Transactional
     @PostMapping("/auth/logout")
     public ResponseEntity<?> logout(HttpServletRequest req, HttpServletResponse res) {

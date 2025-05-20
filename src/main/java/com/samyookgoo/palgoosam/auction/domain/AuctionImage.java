@@ -33,10 +33,10 @@ public class AuctionImage {
     @JoinColumn(name = "auction_id", nullable = false)
     private Auction auction;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String originalName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String storeName;
 
 //    @Column(nullable = false)
