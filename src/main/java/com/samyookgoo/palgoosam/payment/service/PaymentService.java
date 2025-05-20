@@ -19,6 +19,7 @@ import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
+import com.samyookgoo.palgoosam.payment.policy.DeliveryPolicy;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import java.time.OffsetDateTime;
@@ -47,6 +48,8 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final DeliveryAddressRepository deliveryAddressRepository;
     private final AuctionImageRepository auctionImageRepository;
+    private final DeliveryPolicy deliveryPolicy;
+
 
     @Transactional
     public PaymentResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
@@ -187,7 +190,7 @@ public class PaymentService {
                 .orElseThrow(() -> new IllegalStateException("해당 경매에 대한 대표 이미지가 존재하지 않습니다."));
 
         int itemPrice = winningBid.getPrice();
-        int deliveryFee = itemPrice >= 50000 ? 0 : 2500; // TODO: 추후 리팩토링 필요
+        int deliveryFee = deliveryPolicy.calculate(itemPrice);
         int finalPrice = itemPrice + deliveryFee;
 
         return OrderResponse.builder()
