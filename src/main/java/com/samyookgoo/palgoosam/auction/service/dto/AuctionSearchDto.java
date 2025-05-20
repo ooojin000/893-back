@@ -38,7 +38,7 @@ public class AuctionSearchDto {
 
     @Min(5)
     @NotNull
-    private Integer limit = 10;
+    private Integer limit = 12;
 
     @NotNull
     private String sortBy = "latest";
