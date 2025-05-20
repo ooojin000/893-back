@@ -1,8 +1,8 @@
 package com.samyookgoo.palgoosam.auction.service;
 
+import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
-import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;

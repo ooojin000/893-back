@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
-import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
+import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

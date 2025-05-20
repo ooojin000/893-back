@@ -1,7 +1,7 @@
 package com.samyookgoo.palgoosam.auction.repository;
 
+import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.dto.AuctionSearchParam;
 import java.time.LocalDateTime;
 import java.util.List;

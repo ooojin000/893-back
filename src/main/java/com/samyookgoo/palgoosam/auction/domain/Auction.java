@@ -1,5 +1,7 @@
 package com.samyookgoo.palgoosam.auction.domain;
 
+import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
+import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
