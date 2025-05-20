@@ -35,7 +35,7 @@ public class AuctionSearchRequestDto {
     private Long detailCategoryId;
 
     private Integer page = 1;
-    private Integer limit = 10;
+    private Integer limit = 12;
 
     public AuctionSearchParam toAuctionSearchParam() {
         Long categoryId = this.checkCategoryId();
