@@ -4,15 +4,15 @@ import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
-import com.samyookgoo.palgoosam.auction.dto.AuctionListItemDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResultDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionImageRequest;
+import com.samyookgoo.palgoosam.auction.dto.request.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionUpdateRequest;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionCreateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionDetailResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionImageResponse;
+import com.samyookgoo.palgoosam.auction.dto.response.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.CategoryResponse;
@@ -480,14 +480,14 @@ public class AuctionService {
         Map<Long, List<Bid>> bidsByAuctionMap = getBidListByAuctionMap(auctionIdList);
         Map<Long, List<Scrap>> scrapsByAuctionMap = getScrapListByAuctionMap(auctionIdList);
         User user = authService.getCurrentUser();
-        List<AuctionListItemDto> resultWithoutSort;
+        List<AuctionSearchResultDto> resultWithoutSort;
         if (user == null) {
             resultWithoutSort = auctionList.stream().map(auction -> {
                         Long auctionId = auction.getId();
                         String thumbnailUrl = thumbnailMap.get(auctionId);
                         List<Bid> bids = bidsByAuctionMap.get(auctionId);
                         List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
-                        return AuctionListItemDto.builder().id(auction.getId())
+                        return AuctionSearchResultDto.builder().id(auction.getId())
                                 .title(auction.getTitle())
                                 .startTime(auction.getStartTime())
                                 .endTime(auction.getEndTime())
@@ -510,7 +510,7 @@ public class AuctionService {
                         List<Bid> bids = bidsByAuctionMap.get(auctionId);
                         List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
 
-                        return AuctionListItemDto.builder().id(auction.getId())
+                        return AuctionSearchResultDto.builder().id(auction.getId())
                                 .title(auction.getTitle())
                                 .startTime(auction.getStartTime())
                                 .endTime(auction.getEndTime())
@@ -535,7 +535,7 @@ public class AuctionService {
 
     private List<Auction> findAuctionList(AuctionSearchRequestDto auctionSearchRequestDto) {
         return auctionRepository.findAllWithDetails(
-                auctionSearchRequestDto.toAuctionSearchParam());
+                auctionSearchRequestDto.toAuctionSearchDto());
     }
 
     private List<Long> getAuctionIdList(List<Auction> auctionList) {
@@ -566,21 +566,21 @@ public class AuctionService {
                 .collect(Collectors.groupingBy(scrap -> scrap.getAuction().getId()));
     }
 
-    private List<AuctionListItemDto> sortAuctionListItemDtoList(
-            List<AuctionListItemDto> auctionSearchResponseDtoList, String sortBy
+    private List<AuctionSearchResultDto> sortAuctionListItemDtoList(
+            List<AuctionSearchResultDto> auctionSearchResponseDtoList, String sortBy
     ) {
         if (sortBy.equals("price_asc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionListItemDto::getBasePrice)).toList();
+                    .sorted(Comparator.comparing(AuctionSearchResultDto::getBasePrice)).toList();
         } else if (sortBy.equals("price_desc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionListItemDto::getBasePrice).reversed()).toList();
+                    .sorted(Comparator.comparing(AuctionSearchResultDto::getBasePrice).reversed()).toList();
         } else if (sortBy.equals("scrap_count_desc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionListItemDto::getScrapCount).reversed()).toList();
+                    .sorted(Comparator.comparing(AuctionSearchResultDto::getScrapCount).reversed()).toList();
         } else if (sortBy.equals("bidder_count_desc")) {
             return auctionSearchResponseDtoList.stream()
-                    .sorted(Comparator.comparing(AuctionListItemDto::getBidderCount).reversed()).toList();
+                    .sorted(Comparator.comparing(AuctionSearchResultDto::getBidderCount).reversed()).toList();
         }
 
         return auctionSearchResponseDtoList;

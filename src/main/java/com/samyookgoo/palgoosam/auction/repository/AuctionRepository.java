@@ -2,7 +2,7 @@ package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchParam;
+import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +58,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                      )
             ORDER BY a.created_at DESC
             """, nativeQuery = true)
-    List<Auction> findAllWithDetails(@Param("request") AuctionSearchParam auctionSearchParam);
+    List<Auction> findAllWithDetails(@Param("request") AuctionSearchDto auctionSearchDto);
 
     Optional<Auction> findById(Long id);
 
