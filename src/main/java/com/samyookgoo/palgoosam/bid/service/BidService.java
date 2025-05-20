@@ -12,7 +12,11 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,7 +41,7 @@ public class BidService {
                 ));
     }
 
-    public BidListResponse getBidsByAuctionId(Long auctionId) {
+    public BidListResponse getBidsByAuctionId(Long auctionId, User user) {
         if (!auctionRepository.existsById(auctionId)) {
             throw new NoSuchElementException("해당 경매를 찾을 수 없습니다.");
         }
@@ -54,6 +58,26 @@ public class BidService {
                 .map(this::mapToResponse)
                 .toList();
 
+        BidResponse userBid = null;
+
+        if (user != null) {
+            Boolean alreadyCancelled = bidRepository.existsByAuctionIdAndBidderIdAndIsDeletedTrue(
+                    auctionId, user.getId()
+            );
+
+            if (!alreadyCancelled) {
+                LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+
+                Optional<Bid> recentUserBid = allBids.stream()
+                        .filter(b -> !b.getIsDeleted())
+                        .filter(b -> b.getBidder().getId().equals(user.getId()))
+                        .filter(b -> b.getCreatedAt().isAfter(oneMinuteAgo))
+                        .findFirst();
+
+                userBid = recentUserBid.map(this::mapToResponse).orElse(null);
+            }
+        }
+
         int totalBid = allBids.size();
         int totalBidder = (int) allBids.stream()
                 .map(b -> b.getBidder().getId())
@@ -64,6 +88,7 @@ public class BidService {
                 .auctionId(auctionId)
                 .totalBid(totalBid)
                 .totalBidder(totalBidder)
+                .userBid(userBid)
                 .bids(bids)
                 .cancelledBids(cancelledBids)
                 .build();

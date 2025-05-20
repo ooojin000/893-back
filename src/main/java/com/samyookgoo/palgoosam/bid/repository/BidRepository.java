@@ -1,10 +1,9 @@
 package com.samyookgoo.palgoosam.bid.repository;
 
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import java.util.List;
 import java.util.Optional;
-
-import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,12 +11,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface BidRepository extends JpaRepository<Bid, Long> {
     @Query("""
-        SELECT b.auction.id AS auctionId,
-               MAX(b.price)     AS maxPrice
-        FROM Bid b
-        WHERE b.auction.id IN :auctionIds
-        GROUP BY b.auction.id
-    """)
+                SELECT b.auction.id AS auctionId,
+                       MAX(b.price)     AS maxPrice
+                FROM Bid b
+                WHERE b.auction.id IN :auctionIds
+                GROUP BY b.auction.id
+            """)
     List<AuctionMaxBid> findMaxBidPricesByAuctionIds(@Param("auctionIds") List<Long> auctionIds);
 
     List<Bid> findAllByBidder_Id(Long bidderId);
@@ -46,4 +45,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     @Query("SELECT COUNT(DISTINCT b.bidder.id) FROM Bid b WHERE b.auction.id = :auctionId")
     Integer countDistinctBidderByAuctionId(Long auctionId);
+
+    Boolean existsByAuctionIdAndBidderIdAndIsDeletedTrue(Long auctionId, Long bidderId);
 }

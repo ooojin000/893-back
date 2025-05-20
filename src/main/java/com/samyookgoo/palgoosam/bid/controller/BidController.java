@@ -49,7 +49,9 @@ public class BidController {
             @Parameter(name = "auctionId", description = "입찰 내역을 조회할 경매 ID", required = true)
             @PathVariable Long auctionId
     ) {
-        BidListResponse response = bidService.getBidsByAuctionId(auctionId);
+        User user = authService.getCurrentUser();
+
+        BidListResponse response = bidService.getBidsByAuctionId(auctionId, user);
         return BaseResponse.success(response);
     }
 
@@ -71,7 +73,7 @@ public class BidController {
                     required = true
             )
             @Valid @RequestBody BidRequest request
-    ) {// TODO: 인증 사용자 연동 시 수정 필요
+    ) {
         User user = authService.getCurrentUser();
         if (user == null) {
             throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
