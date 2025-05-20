@@ -57,11 +57,8 @@ public class BidService {
                 .map(this::mapToResponse)
                 .toList();
 
-        int totalBid = allBids.size();
-        int totalBidder = (int) allBids.stream()
-                .map(b -> b.getBidder().getId())
-                .distinct()
-                .count();
+        int totalBid = bidRepository.countByAuctionIdAndIsDeletedFalse(auctionId);
+        int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
 
         return BidListResponse.builder()
                 .auctionId(auctionId)
