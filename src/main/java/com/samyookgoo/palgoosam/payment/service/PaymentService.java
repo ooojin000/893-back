@@ -12,12 +12,12 @@ import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentConfirmRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentFailCallbackRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
+import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateResponse;
+import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.policy.DeliveryPolicy;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
@@ -52,7 +52,7 @@ public class PaymentService {
 
 
     @Transactional
-    public PaymentResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
+    public PaymentCreateResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
 
@@ -67,7 +67,7 @@ public class PaymentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "낙찰자만 결제할 수 있습니다.");
         }
 
-        if (!request.getFinalPrice().equals(winningBid.getPrice())) {
+        if (!request.getItemPrice().equals(winningBid.getPrice())) {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
 
@@ -86,16 +86,16 @@ public class PaymentService {
                             .zipCode(request.getZipCode())
                             .itemPrice(request.getItemPrice())
                             .deliveryFee(request.getDeliveryFee())
-                            .finalPrice(winningBid.getPrice() + request.getDeliveryFee())
+                            .finalPrice(request.getItemPrice() + request.getDeliveryFee())
                             .orderNumber(orderNumber)
                             .status(PaymentStatus.READY)
                             .build();
                     return paymentRepository.save(newPayment);
                 });
 
-        return PaymentResponse.builder()
+        return PaymentCreateResponse.builder()
                 .orderId(payment.getOrderNumber())
-                .orderName(payment.getOrderNumber())
+                .orderName(auction.getTitle())
                 .successUrl(request.getSuccessUrl())
                 .failUrl(request.getFailUrl())
                 .customerEmail(payment.getRecipientEmail())
@@ -105,7 +105,7 @@ public class PaymentService {
                 .build();
     }
 
-    public void handlePaymentFailure(PaymentFailRequest request) {
+    public void handlePaymentFailure(TossPaymentFailCallbackRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
 
@@ -114,7 +114,7 @@ public class PaymentService {
         }
     }
 
-    public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request) {
+    public TossPaymentConfirmResponse confirmPayment(TossPaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
                 .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
 
@@ -129,8 +129,8 @@ public class PaymentService {
         String url = config.getBaseUrl() + "/v1/payments/confirm";
         try {
             @SuppressWarnings("unchecked")
-            PaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
-                    PaymentConfirmResponse.class);
+            TossPaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
+                    TossPaymentConfirmResponse.class);
 
             if (tossResponse == null) {
                 payment.setStatus(PaymentStatus.FAILED);

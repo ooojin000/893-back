@@ -2,11 +2,11 @@ package com.samyookgoo.palgoosam.payment.controller;
 
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
+import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentConfirmRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentFailCallbackRequest;
+import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateResponse;
+import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.service.PaymentService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import lombok.RequiredArgsConstructor;
@@ -25,29 +25,29 @@ public class PaymentController {
     private final AuthService authService;
 
     @PostMapping("/auctions/{auctionId}/payments")
-    public BaseResponse<PaymentResponse> create(@PathVariable Long auctionId,
-                                                @RequestBody PaymentCreateRequest request) {
+    public BaseResponse<PaymentCreateResponse> create(@PathVariable Long auctionId,
+                                                      @RequestBody PaymentCreateRequest request) {
 
         User user = authService.getCurrentUser();
         if (user == null) {
             throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
         }
-        PaymentResponse response = paymentService.createPayment(auctionId, user, request);
+        PaymentCreateResponse response = paymentService.createPayment(auctionId, user, request);
         return BaseResponse.success(response);
     }
 
     @PostMapping("/payments/fail")
-    public BaseResponse<Void> failPayment(@RequestBody PaymentFailRequest request) {
+    public BaseResponse<Void> failPayment(@RequestBody TossPaymentFailCallbackRequest request) {
         paymentService.handlePaymentFailure(request);
 
         return BaseResponse.success(null);
     }
 
-    // TODO: 클라이언트와 연동 후 테스트 필요
     @PostMapping("/payments/confirm")
-    public BaseResponse<PaymentConfirmResponse> confirmPayment(@RequestBody PaymentConfirmRequest request) {
+    public BaseResponse<TossPaymentConfirmResponse> confirmPayment(
+            @RequestBody TossPaymentConfirmRequest request) {
 
-        PaymentConfirmResponse response = paymentService.confirmPayment(request);
+        TossPaymentConfirmResponse response = paymentService.confirmPayment(request);
 
         return BaseResponse.success(response);
     }
