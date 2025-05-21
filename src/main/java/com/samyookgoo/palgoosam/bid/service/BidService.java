@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,8 @@ public class BidService {
                 ));
     }
 
-    public BidListResponse getBidsByAuctionId(Long auctionId) {
+    // TODO: 리팩토링 필요
+    public BidListResponse getBidsByAuctionId(Long auctionId, User user) {
         if (!auctionRepository.existsById(auctionId)) {
             throw new NoSuchElementException("해당 경매를 찾을 수 없습니다.");
         }
@@ -57,6 +59,26 @@ public class BidService {
                 .map(this::mapToResponse)
                 .toList();
 
+        BidResponse userBid = null;
+
+        if (user != null) {
+            Boolean alreadyCancelled = bidRepository.existsByAuctionIdAndBidderIdAndIsDeletedTrue(
+                    auctionId, user.getId()
+            );
+
+            if (!alreadyCancelled) {
+                LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+
+                Optional<Bid> recentUserBid = allBids.stream()
+                        .filter(b -> !b.getIsDeleted())
+                        .filter(b -> b.getBidder().getId().equals(user.getId()))
+                        .filter(b -> b.getCreatedAt().isAfter(oneMinuteAgo))
+                        .findFirst();
+
+                userBid = recentUserBid.map(this::mapToResponse).orElse(null);
+            }
+        }
+
         int totalBid = bidRepository.countByAuctionIdAndIsDeletedFalse(auctionId);
         int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
 
@@ -64,6 +86,7 @@ public class BidService {
                 .auctionId(auctionId)
                 .totalBid(totalBid)
                 .totalBidder(totalBidder)
+                .userBid(userBid)
                 .bids(bids)
                 .cancelledBids(cancelledBids)
                 .build();
@@ -110,6 +133,14 @@ public class BidService {
 
     @Transactional
     public BidEventResponse cancelBid(Long auctionId, Long bidId, User currentUser) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
+            throw new IllegalStateException("현재는 입찰 취소 가능 시간이 아닙니다.");
+        }
+
         Bid bid = bidRepository.findById(bidId)
                 .orElseThrow(() -> new NoSuchElementException("해당 입찰 내역이 존재하지 않습니다."));
 
@@ -124,11 +155,6 @@ public class BidService {
         LocalDateTime cancellableUntil = bid.getCreatedAt().plusMinutes(1);
         if (LocalDateTime.now().isAfter(cancellableUntil)) {
             throw new IllegalStateException("입찰 후 1분 이내에만 취소할 수 있습니다.");
-        }
-
-        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
-        if (!Objects.equals(bid.getPrice(), highestPrice)) {
-            throw new IllegalStateException("최고 입찰가가 아니면 취소할 수 없습니다.");
         }
 
         bid.setIsWinning(Boolean.FALSE);

@@ -45,4 +45,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     @Query("SELECT COUNT(DISTINCT b.bidder.id) FROM Bid b WHERE b.auction.id = :auctionId AND b.isDeleted = false")
     Integer countDistinctBidderByAuctionId(Long auctionId);
+
+    Boolean existsByAuctionIdAndBidderIdAndIsDeletedTrue(Long auctionId, Long bidderId);
 }
