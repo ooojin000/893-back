@@ -71,6 +71,11 @@ public class PaymentService {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
 
+        int deliveryFee = deliveryPolicy.calculate(request.getItemPrice());
+        if (!request.getDeliveryFee().equals(deliveryFee)) {
+            throw new IllegalArgumentException("배송비가 배송비가 올바르지 않습니다.");
+        }
+
         Payment payment = paymentRepository.findByAuctionIdAndStatus(auctionId, PaymentStatus.READY)
                 .orElseGet(() -> {
                     String orderNumber = generateOrderNumber(auctionId);
