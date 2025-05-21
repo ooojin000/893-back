@@ -1,6 +1,8 @@
 package com.samyookgoo.palgoosam.payment.domain;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
+import com.samyookgoo.palgoosam.payment.constant.PaymentType;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,6 +52,9 @@ public class Payment {
     private String recipientName;
 
     @Column(nullable = false)
+    private String recipientEmail;
+
+    @Column(nullable = false)
     private String phoneNumber;
 
     @Column(nullable = false)
@@ -59,6 +64,12 @@ public class Payment {
 
     @Column(nullable = false)
     private String zipCode;
+
+    @Column(nullable = false)
+    private Integer itemPrice;
+
+    @Column(nullable = false)
+    private Integer deliveryFee;
 
     @Column(nullable = false)
     private Integer finalPrice;
@@ -80,8 +91,8 @@ public class Payment {
     private PaymentStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentMethod method;
+    @Column
+    private PaymentType type;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;

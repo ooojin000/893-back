@@ -37,13 +37,12 @@ public class ScrapController {
             @Parameter(name = "auctionId", description = "스크랩할 경매 상품의 ID", required = true)
             @PathVariable Long auctionId
     ) {
-        boolean addedScrap = scrapService.addScrap(auctionId);
-
-        if (addedScrap) {
+        try {
+            scrapService.addScrap(auctionId);
             return ResponseEntity.ok(BaseResponse.success("스크랩 등록 완료", null));
-        } else {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(BaseResponse.error("이미 스크랩된 상품입니다.", null));
+                    .body(BaseResponse.error(e.getMessage(), null));
         }
     }
 
@@ -60,13 +59,12 @@ public class ScrapController {
             @Parameter(name = "auctionId", description = "스크랩 취소할 경매 상품의 ID", required = true)
             @PathVariable Long auctionId
     ) {
-        boolean removedScrap = scrapService.removeScrap(auctionId);
-
-        if (removedScrap) {
+        try {
+            scrapService.removeScrap(auctionId);
             return ResponseEntity.ok(BaseResponse.success("스크랩 취소 완료", null));
-        } else {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(BaseResponse.error("스크랩된 상태가 아닙니다.", null));
+                    .body(BaseResponse.error(e.getMessage(), null));
         }
     }
 }

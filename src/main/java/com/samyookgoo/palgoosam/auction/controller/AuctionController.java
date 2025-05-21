@@ -1,11 +1,11 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
+import com.samyookgoo.palgoosam.auction.dto.request.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionUpdateRequest;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionCreateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionDetailResponse;
+import com.samyookgoo.palgoosam.auction.dto.response.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.RelatedAuctionResponse;
@@ -169,5 +169,11 @@ public class AuctionController {
     ) {
         List<RelatedAuctionResponse> related = auctionService.getRelatedAuctions(auctionId);
         return ResponseEntity.ok(BaseResponse.success("연관 경매 상품 조회 성공", related));
+    }
+
+    @GetMapping
+    public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> getAuctions() {
+
+        return ResponseEntity.ok(BaseResponse.success("정상적으로 조회되었습니다.", auctionService.getAuctions()));
     }
 }

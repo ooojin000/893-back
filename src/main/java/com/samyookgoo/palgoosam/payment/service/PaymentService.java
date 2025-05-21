@@ -11,14 +11,15 @@ import com.samyookgoo.palgoosam.config.TossPaymentsConfig;
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
-import com.samyookgoo.palgoosam.payment.controller.request.CreatePaymentRequest;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentConfirmRequest;
-import com.samyookgoo.palgoosam.payment.controller.request.PaymentFailRequest;
+import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentConfirmRequest;
+import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentFailCallbackRequest;
 import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentConfirmResponse;
-import com.samyookgoo.palgoosam.payment.controller.response.PaymentResponse;
+import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateResponse;
+import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
-import com.samyookgoo.palgoosam.payment.domain.PaymentStatus;
+import com.samyookgoo.palgoosam.payment.policy.DeliveryPolicy;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import java.time.OffsetDateTime;
@@ -47,8 +48,11 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final DeliveryAddressRepository deliveryAddressRepository;
     private final AuctionImageRepository auctionImageRepository;
+    private final DeliveryPolicy deliveryPolicy;
 
-    public PaymentResponse createPayment(Long auctionId, User buyer, CreatePaymentRequest request) {
+
+    @Transactional
+    public PaymentCreateResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
 
@@ -63,42 +67,50 @@ public class PaymentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "낙찰자만 결제할 수 있습니다.");
         }
 
-        if (!request.getFinalPrice().equals(winningBid.getPrice())) {
+        if (!request.getItemPrice().equals(winningBid.getPrice())) {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
 
-//        String orderNumber = generateOrderNumber(auctionId); TODO 추후 삭제
-        Payment payment = Payment.builder()
-                .buyer(buyer)
-                .seller(auction.getSeller())
-                .auction(auction)
-                .recipientName(request.getRecipientName())
-                .phoneNumber(request.getPhoneNumber())
-                .addressLine1(request.getAddressLine1())
-                .addressLine2(request.getAddressLine2())
-                .zipCode(request.getZipCode())
-                .finalPrice(winningBid.getPrice())
-                .orderNumber(request.getOrderId())
-                .paymentKey(request.getPaymentKey())
-                .status(PaymentStatus.READY)
-                .method(request.getPaymentMethod())
-                .build();
+        int deliveryFee = deliveryPolicy.calculate(request.getItemPrice());
+        if (!request.getDeliveryFee().equals(deliveryFee)) {
+            throw new IllegalArgumentException("배송비가 배송비가 올바르지 않습니다.");
+        }
 
-        paymentRepository.save(payment);
+        Payment payment = paymentRepository.findByAuctionIdAndStatus(auctionId, PaymentStatus.READY)
+                .orElseGet(() -> {
+                    String orderNumber = generateOrderNumber(auctionId);
+                    Payment newPayment = Payment.builder()
+                            .buyer(buyer)
+                            .seller(auction.getSeller())
+                            .auction(auction)
+                            .recipientName(request.getRecipientName())
+                            .recipientEmail(buyer.getEmail())
+                            .phoneNumber(request.getPhoneNumber())
+                            .addressLine1(request.getAddressLine1())
+                            .addressLine2(request.getAddressLine2())
+                            .zipCode(request.getZipCode())
+                            .itemPrice(request.getItemPrice())
+                            .deliveryFee(request.getDeliveryFee())
+                            .finalPrice(request.getItemPrice() + request.getDeliveryFee())
+                            .orderNumber(orderNumber)
+                            .status(PaymentStatus.READY)
+                            .build();
+                    return paymentRepository.save(newPayment);
+                });
 
-        return PaymentResponse.builder()
-                .orderId(request.getOrderId()) // TODO 추후 삭제. orderId 는 프론트쪽에서 생성하는 것
+        return PaymentCreateResponse.builder()
+                .orderId(payment.getOrderNumber())
                 .orderName(auction.getTitle())
                 .successUrl(request.getSuccessUrl())
                 .failUrl(request.getFailUrl())
-                .customerEmail(buyer.getEmail())
-                .customerName(buyer.getName())
-                .customerMobilePhone(request.getPhoneNumber())
-                .finalPrice(request.getFinalPrice())
+                .customerEmail(payment.getRecipientEmail())
+                .customerName(payment.getRecipientName())
+                .customerMobilePhone(payment.getPhoneNumber())
+                .finalPrice(payment.getFinalPrice())
                 .build();
     }
 
-     public void handlePaymentFailure(PaymentFailRequest request) {
+    public void handlePaymentFailure(TossPaymentFailCallbackRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
 
@@ -106,8 +118,8 @@ public class PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
         }
     }
-  
-    public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request) {
+
+    public TossPaymentConfirmResponse confirmPayment(TossPaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
                 .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
 
@@ -122,17 +134,21 @@ public class PaymentService {
         String url = config.getBaseUrl() + "/v1/payments/confirm";
         try {
             @SuppressWarnings("unchecked")
-            PaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
-                    PaymentConfirmResponse.class);
+            TossPaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
+                    TossPaymentConfirmResponse.class);
 
             if (tossResponse == null) {
                 payment.setStatus(PaymentStatus.FAILED);
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "토스 응답이 비어 있습니다.");
             }
 
+            payment.setType(request.getPaymentType());
             payment.setStatus(PaymentStatus.PAID);
             payment.setApprovedAt(OffsetDateTime.parse(tossResponse.getApprovedAt()).toLocalDateTime());
 
+            tossResponse.setCustomerEmail(payment.getRecipientEmail());
+            tossResponse.setCustomerName(payment.getRecipientName());
+            tossResponse.setCustomerMobilePhone(payment.getPhoneNumber());
             return tossResponse;
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -175,20 +191,22 @@ public class PaymentService {
         DeliveryAddress deliveryAddress = deliveryAddressRepository.findDefaultByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("기본 배송지가 없습니다."));
 
-        String orderNumber = generateOrderNumber(auctionId);
-
         AuctionImage image = auctionImageRepository.findMainImageByAuctionId(auctionId)
                 .orElseThrow(() -> new IllegalStateException("해당 경매에 대한 대표 이미지가 존재하지 않습니다."));
 
+        int itemPrice = winningBid.getPrice();
+        int deliveryFee = deliveryPolicy.calculate(itemPrice);
+        int finalPrice = itemPrice + deliveryFee;
+
         return OrderResponse.builder()
-                .orderId(orderNumber)
                 .auctionId(auction.getId())
+                .customerName(winningBid.getBidder().getName())
                 .auctionTitle(auction.getTitle())
                 .auctionThumbnail(image != null ? image.getUrl() : null)
-                .finalPrice(winningBid.getPrice())
+                .itemPrice(itemPrice)
+                .deliveryFee(deliveryFee)
+                .finalPrice(finalPrice)
                 .deliveryAddress(DeliveryAddressResponseDto.of(deliveryAddress))
-                .paymentMethod(null) // 아직 선택되지 않음
-                .paymentStatus(PaymentStatus.READY)
                 .build();
     }
 

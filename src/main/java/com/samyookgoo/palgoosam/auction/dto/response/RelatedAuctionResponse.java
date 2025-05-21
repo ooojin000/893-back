@@ -53,7 +53,7 @@ public class RelatedAuctionResponse {
         }
         int scrapCount = scrapRepository.countByAuctionId(auction.getId());
 
-        int bidCount = bidRepository.countByAuctionId(auction.getId());
+        int bidCount = bidRepository.countByAuctionIdAndIsDeletedFalse(auction.getId());
 
         Integer winningPrice = bidRepository.findMaxBidPriceByAuctionId(auction.getId());
 
