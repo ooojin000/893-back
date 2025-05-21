@@ -19,6 +19,7 @@ public class AuctionCreateRequest {
 
     @NotNull
     @Min(0)
+    @Max(value = 100_000_000, message = "시작가는 최대 1억원까지만 입력 가능합니다.")
     private Integer basePrice;
 
     @NotNull
