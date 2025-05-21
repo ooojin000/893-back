@@ -1,5 +1,6 @@
-package com.samyookgoo.palgoosam.auction.dto;
+package com.samyookgoo.palgoosam.auction.dto.request;
 
+import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,9 +38,9 @@ public class AuctionSearchRequestDto {
     private Integer page = 1;
     private Integer limit = 12;
 
-    public AuctionSearchParam toAuctionSearchParam() {
+    public AuctionSearchDto toAuctionSearchDto() {
         Long categoryId = this.checkCategoryId();
-        return new AuctionSearchParam(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
+        return new AuctionSearchDto(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
                 isDamaged, minPrice, maxPrice, isPending, isActive, isCompleted, page, limit, sortBy);
     }
 
