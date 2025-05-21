@@ -2,15 +2,16 @@ package com.samyookgoo.palgoosam.deliveryaddress.controller;
 
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
+import com.samyookgoo.palgoosam.deliveryaddress.api_docs.DeleteUserDeliveryAddressApi;
+import com.samyookgoo.palgoosam.deliveryaddress.api_docs.GetUserDeliveryAddressesApi;
+import com.samyookgoo.palgoosam.deliveryaddress.api_docs.PatchUserDefaultAddress;
+import com.samyookgoo.palgoosam.deliveryaddress.api_docs.PostUserDeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressRequestDto;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.service.DeliveryAddressService;
 import com.samyookgoo.palgoosam.user.domain.User;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,11 +38,7 @@ public class DeliveryAddressController {
     private final AuthService authService;
     private final DeliveryAddressService deliveryAddressService;
 
-    @Operation(
-            summary = "회원 배송지 목록 조회",
-            description = "로그인한 회원의 등록된 모든 배송지 목록을 반환합니다."
-    )
-    @ApiResponse(responseCode = "200", description = "배송지 목록 조회 성공")
+    @GetUserDeliveryAddressesApi
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @GetMapping("/addresses")
     public ResponseEntity<BaseResponse<List<DeliveryAddressResponseDto>>> getUserDeliveryAddresses() {
@@ -60,15 +57,7 @@ public class DeliveryAddressController {
                 .body(BaseResponse.success("배송지가 정상적으로 조회되었습니다.", dtoList));
     }
 
-
-    @Operation(
-            summary = "회원 배송지 삭제",
-            description = "회원의 특정 배송지를 삭제합니다."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "배송지 삭제 성공"),
-            @ApiResponse(responseCode = "400", description = "배송지 삭제 실패")
-    })
+    @DeleteUserDeliveryAddressApi
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @DeleteMapping("addresses/{id}")
     public ResponseEntity<BaseResponse<Void>> deleteUserDeliveryAddress(
@@ -92,14 +81,7 @@ public class DeliveryAddressController {
                 .body(BaseResponse.success("배송지가 삭제되었습니다.", null));
     }
 
-    @Operation(
-            summary = "회원 배송지 등록",
-            description = "새로운 배송지를 등록합니다. 기본 배송지 여부도 함께 설정할 수 있습니다."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "배송지 등록 성공"),
-            @ApiResponse(responseCode = "400", description = "배송지 등록 실패")
-    })
+    @PostUserDeliveryAddress
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PostMapping("/addresses")
     public ResponseEntity<BaseResponse<Void>> postUserDeliveryAddress(
@@ -134,14 +116,7 @@ public class DeliveryAddressController {
                 .body(BaseResponse.success("배송지가 등록되었습니다.", null));
     }
 
-    @Operation(
-            summary = "기본 배송지 설정",
-            description = "회원의 배송지 중 하나를 기본 배송지로 설정합니다."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "기본 배송지 설정 성공"),
-            @ApiResponse(responseCode = "400", description = "기본 배송지 설정 실패")
-    })
+    @PatchUserDefaultAddress
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PatchMapping("/addresses/{id}/default")
     public ResponseEntity<BaseResponse<Void>> patchUserDefaultAddress(
