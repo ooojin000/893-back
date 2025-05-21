@@ -38,6 +38,10 @@ spring:
             token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+  servlet:
+    multipart:
+      max-file-size: 10MB     # 단일 파일의 최대 크기 제한
+      max-request-size: 20MB  # 요청 전체의 최대 크기 제한
 
   logging:
     level:
