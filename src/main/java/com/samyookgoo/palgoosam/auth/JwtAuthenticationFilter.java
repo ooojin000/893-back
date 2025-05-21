@@ -1,6 +1,9 @@
 package com.samyookgoo.palgoosam.auth;
+
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -56,6 +59,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 업로드된 이미지
         if ("GET".equals(request.getMethod()) && path.startsWith("/uploads/")) {
+            return true;
+        }
+
+        if ("GET".equals(request.getMethod()) && path.startsWith("/api/auctions/**")) {
             return true;
         }
         return false;
