@@ -57,6 +57,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
 
+        // 메인 페이지 API
+        if ("GET".equals(request.getMethod()) && "/api/auctions".equals(path)) {
+            return true;
+        }
+
         // 업로드된 이미지
         if ("GET".equals(request.getMethod()) && path.startsWith("/uploads/")) {
             return true;
