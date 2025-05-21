@@ -1,8 +1,8 @@
 package com.samyookgoo.palgoosam.auction.repository;
 
+import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionStatus;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchParam;
+import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +19,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
              JOIN user u ON a.seller_id = u.id
              JOIN category c ON a.category_id = c.id
              WHERE
-             (:#{#request.keyword} IS NULL OR MATCH(a.title, a.description)
-             AGAINST (:#{#request.keyword} IN NATURAL LANGUAGE MODE)) AND
+             MATCH(a.title, a.description)
+             AGAINST (:#{#request.keyword} IN NATURAL LANGUAGE MODE) AND
              -- 카테고리 SQL
              (:#{#request.categoryId} IS NULL OR a.category_id IN (
                  WITH RECURSIVE CategoryHierarchy AS (
@@ -41,24 +41,24 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                           (:#{#request.isHeavilyUsed} IS NULL OR :#{#request.isHeavilyUsed} = FALSE) AND
                           (:#{#request.isDamaged} IS NULL OR :#{#request.isDamaged} = FALSE))
                          OR
-                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).BRAND_NEW_VALUE}) OR
-                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).LIKE_NEW_VALUE} ) OR
-                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).GENTLY_USED_VALUE} ) OR
-                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).HEAVILY_USED_VALUE} ) OR
-                          (:#{#request.isDamaged} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).DAMAGED_VALUE} ))
+                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).brand_new}) OR
+                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).like_new} ) OR
+                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).gently_used} ) OR
+                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).heavily_used} ) OR
+                          (:#{#request.isDamaged} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).damaged} ))
                      ) AND
                      (
                          ((:#{#request.isPending} IS NULL OR :#{#request.isPending} = FALSE) AND
                           (:#{#request.isActive} IS NULL OR :#{#request.isActive} = FALSE) AND
                           (:#{#request.isCompleted} IS NULL OR :#{#request.isCompleted} = FALSE))
                          OR
-                         ((:#{#request.isPending} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).PENDING_VALUE} ) OR
-                          (:#{#request.isActive} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).ACTIVE_VALUE} ) OR
-                          (:#{#request.isCompleted} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).COMPLETED_VALUE} ))
+                         ((:#{#request.isPending} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).pending} ) OR
+                          (:#{#request.isActive} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).active} ) OR
+                          (:#{#request.isCompleted} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).completed} ))
                      )
             ORDER BY a.created_at DESC
             """, nativeQuery = true)
-    List<Auction> findAllWithDetails(@Param("request") AuctionSearchParam auctionSearchParam);
+    List<Auction> findAllWithDetails(@Param("request") AuctionSearchDto auctionSearchDto);
 
     Optional<Auction> findById(Long id);
 
@@ -85,4 +85,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                   AND a.endTime <= :now
             """)
     int updateStatusToCompleted(@Param("now") LocalDateTime now);
+
+    List<Auction> findTop12ByOrderByCreatedAtDesc();
 }
