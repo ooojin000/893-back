@@ -12,7 +12,10 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -54,11 +57,8 @@ public class BidService {
                 .map(this::mapToResponse)
                 .toList();
 
-        int totalBid = allBids.size();
-        int totalBidder = (int) allBids.stream()
-                .map(b -> b.getBidder().getId())
-                .distinct()
-                .count();
+        int totalBid = bidRepository.countByAuctionIdAndIsDeletedFalse(auctionId);
+        int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
 
         return BidListResponse.builder()
                 .auctionId(auctionId)
@@ -156,7 +156,7 @@ public class BidService {
 
     private BidEventResponse createBidEventResponse(Long auctionId, BidResponse bidResponse, boolean isCancelled) {
         Integer currentPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
-        int totalBid = bidRepository.countByAuctionId(auctionId);
+        int totalBid = bidRepository.countByAuctionIdAndIsDeletedFalse(auctionId);
         int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
 
         return BidEventResponse.builder()
