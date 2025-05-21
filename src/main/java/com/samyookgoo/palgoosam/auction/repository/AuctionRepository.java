@@ -19,8 +19,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
              JOIN user u ON a.seller_id = u.id
              JOIN category c ON a.category_id = c.id
              WHERE
-             (:#{#request.keyword} IS NULL OR MATCH(a.title, a.description)
-             AGAINST (:#{#request.keyword} IN NATURAL LANGUAGE MODE)) AND
+             MATCH(a.title, a.description)
+             AGAINST (:#{#request.keyword} IN NATURAL LANGUAGE MODE) AND
              -- 카테고리 SQL
              (:#{#request.categoryId} IS NULL OR a.category_id IN (
                  WITH RECURSIVE CategoryHierarchy AS (
@@ -85,4 +85,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                   AND a.endTime <= :now
             """)
     int updateStatusToCompleted(@Param("now") LocalDateTime now);
+
+    List<Auction> findTop12ByOrderByCreatedAtDesc();
 }

@@ -39,6 +39,7 @@ public class SecurityConfig {
                         // 프리플라이트 OPTIONS 전역 허용 , TODO 추후 삭제
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auctions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/category").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auctions/**").permitAll()
