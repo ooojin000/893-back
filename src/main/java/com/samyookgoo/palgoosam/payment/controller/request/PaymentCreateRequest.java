@@ -1,6 +1,5 @@
 package com.samyookgoo.palgoosam.payment.controller.request;
 
-import com.samyookgoo.palgoosam.payment.domain.PaymentMethod;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +8,7 @@ import lombok.Data;
 import org.hibernate.validator.constraints.URL;
 
 @Data
-public class CreatePaymentRequest {
+public class PaymentCreateRequest {
     @NotBlank(message = "수령인 이름은 필수 항목입니다.")
     private String recipientName;
 
@@ -25,15 +24,14 @@ public class CreatePaymentRequest {
     @Pattern(regexp = "^\\d{5}$", message = "우편번호는 숫자 5자리여야 합니다.")
     private String zipCode;
 
-    @NotNull(message = "결제 수단을 선택해주세요.")
-    private PaymentMethod paymentMethod;
+    @NotNull(message = "경매 상품 금액은 필수입니다.")
+    @Min(value = 0, message = "경매 상품 금액은 0원 이상이어야 합니다.")
+    private Integer itemPrice;
 
-    @NotNull(message = "주문번호는 필수입니다.")
-    private String orderId;
+    @NotNull(message = "배송비는 필수입니다.")
+    @Min(value = 0, message = "배송비는 0원 이상이어야 합니다.")
+    private Integer deliveryFee;
 
-    @NotNull(message = "페이먼트키는 필수입니다.")
-    private String paymentKey;
-    
     @NotNull(message = "결제 금액은 필수입니다.")
     @Min(value = 0, message = "결제 금액은 0원 이상이어야 합니다.")
     private Integer finalPrice;
