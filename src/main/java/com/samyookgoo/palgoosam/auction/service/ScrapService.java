@@ -9,13 +9,14 @@ import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ScrapService {
 
     private final UserRepository userRepository;
@@ -24,43 +25,44 @@ public class ScrapService {
     private final AuthService authService;
 
     @Transactional
-    public boolean addScrap(Long auctionId) {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
-
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new EntityNotFoundException("경매 상품 없음"));
+    public void addScrap(Long auctionId) {
+        User user = getCurrentUser();
+        Auction auction = getAuction(auctionId);
 
         if (scrapRepository.existsByUserAndAuction(user, auction)) {
-            return false;
+            throw new IllegalArgumentException("이미 스크랩된 상품입니다.");
         }
 
-        Scrap scrap = new Scrap();
-        scrap.setUser(user);
-        scrap.setAuction(auction);
+        Scrap scrap = Scrap.of(user, auction);
         scrapRepository.save(scrap);
-        return true;
+
+        log.info("사용자 {}가 경매 상품 {}을 스크랩했습니다.", user.getId(), auction.getId());
     }
 
     @Transactional
-    public boolean removeScrap(Long auctionId) {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
+    public void removeScrap(Long auctionId) {
+        User user = getCurrentUser();
+        Auction auction = getAuction(auctionId);
 
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new EntityNotFoundException("경매 상품 없음"));
+        Scrap scrap = scrapRepository.findByUserAndAuction(user, auction)
+                .orElseThrow(() -> new IllegalStateException("스크랩된 상태가 아닙니다"
+                        + "."));
 
-        Optional<Scrap> optionalScrap = scrapRepository.findByUserAndAuction(user, auction);
+        scrapRepository.delete(scrap);
 
-        if (optionalScrap.isEmpty()) {
-            return false;
-        }
-        scrapRepository.delete(optionalScrap.get());
-        return true;
+        log.info("사용자 {}가 경매 상품 {}의 스크랩을 취소했습니다.", user.getId(), auction.getId());
     }
 
+    private User getCurrentUser() {
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+        }
+        return user;
+    }
+
+    private Auction getAuction(Long auctionId) {
+        return auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new EntityNotFoundException("경매 상품을 찾을 수 없습니다."));
+    }
 }

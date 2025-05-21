@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.user.domain;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -22,14 +23,21 @@ public class Scrap {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "auction_id", nullable = false)
     private Auction auction;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    public static Scrap of(User user, Auction auction) {
+        Scrap scrap = new Scrap();
+        scrap.setUser(user);
+        scrap.setAuction(auction);
+        return scrap;
+    }
 }
