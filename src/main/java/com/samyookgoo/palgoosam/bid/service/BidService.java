@@ -135,6 +135,14 @@ public class BidService {
 
     @Transactional
     public BidEventResponse cancelBid(Long auctionId, Long bidId, User currentUser) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
+            throw new IllegalStateException("현재는 입찰 취소 가능 시간이 아닙니다.");
+        }
+
         Bid bid = bidRepository.findById(bidId)
                 .orElseThrow(() -> new NoSuchElementException("해당 입찰 내역이 존재하지 않습니다."));
 
