@@ -15,7 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +40,7 @@ public class BidService {
                 ));
     }
 
+    // TODO: 리팩토링 필요
     public BidListResponse getBidsByAuctionId(Long auctionId, User user) {
         if (!auctionRepository.existsById(auctionId)) {
             throw new NoSuchElementException("해당 경매를 찾을 수 없습니다.");
@@ -149,11 +149,6 @@ public class BidService {
         LocalDateTime cancellableUntil = bid.getCreatedAt().plusMinutes(1);
         if (LocalDateTime.now().isAfter(cancellableUntil)) {
             throw new IllegalStateException("입찰 후 1분 이내에만 취소할 수 있습니다.");
-        }
-
-        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
-        if (!Objects.equals(bid.getPrice(), highestPrice)) {
-            throw new IllegalStateException("최고 입찰가가 아니면 취소할 수 없습니다.");
         }
 
         bid.setIsWinning(Boolean.FALSE);
