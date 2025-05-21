@@ -200,6 +200,7 @@ public class PaymentService {
 
         return OrderResponse.builder()
                 .auctionId(auction.getId())
+                .customerName(winningBid.getBidder().getName())
                 .auctionTitle(auction.getTitle())
                 .auctionThumbnail(image != null ? image.getUrl() : null)
                 .itemPrice(itemPrice)
