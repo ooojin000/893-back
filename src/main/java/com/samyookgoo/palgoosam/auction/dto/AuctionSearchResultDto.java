@@ -1,38 +1,36 @@
 package com.samyookgoo.palgoosam.auction.dto;
 
-import com.samyookgoo.palgoosam.auction.domain.Category;
-import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuctionSearchResultDto {
     private Long id;
-
-    private User seller;
-
-    private Category category;
-
     private String title;
-
-    private String description;
-
-    private Integer basePrice;
-    private Integer currentPrice;
-
-    private String itemCondition;
 
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    private String status;
+    private AuctionStatus status;
 
-    private Integer bidderCount;
+    private Integer basePrice;
+    private Integer currentPrice;
 
-    private Integer scrapCount;
+    private Long bidderCount;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Long scrapCount;
+
+    private String thumbnailUrl;
+
+    // 로그인 구현에 따라 수정 필요
+    private Boolean isScrapped = false;
 }

@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto.request;
 
-import com.samyookgoo.palgoosam.auction.domain.ItemCondition;
+import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

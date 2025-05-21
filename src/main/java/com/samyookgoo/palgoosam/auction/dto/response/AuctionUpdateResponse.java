@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.auction.dto.response;
 
-import com.samyookgoo.palgoosam.auction.domain.ItemCondition;
+import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import lombok.Builder;

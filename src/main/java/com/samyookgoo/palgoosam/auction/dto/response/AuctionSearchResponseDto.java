@@ -1,5 +1,6 @@
-package com.samyookgoo.palgoosam.auction.dto;
+package com.samyookgoo.palgoosam.auction.dto.response;
 
+import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResultDto;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,5 +12,5 @@ import lombok.Setter;
 public class AuctionSearchResponseDto {
     private Long totalAuctionsCount;
 
-    private List<AuctionListItemDto> auctionList;
+    private List<AuctionSearchResultDto> auctionList;
 }
