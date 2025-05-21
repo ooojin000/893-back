@@ -49,7 +49,7 @@ VALUES (2, 1, 860000, '2025-05-01 10:00:00', FALSE, FALSE),
 
 -- 결제
 INSERT INTO payment (buyer_id, seller_id, auction_id, recipient_name, phone_number, address_line1, address_line2,
-                     zip_code, final_price, created_at, order_number, payment_key, status, method, updated_at)
+                     zip_code, final_price, created_at, order_number, payment_key, status, type, updated_at)
 VALUES (1, 3, 3, '홍길동', '010-1234-5678', '서울시 강남구 역삼동 123-45', '201호', '06234', 51000, CURRENT_TIMESTAMP, 'ORDER12345',
         'testPaymentKey', 'READY', 'CREDIT_CARD', CURRENT_TIMESTAMP);
 

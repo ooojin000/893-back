@@ -170,4 +170,10 @@ public class AuctionController {
         List<RelatedAuctionResponse> related = auctionService.getRelatedAuctions(auctionId);
         return ResponseEntity.ok(BaseResponse.success("연관 경매 상품 조회 성공", related));
     }
+
+    @GetMapping
+    public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> getAuctions() {
+
+        return ResponseEntity.ok(BaseResponse.success("정상적으로 조회되었습니다.", auctionService.getAuctions()));
+    }
 }

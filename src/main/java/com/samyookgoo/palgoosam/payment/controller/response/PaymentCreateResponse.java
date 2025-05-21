@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class PaymentResponse {
+public class PaymentCreateResponse {
     private String orderId;
     private String orderName;
     private String successUrl;

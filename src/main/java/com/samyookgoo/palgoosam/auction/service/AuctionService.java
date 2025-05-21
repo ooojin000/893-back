@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auction.service;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
+import com.samyookgoo.palgoosam.auction.constant.SortType;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
@@ -569,20 +570,79 @@ public class AuctionService {
     private List<AuctionSearchResultDto> sortAuctionListItemDtoList(
             List<AuctionSearchResultDto> auctionSearchResponseDtoList, String sortBy
     ) {
-        if (sortBy.equals("price_asc")) {
+        if (String.valueOf(SortType.price_asc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getBasePrice)).toList();
-        } else if (sortBy.equals("price_desc")) {
+        } else if (String.valueOf(SortType.price_desc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getBasePrice).reversed()).toList();
-        } else if (sortBy.equals("scrap_count_desc")) {
+        } else if (String.valueOf(SortType.scrap_count_desc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getScrapCount).reversed()).toList();
-        } else if (sortBy.equals("bidder_count_desc")) {
+        } else if (String.valueOf(SortType.bidder_count_desc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getBidderCount).reversed()).toList();
         }
 
         return auctionSearchResponseDtoList;
+    }
+
+    public AuctionSearchResponseDto getAuctions() {
+        List<Auction> auctionList = auctionRepository.findTop12ByOrderByCreatedAtDesc();
+        if (auctionList.isEmpty()) {
+            return new AuctionSearchResponseDto(0L, new ArrayList<>());
+        }
+        List<Long> auctionIdList = getAuctionIdList(auctionList);
+        Map<Long, String> thumbnailMap = getThumbnailMap(auctionIdList);
+        Map<Long, List<Bid>> bidsByAuctionMap = getBidListByAuctionMap(auctionIdList);
+        Map<Long, List<Scrap>> scrapsByAuctionMap = getScrapListByAuctionMap(auctionIdList);
+        User user = authService.getCurrentUser();
+        List<AuctionListItemDto> result;
+        if (user == null) {
+            result = auctionList.stream().map(auction -> {
+                        Long auctionId = auction.getId();
+                        String thumbnailUrl = thumbnailMap.get(auctionId);
+                        List<Bid> bids = bidsByAuctionMap.get(auctionId);
+                        List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
+                        return AuctionListItemDto.builder().id(auction.getId())
+                                .title(auction.getTitle())
+                                .startTime(auction.getStartTime())
+                                .endTime(auction.getEndTime())
+                                .status(auction.getStatus())
+                                .basePrice(auction.getBasePrice())
+                                .thumbnailUrl(thumbnailUrl)
+                                .bidderCount((long) (bids != null ? bids.size() : 0))
+                                .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
+                                .scrapCount((long) (scraps != null ? scraps.size() : 0))
+                                .isScrapped(false)
+                                .build();
+                    }
+            ).toList();
+        } else {
+            Map<Long, Scrap> isScrappedMap = scrapRepository.findAllByUser_Id(user.getId()).stream()
+                    .collect(Collectors.toMap(scrap -> scrap.getAuction().getId(), scrap -> scrap));
+            result = auctionList.stream().map(auction -> {
+                        Long auctionId = auction.getId();
+                        String thumbnailUrl = thumbnailMap.get(auctionId);
+                        List<Bid> bids = bidsByAuctionMap.get(auctionId);
+                        List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
+
+                        return AuctionListItemDto.builder().id(auction.getId())
+                                .title(auction.getTitle())
+                                .startTime(auction.getStartTime())
+                                .endTime(auction.getEndTime())
+                                .status(auction.getStatus())
+                                .basePrice(auction.getBasePrice())
+                                .thumbnailUrl(thumbnailUrl)
+                                .bidderCount((long) (bids != null ? bids.size() : 0))
+                                .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
+                                .scrapCount((long) (scraps != null ? scraps.size() : 0))
+                                .isScrapped(isScrappedMap.get(auctionId) != null)
+                                .build();
+                    }
+            ).toList();
+        }
+
+        return new AuctionSearchResponseDto((long) result.size(), result);
     }
 }
