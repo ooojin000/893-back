@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auction.service;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
+import com.samyookgoo.palgoosam.auction.constant.SortType;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
@@ -569,16 +570,16 @@ public class AuctionService {
     private List<AuctionSearchResultDto> sortAuctionListItemDtoList(
             List<AuctionSearchResultDto> auctionSearchResponseDtoList, String sortBy
     ) {
-        if (sortBy.equals("price_asc")) {
+        if (String.valueOf(SortType.price_asc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getBasePrice)).toList();
-        } else if (sortBy.equals("price_desc")) {
+        } else if (String.valueOf(SortType.price_desc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getBasePrice).reversed()).toList();
-        } else if (sortBy.equals("scrap_count_desc")) {
+        } else if (String.valueOf(SortType.scrap_count_desc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getScrapCount).reversed()).toList();
-        } else if (sortBy.equals("bidder_count_desc")) {
+        } else if (String.valueOf(SortType.bidder_count_desc).equals(sortBy)) {
             return auctionSearchResponseDtoList.stream()
                     .sorted(Comparator.comparing(AuctionSearchResultDto::getBidderCount).reversed()).toList();
         }
