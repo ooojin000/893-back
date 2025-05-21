@@ -16,9 +16,6 @@ public class AuctionDetailResponse {
     @Schema(description = "경매 ID", example = "123")
     private Long auctionId;
 
-    @Schema(description = "카테고리 ID", example = "5")
-    private Long categoryId;
-
     @Schema(description = "경매 제목", example = "아이폰 13 미개봉")
     private String title;
 
@@ -40,7 +37,7 @@ public class AuctionDetailResponse {
     private Integer basePrice;
 
     @Schema(description = "해당 유저가 이 경매를 스크랩했는지 여부", example = "true")
-    private Boolean isScrap;
+    private Boolean isScraped;
 
     @Schema(description = "스크랩한 유저 수", example = "12")
     private Integer scrapCount;
