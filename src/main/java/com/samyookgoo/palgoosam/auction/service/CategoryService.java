@@ -15,7 +15,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
 
     public List<CategoryResponseDto> getCategory() {
-        List<Category> categoryList = categoryRepository.findAll();
+        List<Category> categoryList = categoryRepository.findAllWithChildrenAndParent();
         return categoryList.stream().map(category -> {
             CategoryResponseDto responseDto = new CategoryResponseDto();
             responseDto.setId(category.getId());
