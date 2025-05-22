@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auction.dto.request;
 
 import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,12 +31,17 @@ public class AuctionSearchRequestDto {
 
     @NotNull
     private String sortBy = "latest";
-
+    
     private Long mainCategoryId;
     private Long subCategoryId;
     private Long detailCategoryId;
 
+    @NotNull(message = "페이지는 null이 될 수 없습니다.")
+    @Min(value = 1, message = "페이지의 최소 값은 1입니다.")
     private Integer page = 1;
+
+    @NotNull(message = "limit은 null이 될 수 없습니다.")
+    @Min(value = 12, message = "limit의 최소 값은 12입니다.")
     private Integer limit = 12;
 
     public AuctionSearchDto toAuctionSearchDto() {

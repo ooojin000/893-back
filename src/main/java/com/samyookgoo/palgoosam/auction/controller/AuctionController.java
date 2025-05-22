@@ -49,7 +49,7 @@ public class AuctionController {
     @ApiResponse(responseCode = "200", description = "검색 결과 조회 성공")
     @GetMapping("/search")
     public ResponseEntity<BaseResponse<AuctionSearchResponseDto>> search(
-            AuctionSearchRequestDto auctionSearchRequestDto) {
+            @Valid AuctionSearchRequestDto auctionSearchRequestDto) {
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("정상적으로 조회되었습니다.",
                 auctionService.search(auctionSearchRequestDto)));
     }
