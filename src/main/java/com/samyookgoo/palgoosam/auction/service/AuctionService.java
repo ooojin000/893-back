@@ -184,14 +184,13 @@ public class AuctionService {
 
             return AuctionDetailResponse.builder()
                     .auctionId(auction.getId())
-                    .categoryId(auction.getCategory().getId())
                     .title(auction.getTitle())
                     .description(auction.getDescription())
                     .sellerEmailMasked(maskedEmail)
                     .status(auction.getStatus())
                     .itemCondition(auction.getItemCondition())
                     .basePrice(auction.getBasePrice())
-                    .isScrap(isScrap)
+                    .isScraped(isScrap)
                     .scrapCount(scrapCount)
                     .isSeller(isSeller)
                     .category(categoryResponse)
@@ -203,14 +202,13 @@ public class AuctionService {
         } else {
             return AuctionDetailResponse.builder()
                     .auctionId(auction.getId())
-                    .categoryId(auction.getCategory().getId())
                     .title(auction.getTitle())
                     .description(auction.getDescription())
                     .sellerEmailMasked(maskedEmail)
                     .status(auction.getStatus())
                     .itemCondition(auction.getItemCondition())
                     .basePrice(auction.getBasePrice())
-                    .isScrap(false)
+                    .isScraped(false)
                     .scrapCount(scrapCount)
                     .isSeller(false)
                     .category(categoryResponse)
@@ -528,7 +526,7 @@ public class AuctionService {
         }
 
         return new AuctionSearchResponseDto(auctionCount,
-                this.sortAuctionListItemDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()).stream()
+                this.sortAuctionSearchResultDtoList(resultWithoutSort, auctionSearchRequestDto.getSortBy()).stream()
                         .skip(auctionSearchRequestDto.getLimit() * (auctionSearchRequestDto.getPage() - 1L))
                         .limit(auctionSearchRequestDto.getLimit())
                         .toList());
@@ -567,7 +565,7 @@ public class AuctionService {
                 .collect(Collectors.groupingBy(scrap -> scrap.getAuction().getId()));
     }
 
-    private List<AuctionSearchResultDto> sortAuctionListItemDtoList(
+    private List<AuctionSearchResultDto> sortAuctionSearchResultDtoList(
             List<AuctionSearchResultDto> auctionSearchResponseDtoList, String sortBy
     ) {
         if (String.valueOf(SortType.price_asc).equals(sortBy)) {
@@ -597,14 +595,14 @@ public class AuctionService {
         Map<Long, List<Bid>> bidsByAuctionMap = getBidListByAuctionMap(auctionIdList);
         Map<Long, List<Scrap>> scrapsByAuctionMap = getScrapListByAuctionMap(auctionIdList);
         User user = authService.getCurrentUser();
-        List<AuctionListItemDto> result;
+        List<AuctionSearchResultDto> result;
         if (user == null) {
             result = auctionList.stream().map(auction -> {
                         Long auctionId = auction.getId();
                         String thumbnailUrl = thumbnailMap.get(auctionId);
                         List<Bid> bids = bidsByAuctionMap.get(auctionId);
                         List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
-                        return AuctionListItemDto.builder().id(auction.getId())
+                        return AuctionSearchResultDto.builder().id(auction.getId())
                                 .title(auction.getTitle())
                                 .startTime(auction.getStartTime())
                                 .endTime(auction.getEndTime())
@@ -627,7 +625,7 @@ public class AuctionService {
                         List<Bid> bids = bidsByAuctionMap.get(auctionId);
                         List<Scrap> scraps = scrapsByAuctionMap.get(auctionId);
 
-                        return AuctionListItemDto.builder().id(auction.getId())
+                        return AuctionSearchResultDto.builder().id(auction.getId())
                                 .title(auction.getTitle())
                                 .startTime(auction.getStartTime())
                                 .endTime(auction.getEndTime())
