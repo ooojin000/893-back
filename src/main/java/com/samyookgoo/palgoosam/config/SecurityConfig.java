@@ -41,7 +41,7 @@ public class SecurityConfig {
                         "/api/auctions/*/bids",
                         "/api/category",
                         "/uploads/**", // 이미지, TODO S3 연동시 삭제
-                        "/swagger-ui/**", "/swagger/**",
+                        "/swagger-ui/**", "/swagger/**", "/v3/api-docs/**",
                         "/login", "/oauth2/**", "/error"
                 )
                 .csrf(AbstractHttpConfigurer::disable)
