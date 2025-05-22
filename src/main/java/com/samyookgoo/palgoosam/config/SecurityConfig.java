@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,6 +27,32 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtProvider;
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain publicChain(HttpSecurity http) throws Exception {
+        http
+                .cors(cors -> cors
+                        .configurationSource(corsConfigSource())
+                )
+                .securityMatcher(
+                        "/api/search/suggestions/**",
+                        "/api/auctions/*",
+                        "/api/auctions/*/related",
+                        "/api/auctions/search/**",
+                        "/api/auctions/*/bids",
+                        "/api/category",
+                        "/uploads/**", // 이미지, TODO S3 연동시 삭제
+                        "/swagger-ui/**", "/swagger/**",
+                        "/login", "/oauth2/**", "/error"
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
+                );
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider);
         http
@@ -38,16 +65,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 프리플라이트 OPTIONS 전역 허용 , TODO 추후 삭제
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auctions/search").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/swagger/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auctions").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/category").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auctions/**").permitAll()
-                        .requestMatchers("/", "/login", "/oauth2/**", "/error").permitAll()
-                        .requestMatchers("/api/user-info").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
