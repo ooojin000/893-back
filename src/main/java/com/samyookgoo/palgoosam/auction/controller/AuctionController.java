@@ -7,8 +7,6 @@ import com.samyookgoo.palgoosam.auction.api_docs.auction.AuctionSearchApi;
 import com.samyookgoo.palgoosam.auction.api_docs.auction.AuctionUpdateApi;
 import com.samyookgoo.palgoosam.auction.api_docs.auction.AuctionUpdatePageApi;
 import com.samyookgoo.palgoosam.auction.api_docs.auction.RelatedAuctionGetApi;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchRequestDto;
-import com.samyookgoo.palgoosam.auction.dto.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionSearchRequestDto;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionUpdateRequest;
