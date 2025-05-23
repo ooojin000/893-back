@@ -41,20 +41,20 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                           (:#{#request.isHeavilyUsed} IS NULL OR :#{#request.isHeavilyUsed} = FALSE) AND
                           (:#{#request.isDamaged} IS NULL OR :#{#request.isDamaged} = FALSE))
                          OR
-                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).brand_new}) OR
-                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).like_new} ) OR
-                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).gently_used} ) OR
-                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).heavily_used} ) OR
-                          (:#{#request.isDamaged} = TRUE AND a.item_condition = :#{T(com.samyookgoo.palgoosam.auction.constant.ItemCondition).damaged} ))
+                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = 'brand_new') OR
+                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = 'like_new' ) OR
+                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = 'gently_used' ) OR
+                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = 'heavily_used' ) OR
+                          (:#{#request.isDamaged} = TRUE AND a.item_condition = 'damaged' ))
                      ) AND
                      (
                          ((:#{#request.isPending} IS NULL OR :#{#request.isPending} = FALSE) AND
                           (:#{#request.isActive} IS NULL OR :#{#request.isActive} = FALSE) AND
                           (:#{#request.isCompleted} IS NULL OR :#{#request.isCompleted} = FALSE))
                          OR
-                         ((:#{#request.isPending} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).pending} ) OR
-                          (:#{#request.isActive} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).active} ) OR
-                          (:#{#request.isCompleted} = TRUE AND a.status = :#{T(com.samyookgoo.palgoosam.auction.constant.AuctionStatus).completed} ))
+                         ((:#{#request.isPending} = TRUE AND a.status = 'pending' ) OR
+                          (:#{#request.isActive} = TRUE AND a.status = 'active' ) OR
+                          (:#{#request.isCompleted} = TRUE AND a.status = 'completed' ))
                      )
             ORDER BY a.created_at DESC
             """, nativeQuery = true)
