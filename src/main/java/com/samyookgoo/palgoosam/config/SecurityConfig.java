@@ -30,20 +30,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors
-                        .configurationSource(corsConfigSource())
-                )
-                .securityMatcher(
-                        "/api/search/suggestions/**",
-                        "/api/auctions/*",
-                        "/api/auctions/*/related",
-                        "/api/auctions/search/**",
-                        "/api/auctions/*/bids",
-                        "/api/category",
-                        "/uploads/**", // 이미지, TODO S3 연동시 삭제
-                        "/swagger-ui/**", "/swagger/**", "/v3/api-docs/**",
-                        "/login", "/oauth2/**", "/error"
-                )
+                .securityMatcher("/swagger-ui/**", "/swagger/**", "/v3/api-docs/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
@@ -65,6 +52,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 프리플라이트 OPTIONS 전역 허용 , TODO 추후 삭제
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/auctions",
+                                "/api/auctions/**",
+                                "/api/category",
+                                "/api/search/suggestions/**",
+                                "/uploads/**"   // 이미지, TODO S3 연동시 삭제
+                        ).permitAll()
+                        .requestMatchers("/", "/login", "/oauth2/**", "/error").permitAll()
+                        
+                        .requestMatchers("/api/users/*").authenticated()
+                        .requestMatchers("/api/payments/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
