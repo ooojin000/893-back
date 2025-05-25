@@ -12,11 +12,10 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,7 +40,7 @@ public class BidService {
                 ));
     }
 
-    // TODO: 리팩토링 필요
+
     public BidListResponse getBidsByAuctionId(Long auctionId, User user) {
         if (!auctionRepository.existsById(auctionId)) {
             throw new NoSuchElementException("해당 경매를 찾을 수 없습니다.");
@@ -49,33 +48,32 @@ public class BidService {
 
         List<Bid> allBids = bidRepository.findByAuctionIdOrderByCreatedAtDesc(auctionId);
 
-        List<BidResponse> bids = allBids.stream()
-                .filter(b -> !b.getIsDeleted())
-                .map(this::mapToResponse)
-                .toList();
+        List<BidResponse> activeBids = new ArrayList<>();
+        List<BidResponse> cancelledBids = new ArrayList<>();
+        BidResponse recentUserBid = null; // 유저의 최근 1분 내 입찰 정보. 비회원이거나 1분 내 입찰 없으면 null
+        boolean isExistCancelled = false;
 
-        List<BidResponse> cancelledBids = allBids.stream()
-                .filter(Bid::getIsDeleted)
-                .map(this::mapToResponse)
-                .toList();
+        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
 
-        BidResponse userBid = null;
-
+        // 이전 입찰 취소 내역 존재 시, 취소 불가. recentUserBid = null
         if (user != null) {
-            Boolean alreadyCancelled = bidRepository.existsByAuctionIdAndBidderIdAndIsDeletedTrue(
-                    auctionId, user.getId()
-            );
+            isExistCancelled = isExistCancelledBidBefore(auctionId, user.getId());
+        }
 
-            if (!alreadyCancelled) {
-                LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+        for (Bid bid : allBids) {
+            BidResponse response = mapToResponse(bid);
 
-                Optional<Bid> recentUserBid = allBids.stream()
-                        .filter(b -> !b.getIsDeleted())
-                        .filter(b -> b.getBidder().getId().equals(user.getId()))
-                        .filter(b -> b.getCreatedAt().isAfter(oneMinuteAgo))
-                        .findFirst();
+            if (Boolean.TRUE.equals(bid.getIsDeleted())) {
+                cancelledBids.add(response);
+                continue;
+            }
 
-                userBid = recentUserBid.map(this::mapToResponse).orElse(null);
+            activeBids.add(response);
+
+            if (user != null && !isExistCancelled) {
+                if (recentUserBid == null && isRecentBidByUser(bid, user, oneMinuteAgo)) {
+                    recentUserBid = response;
+                }
             }
         }
 
@@ -86,8 +84,8 @@ public class BidService {
                 .auctionId(auctionId)
                 .totalBid(totalBid)
                 .totalBidder(totalBidder)
-                .userBid(userBid)
-                .bids(bids)
+                .recentUserBid(recentUserBid)
+                .bids(activeBids)
                 .cancelledBids(cancelledBids)
                 .build();
     }
@@ -138,7 +136,7 @@ public class BidService {
 
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
-            throw new IllegalStateException("현재는 입찰 취소 가능 시간이 아닙니다.");
+            throw new IllegalStateException("현재는 경매 진행 상태가 아닙니다.");
         }
 
         Bid bid = bidRepository.findById(bidId)
@@ -150,6 +148,10 @@ public class BidService {
 
         if (bid.getIsDeleted() == Boolean.TRUE) {
             throw new IllegalStateException("이미 취소된 입찰입니다.");
+        }
+
+        if (isExistCancelledBidBefore(auctionId, bid.getBidder().getId())) {
+            throw new IllegalStateException("입찰 취소는 1번만 가능합니다.");
         }
 
         LocalDateTime cancellableUntil = bid.getCreatedAt().plusMinutes(1);
@@ -192,6 +194,14 @@ public class BidService {
                 .isCancelled(isCancelled)
                 .bid(bidResponse)
                 .build();
+    }
+
+    private boolean isRecentBidByUser(Bid bid, User user, LocalDateTime oneMinuteAgo) {
+        return bid.getBidder().getId().equals(user.getId()) && bid.getCreatedAt().isAfter(oneMinuteAgo);
+    }
+
+    private boolean isExistCancelledBidBefore(Long auctionId, Long userId) {
+        return bidRepository.existsByAuctionIdAndBidderIdAndIsDeletedTrue(auctionId, userId);
     }
 
     private BidResponse mapToResponse(Bid bid) {
