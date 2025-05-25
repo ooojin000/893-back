@@ -98,6 +98,10 @@ public class BidService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("해당 사용자를 찾을 수 없습니다."));
 
+        if (auction.getSeller().getId().equals(user.getId())) {
+            throw new IllegalStateException("판매자는 자신의 경매에 입찰할 수 없습니다.");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
             throw new IllegalStateException("현재는 입찰 가능한 시간이 아닙니다.");
