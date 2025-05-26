@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.auction.domain;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
+import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -71,6 +72,10 @@ public class Auction {
     @Column(nullable = false, length = 20)
     private AuctionStatus status;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -79,4 +84,23 @@ public class Auction {
 
     @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AuctionImage> auctionImages = new ArrayList<>();
+
+    public static Auction from(AuctionCreateRequest request,
+                               Category category,
+                               User seller,
+                               LocalDateTime startTime,
+                               LocalDateTime endTime
+    ) {
+        return Auction.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .basePrice(request.getBasePrice())
+                .itemCondition(request.getItemCondition())
+                .startTime(startTime)
+                .endTime(endTime)
+                .category(category)
+                .seller(seller)
+                .status(AuctionStatus.pending)
+                .build();
+    }
 }

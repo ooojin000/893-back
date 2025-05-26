@@ -48,6 +48,10 @@ public class AuctionImage {
     @Column(nullable = false, length = 255)
     private String url;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }
