@@ -83,7 +83,7 @@ public class Payment {
     @Column(nullable = false, unique = true)
     private String orderNumber;
 
-    @Column(nullable = false)
+    @Column
     private String paymentKey;
 
     @Enumerated(EnumType.STRING)
