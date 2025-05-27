@@ -23,6 +23,7 @@ import com.samyookgoo.palgoosam.payment.policy.DeliveryPolicy;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -67,6 +68,11 @@ public class PaymentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "낙찰자만 결제할 수 있습니다.");
         }
 
+        if (paymentRepository.existsByAuctionIdAndStatusIn(auctionId,
+                List.of(PaymentStatus.PAID, PaymentStatus.PENDING))) {
+            throw new IllegalStateException("이미 결제 중이거나 완료된 주문입니다.");
+        }
+
         if (!request.getItemPrice().equals(winningBid.getPrice())) {
             throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
         }
@@ -76,7 +82,7 @@ public class PaymentService {
             throw new IllegalArgumentException("배송비가 배송비가 올바르지 않습니다.");
         }
 
-        Payment payment = paymentRepository.findByAuctionIdAndStatus(auctionId, PaymentStatus.READY)
+        Payment payment = paymentRepository.findByAuction_Id(auctionId)
                 .orElseGet(() -> {
                     String orderNumber = generateOrderNumber(auctionId);
                     Payment newPayment = Payment.builder()
@@ -119,11 +125,12 @@ public class PaymentService {
         }
     }
 
+    @Transactional
     public TossPaymentConfirmResponse confirmPayment(TossPaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
                 .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
 
-        if (!payment.getStatus().equals(PaymentStatus.READY)) {
+        if (payment.getStatus().equals(PaymentStatus.PAID)) {
             throw new IllegalStateException("이미 결제 처리된 주문입니다.");
         }
 
@@ -132,6 +139,10 @@ public class PaymentService {
         }
 
         String url = config.getBaseUrl() + "/v1/payments/confirm";
+
+        payment.setType(request.getPaymentType());
+        payment.setPaymentKey(request.getPaymentKey());
+
         try {
             @SuppressWarnings("unchecked")
             TossPaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
@@ -142,7 +153,6 @@ public class PaymentService {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "토스 응답이 비어 있습니다.");
             }
 
-            payment.setType(request.getPaymentType());
             payment.setStatus(PaymentStatus.PAID);
             payment.setApprovedAt(OffsetDateTime.parse(tossResponse.getApprovedAt()).toLocalDateTime());
 
