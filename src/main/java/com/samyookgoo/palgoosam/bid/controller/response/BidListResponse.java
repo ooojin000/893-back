@@ -10,7 +10,7 @@ public class BidListResponse {
     private Long auctionId;
     private Integer totalBid;
     private Integer totalBidder;
-    private BidResponse userBid;
+    private BidResponse recentUserBid;
     private List<BidResponse> bids;
     private List<BidResponse> cancelledBids;
 }
