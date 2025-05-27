@@ -167,6 +167,15 @@ public class AuctionService {
         CategoryResponse categoryResponse = CategoryResponse.from(auction.getCategory());
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
         String maskedEmail = maskEmail(auction.getSeller().getEmail());
+
+        Bid winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
+                .orElseThrow(() -> new IllegalStateException("낙찰된 입찰이 존재하지 않습니다."));
+
+        boolean isCurrentUserWinner =
+                user != null && winningBid.getBidder().getId().equals(user.getId());
+
+        boolean hasBeenPaid = paymentRepository.existsByAuction_IdAndStatus(auctionId, PaymentStatus.PAID);
+
         if (user != null) {
             boolean isScraped = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
             boolean isSeller = auction.getSeller().getId().equals(user.getId());
@@ -187,6 +196,8 @@ public class AuctionService {
                     .endTime(auction.getEndTime())
                     .mainImage(mainImage)
                     .images(imageResponses)
+                    .isCurrentUserBuyer(isCurrentUserWinner)
+                    .hasBeenPaid(hasBeenPaid)
                     .build();
         } else {
             return AuctionDetailResponse.builder()
@@ -205,6 +216,8 @@ public class AuctionService {
                     .endTime(auction.getEndTime())
                     .mainImage(mainImage)
                     .images(imageResponses)
+                    .isCurrentUserBuyer(false)
+                    .hasBeenPaid(false)
                     .build();
         }
 
