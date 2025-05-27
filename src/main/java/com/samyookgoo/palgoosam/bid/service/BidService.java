@@ -51,6 +51,7 @@ public class BidService {
         List<BidResponse> activeBids = new ArrayList<>();
         List<BidResponse> cancelledBids = new ArrayList<>();
         BidResponse recentUserBid = null; // 유저의 최근 1분 내 입찰 정보. 비회원이거나 1분 내 입찰 없으면 null
+        boolean canCancelBid = false;
         boolean isExistCancelled = false;
 
         LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
@@ -73,6 +74,7 @@ public class BidService {
             if (user != null && !isExistCancelled) {
                 if (recentUserBid == null && isRecentBidByUser(bid, user, oneMinuteAgo)) {
                     recentUserBid = response;
+                    canCancelBid = true;
                 }
             }
         }
@@ -84,6 +86,7 @@ public class BidService {
                 .auctionId(auctionId)
                 .totalBid(totalBid)
                 .totalBidder(totalBidder)
+                .canCancelBid(canCancelBid)
                 .recentUserBid(recentUserBid)
                 .bids(activeBids)
                 .cancelledBids(cancelledBids)
