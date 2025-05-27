@@ -26,11 +26,12 @@ import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
+import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,10 +44,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -60,6 +63,7 @@ public class AuctionService {
     private final FileStore fileStore;
     private final BidRepository bidRepository;
     private final AuthService authService;
+    private final PaymentRepository paymentRepository;
 
     public List<Long> getAuctionIdsByAuctions(List<Auction> auctions) {
         return auctions.stream()
@@ -100,31 +104,17 @@ public class AuctionService {
             throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
         }
 
-        Category category = categoryRepository.findById(request.getCategory().getId())
-                .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+        Category category = getValidatedCategory(request.getCategory().getId());
 
         validateLeafCategory(category);
-
         validateAuctionTime(request.getStartDelay(), request.getDurationTime());
-
         validateBasePrice(request.getBasePrice());
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startTime = now.plusMinutes(request.getStartDelay());
         LocalDateTime endTime = startTime.plusMinutes(request.getDurationTime());
 
-        Auction auction = Auction.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .basePrice(request.getBasePrice())
-                .itemCondition(request.getItemCondition())
-                .startTime(startTime)
-                .endTime(endTime)
-                .category(category)
-                .seller(user)
-                .status(AuctionStatus.pending)
-                .build();
-
+        Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
 
         List<AuctionImageResponse> imageResponses = new ArrayList<>();
@@ -161,9 +151,8 @@ public class AuctionService {
     @Transactional(readOnly = true)
     public AuctionDetailResponse getAuctionDetail(Long auctionId) {
         User user = authService.getCurrentUser();
-
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+        log.info("현재 로그인 유저: {}", user != null ? user.getEmail() : "null");
+        Auction auction = getValidatedAuction(auctionId);
 
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
 
@@ -179,7 +168,7 @@ public class AuctionService {
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
         String maskedEmail = maskEmail(auction.getSeller().getEmail());
         if (user != null) {
-            boolean isScrap = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
+            boolean isScraped = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
             boolean isSeller = auction.getSeller().getId().equals(user.getId());
 
             return AuctionDetailResponse.builder()
@@ -190,7 +179,7 @@ public class AuctionService {
                     .status(auction.getStatus())
                     .itemCondition(auction.getItemCondition())
                     .basePrice(auction.getBasePrice())
-                    .isScraped(isScrap)
+                    .isScraped(isScraped)
                     .scrapCount(scrapCount)
                     .isSeller(isSeller)
                     .category(categoryResponse)
@@ -223,8 +212,7 @@ public class AuctionService {
 
     @Transactional(readOnly = true)
     public AuctionUpdatePageResponse getAuctionUpdate(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+        Auction auction = getValidatedAuction(auctionId);
 
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
 
@@ -255,8 +243,16 @@ public class AuctionService {
     @Transactional
     public AuctionUpdateResponse updateAuction(Long auctionId, AuctionUpdateRequest request,
                                                List<MultipartFile> images) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+        Auction auction = getValidatedAuction(auctionId);
+        User user = authService.getCurrentUser();
+
+        if (user == null) {
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+        }
+
+        if (!auction.getSeller().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 경매만 삭제할 수 있습니다.");
+        }
 
         if (auction.getStartTime().minusMinutes(10).isBefore(LocalDateTime.now())) {
             throw new IllegalStateException("경매 시작 10분 전부터는 수정이 불가능합니다.");
@@ -279,8 +275,7 @@ public class AuctionService {
         Category category = auction.getCategory();
 
         if (request.getCategory() != null && request.getCategory().getId() != null) {
-            category = categoryRepository.findById(request.getCategory().getId())
-                    .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+            category = getValidatedCategory(request.getCategory().getId());
 
             validateLeafCategory(category);
             auction.setCategory(category);
@@ -367,23 +362,83 @@ public class AuctionService {
 
     @Transactional
     public void deleteAuction(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new EntityNotFoundException("경매 상품 찾을 수 없음."));
+        Auction auction = getValidatedAuction(auctionId);
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+        }
 
+        if (!auction.getSeller().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 경매만 삭제할 수 있습니다.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (auction.getStartTime().minusMinutes(10).isAfter(now)) {
+            softDeleteAuction(auctionId, auction);
+            return;
+        }
+
+        if (auction.getStatus() == AuctionStatus.completed) {
+            List<Bid> bids = bidRepository.findByAuctionId(auctionId);
+
+            boolean allCancelled = bids.stream().allMatch(Bid::getIsDeleted);
+            boolean hasValidBids = bids.stream().anyMatch(b -> !b.getIsDeleted());
+
+            if (!hasValidBids || allCancelled) {
+                softDeleteAuction(auctionId, auction);
+                return;
+            }
+
+            boolean hasWinningBid = bidRepository.existsByAuctionIdAndIsWinningTrue(auctionId);
+            if (!hasWinningBid) {
+                throw new IllegalStateException("낙찰 정보가 존재하지 않아 삭제할 수 없습니다.");
+            }
+
+            Payment payment = paymentRepository.findByAuctionId(auctionId)
+                    .orElseThrow(() -> new IllegalStateException("결제 정보가 존재하지 않아 삭제할 수 없습니다."));
+
+            if (payment.getStatus() != PaymentStatus.PAID) {
+                throw new IllegalStateException("낙찰자의 결제가 완료되지 않아 삭제할 수 없습니다.");
+            }
+
+            softDeleteAuction(auctionId, auction);
+            return;
+        }
+
+        throw new IllegalStateException("경매 시작 10분 전이 지나거나, 경매 중에는 삭제할 수 없습니다.");
+    }
+
+    private void softDeleteAuction(Long auctionId, Auction auction) {
+        // 대표이미지만 논리 삭제
+        softDeleteAuctionImages(auctionId);
+
+        // 논리 삭제
+        auction.setStatus(AuctionStatus.deleted);
+        auction.setIsDeleted(true);
+        auctionRepository.save(auction);
+    }
+
+    private void softDeleteAuctionImages(Long auctionId) {
+        // 이미지 처리
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
 
         for (AuctionImage image : images) {
-            fileStore.delete(image.getStoreName());
+            if (image.getImageSeq() != null && image.getImageSeq() == 0) {
+                // 대표 이미지는 soft delete
+                image.setIsDeleted(true);
+                auctionImageRepository.save(image);
+            } else {
+                // 나머지 이미지는 물리 삭제
+                fileStore.delete(image.getStoreName());
+                auctionImageRepository.delete(image);
+            }
         }
-
-        auctionImageRepository.deleteAll(images);
-        auctionRepository.delete(auction);
     }
 
     @Transactional(readOnly = true)
     public List<RelatedAuctionResponse> getRelatedAuctions(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+        Auction auction = getValidatedAuction(auctionId);
 
         User user = authService.getCurrentUser();
 
@@ -430,6 +485,16 @@ public class AuctionService {
                 .collect(Collectors.toList());
     }
 
+    private Auction getValidatedAuction(Long auctionId) {
+        return auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+    }
+
+    private Category getValidatedCategory(Long categoryId) {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+    }
+
     private static String maskEmail(String email) {
         int atIndex = email.indexOf("@");
         String domain = email.substring(atIndex);
@@ -446,9 +511,12 @@ public class AuctionService {
         }
     }
 
-    private void validateBasePrice(int basePrice) {
-        if (basePrice < 0) {
+    private void validateBasePrice(Integer basePrice) {
+        if (basePrice == null || basePrice < 0) {
             throw new IllegalArgumentException("시작가는 0원 이상이어야 합니다.");
+        }
+        if (basePrice > 100_000_000) {
+            throw new IllegalArgumentException("시작가는 초대 1억 원까지만 입력 가능합니다.");
         }
     }
 
@@ -460,7 +528,6 @@ public class AuctionService {
             throw new IllegalArgumentException("경매 소요 시간은 10분 이상, 24시간(1440분) 이내여야 합니다.");
         }
     }
-
 
     public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
         List<Auction> auctionList = findAuctionList(auctionSearchRequestDto);

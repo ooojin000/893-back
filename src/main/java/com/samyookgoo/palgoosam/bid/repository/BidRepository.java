@@ -33,6 +33,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     Optional<Bid> findByAuctionIdAndIsWinningTrue(Long auctionId);
 
+    boolean existsByAuctionIdAndIsWinningTrue(Long auctionId);
+
     @Query(value = """
             SELECT * 
             FROM bid b
@@ -47,4 +49,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     Integer countDistinctBidderByAuctionId(Long auctionId);
 
     Boolean existsByAuctionIdAndBidderIdAndIsDeletedTrue(Long auctionId, Long bidderId);
+
+    List<Bid> findByAuctionId(Long auctionId);
 }
