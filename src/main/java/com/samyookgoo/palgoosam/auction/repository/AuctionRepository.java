@@ -87,4 +87,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     int updateStatusToCompleted(@Param("now") LocalDateTime now);
 
     List<Auction> findTop12ByOrderByCreatedAtDesc();
+
+    long countByStatus(AuctionStatus status);
 }
