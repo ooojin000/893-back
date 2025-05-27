@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auction.dto.request;
 
 import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -21,8 +22,13 @@ public class AuctionSearchRequestDto {
     private Boolean isHeavilyUsed;
     private Boolean isDamaged;
 
-    private Integer minPrice;
+    @Max(1000000000)
+    @Min(0)
     private Integer maxPrice;
+
+    @Max(1000000000)
+    @Min(0)
+    private Integer minPrice;
 
     // 경매 진행 상태
     private Boolean isPending;
@@ -31,7 +37,7 @@ public class AuctionSearchRequestDto {
 
     @NotNull
     private String sortBy = "latest";
-    
+
     private Long mainCategoryId;
     private Long subCategoryId;
     private Long detailCategoryId;
