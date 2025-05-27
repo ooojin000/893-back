@@ -38,7 +38,7 @@ public class RelatedAuctionResponse {
     private Integer scrapCount;
 
     @Schema(description = "현재 사용자가 이 상품을 스크랩했는지 여부", example = "true")
-    private boolean isScrapped;
+    private Boolean isScrapped;
 
     public static RelatedAuctionResponse of(Auction auction,
                                             String thumbnailUrl,
