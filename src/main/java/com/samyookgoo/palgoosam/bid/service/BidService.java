@@ -7,6 +7,7 @@ import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.exception.BidBadRequestException;
 import com.samyookgoo.palgoosam.bid.exception.BidForbiddenException;
 import com.samyookgoo.palgoosam.bid.exception.BidInvalidStateException;
 import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
@@ -183,12 +184,12 @@ public class BidService {
         }
 
         if (price < auction.getBasePrice()) {
-            throw new BidInvalidStateException(ErrorCode.BID_LESS_THAN_BASE);
+            throw new BidBadRequestException(ErrorCode.BID_LESS_THAN_BASE);
         }
 
         Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auction.getId());
         if (highestPrice != null && price <= highestPrice) {
-            throw new BidInvalidStateException(ErrorCode.BID_NOT_HIGHEST);
+            throw new BidBadRequestException(ErrorCode.BID_NOT_HIGHEST);
         }
     }
 

@@ -7,4 +7,8 @@ public class BidNotFoundException extends ApiException {
     public BidNotFoundException() {
         super(ErrorCode.BID_NOT_FOUND);
     }
+
+    public BidNotFoundException(ErrorCode errorCode) {
+        super(errorCode);
+    }
 }
