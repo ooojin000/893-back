@@ -1,7 +1,9 @@
 package com.samyookgoo.palgoosam.bid.controller.response;
 
 import lombok.Builder;
+import lombok.Getter;
 
+@Getter
 @Builder
 public class BidResultResponse {
     private Boolean canCancelBid;
