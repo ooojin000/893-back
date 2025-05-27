@@ -3,14 +3,17 @@ package com.samyookgoo.palgoosam.payment.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
+import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.config.TossPaymentsConfig;
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentConfirmRequest;
@@ -19,6 +22,11 @@ import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
+import com.samyookgoo.palgoosam.payment.exception.PaymentBadRequestException;
+import com.samyookgoo.palgoosam.payment.exception.PaymentExternalException;
+import com.samyookgoo.palgoosam.payment.exception.PaymentForbiddenException;
+import com.samyookgoo.palgoosam.payment.exception.PaymentInvalidStateException;
+import com.samyookgoo.palgoosam.payment.exception.PaymentNotFoundException;
 import com.samyookgoo.palgoosam.payment.policy.DeliveryPolicy;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
@@ -55,31 +63,31 @@ public class PaymentService {
     @Transactional
     public PaymentCreateResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
         Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+                .orElseThrow(AuctionNotFoundException::new);
 
         if (auction.getSeller().getId().equals(buyer.getId())) {
-            throw new IllegalArgumentException("판매자는 자신의 경매를 구매할 수 없습니다.");
+            throw new PaymentForbiddenException(ErrorCode.SELLER_CANNOT_PURCHASE);
         }
 
         Bid winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
-                .orElseThrow(() -> new IllegalStateException("낙찰된 입찰이 존재하지 않습니다."));
+                .orElseThrow(() -> new BidNotFoundException(ErrorCode.WINNING_BID_NOT_FOUND));
 
         if (!winningBid.getBidder().getId().equals(buyer.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "낙찰자만 결제할 수 있습니다.");
+            throw new PaymentForbiddenException(ErrorCode.NOT_WINNING_BIDDER);
         }
 
         if (paymentRepository.existsByAuctionIdAndStatusIn(auctionId,
                 List.of(PaymentStatus.PAID, PaymentStatus.PENDING))) {
-            throw new IllegalStateException("이미 결제 중이거나 완료된 주문입니다.");
+            throw new PaymentInvalidStateException(ErrorCode.PAYMENT_IN_PROGRESS_OR_DONE);
         }
 
         if (!request.getItemPrice().equals(winningBid.getPrice())) {
-            throw new IllegalArgumentException("결제 금액이 낙찰 금액과 일치하지 않습니다.");
+            throw new PaymentBadRequestException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
         int deliveryFee = deliveryPolicy.calculate(request.getItemPrice());
         if (!request.getDeliveryFee().equals(deliveryFee)) {
-            throw new IllegalArgumentException("배송비가 배송비가 올바르지 않습니다.");
+            throw new PaymentBadRequestException(ErrorCode.INVALID_DELIVERY_FEE);
         }
 
         Payment payment = paymentRepository.findByAuction_Id(auctionId)
@@ -118,7 +126,7 @@ public class PaymentService {
 
     public void handlePaymentFailure(TossPaymentFailCallbackRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
-                .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
+                .orElseThrow(AuctionNotFoundException::new);
 
         if (payment.getStatus() == PaymentStatus.READY) {
             payment.setStatus(PaymentStatus.FAILED);
@@ -128,14 +136,14 @@ public class PaymentService {
     @Transactional
     public TossPaymentConfirmResponse confirmPayment(TossPaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
-                .orElseThrow(() -> new NoSuchElementException("해당 주문을 찾을 수 없습니다."));
+                .orElseThrow(PaymentNotFoundException::new);
 
         if (payment.getStatus().equals(PaymentStatus.PAID)) {
-            throw new IllegalStateException("이미 결제 처리된 주문입니다.");
+            throw new PaymentInvalidStateException(ErrorCode.ALREADY_PAID);
         }
 
         if (payment.getFinalPrice() != request.getAmount()) {
-            throw new IllegalArgumentException("결제 금액이 일치하지 않습니다.");
+            throw new PaymentBadRequestException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
         String url = config.getBaseUrl() + "/v1/payments/confirm";
@@ -150,7 +158,7 @@ public class PaymentService {
 
             if (tossResponse == null) {
                 payment.setStatus(PaymentStatus.FAILED);
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "토스 응답이 비어 있습니다.");
+                throw new PaymentExternalException(ErrorCode.TOSS_PAYMENT_EMPTY_RESPONSE);
             }
 
             payment.setStatus(PaymentStatus.PAID);
@@ -166,7 +174,7 @@ public class PaymentService {
 
             String responseBody = ex.getResponseBodyAsString();
             String code = "UNKNOWN";
-            String message = "Toss 결제 오류가 발생했습니다.";
+            String message = ErrorCode.TOSS_PAYMENT_FAILED.getMessage();
 
             try {
                 Map<String, Object> errorMap = objectMapper.readValue(responseBody, Map.class);
@@ -177,12 +185,12 @@ public class PaymentService {
             }
 
             log.error("Toss 결제 승인 실패 - code: {}, message: {}", code, message);
-            throw new ResponseStatusException(ex.getStatusCode(), "[" + code + "] " + message);
+            throw new PaymentExternalException(ErrorCode.TOSS_PAYMENT_FAILED);
 
         } catch (Exception ex) {
             payment.setStatus(PaymentStatus.FAILED);
             log.error("Toss 결제 처리 중 예외 발생", ex);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Toss 결제 오류가 발생했습니다.");
+            throw new PaymentExternalException(ErrorCode.TOSS_PAYMENT_FAILED);
         }
     }
 
