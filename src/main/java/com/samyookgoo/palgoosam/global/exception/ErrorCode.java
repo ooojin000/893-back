@@ -6,12 +6,11 @@ import lombok.Getter;
 public enum ErrorCode {
     // 인증/권한
     UNAUTHORIZED_USER(401, "A_001", "클라이언트 인증 부재, 로그인 해주세요."),
-    FORBIDDEN_BID_CANCEL(403, "A_002", "본인의 입찰만 취소할 수 있습니다."),
 
     // 유저/카테고리/경매/입찰 조회 실패
-    USER_NOT_FOUND(404, "U_001", "유저를 찾을 수 없습니다."),
+    USER_NOT_FOUND(404, "U_001", "해당 유저를 찾을 수 없습니다."),
     CATEGORY_NOT_FOUND(404, "C_001", "카테고리가 존재하지 않습니다."),
-    AUCTION_NOT_FOUND(404, "AUC_001", "경매 상품이 존재하지 않습니다."),
+    AUCTION_NOT_FOUND(404, "AUC_001", "해당 경매 상품이 존재하지 않습니다."),
     BID_NOT_FOUND(404, "BID_001", "해당 입찰 내역이 존재하지 않습니다."),
     ADDRESS_NOT_FOUND(404, "ADR_001", "변경할 주소를 찾을 수 없습니다."),
     DELETE_ADDRESS_NOT_FOUND(404, "ADR_002", "삭제할 주소를 찾을 수 없습니다."),
@@ -32,6 +31,9 @@ public enum ErrorCode {
     BID_ALREADY_CANCELED(400, "BID_005", "이미 취소된 입찰입니다."),
     BID_CANCEL_EXPIRED(400, "BID_006", "입찰 후 1분 이내에만 취소할 수 있습니다."),
     BID_CANCEL_NOT_TOP(400, "BID_007", "최고 입찰가가 아니면 취소할 수 없습니다."),
+    SELLER_CANNOT_BID(403, "BID_008", "판매자는 자신의 경매에 입찰할 수 없습니다."),
+    BID_CANCEL_FORBIDDEN(403, "BID_009", "본인의 입찰만 취소할 수 있습니다."),
+    BID_CANCEL_LIMIT_EXCEEDED(400, "BID_010", "입찰 취소는 1회까지만 가능합니다."),
 
     // FCM
     FCM_TOKEN_MISSING(404, "FCM_001", "토큰이 없습니다."),
