@@ -2,20 +2,14 @@ package com.samyookgoo.palgoosam.payment.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.config.TossPaymentsConfig;
-import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
-import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
-import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentConfirmRequest;
 import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentFailCallbackRequest;
-import com.samyookgoo.palgoosam.payment.controller.response.OrderResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
@@ -47,8 +41,6 @@ public class PaymentService {
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
     private final ObjectMapper objectMapper;
-    private final DeliveryAddressRepository deliveryAddressRepository;
-    private final AuctionImageRepository auctionImageRepository;
     private final DeliveryPolicy deliveryPolicy;
 
 
@@ -185,41 +177,6 @@ public class PaymentService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Toss 결제 오류가 발생했습니다.");
         }
     }
-
-    @Transactional(readOnly = true)
-    public OrderResponse getOrder(Long auctionId, Long userId) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
-
-        Bid winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
-                .orElseThrow(() -> new IllegalStateException("낙찰된 입찰이 존재하지 않습니다."));
-
-        if (!winningBid.getBidder().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "낙찰자만 결제할 수 있습니다.");
-        }
-
-        DeliveryAddress deliveryAddress = deliveryAddressRepository.findDefaultByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("기본 배송지가 없습니다."));
-
-        AuctionImage image = auctionImageRepository.findMainImageByAuctionId(auctionId)
-                .orElseThrow(() -> new IllegalStateException("해당 경매에 대한 대표 이미지가 존재하지 않습니다."));
-
-        int itemPrice = winningBid.getPrice();
-        int deliveryFee = deliveryPolicy.calculate(itemPrice);
-        int finalPrice = itemPrice + deliveryFee;
-
-        return OrderResponse.builder()
-                .auctionId(auction.getId())
-                .customerName(winningBid.getBidder().getName())
-                .auctionTitle(auction.getTitle())
-                .auctionThumbnail(image != null ? image.getUrl() : null)
-                .itemPrice(itemPrice)
-                .deliveryFee(deliveryFee)
-                .finalPrice(finalPrice)
-                .deliveryAddress(DeliveryAddressResponseDto.of(deliveryAddress))
-                .build();
-    }
-
 
     private String generateOrderNumber(Long auctionId) {
         return String.format("ORD-%d-%s", auctionId, UUID.randomUUID().toString().substring(0, 8));
