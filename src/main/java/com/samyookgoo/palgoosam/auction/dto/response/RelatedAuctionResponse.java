@@ -13,7 +13,7 @@ import lombok.Getter;
 public class RelatedAuctionResponse {
 
     @Schema(description = "경매 ID", example = "101")
-    private Long auctionId;
+    private Long id;
 
     @Schema(description = "경매 제목", example = "아이패드 미니 6세대")
     private String title;
@@ -28,52 +28,40 @@ public class RelatedAuctionResponse {
     @Schema(description = "경매 종료 시간 (ISO 8601 형식)", example = "2025-06-01 12:00:00")
     private String endTime;
 
-    @Schema(description = "현재 경매가 (입찰이 없다면 시작가)", example = "150000")
-    private Integer price;
+    @Schema(description = "현재 경매가", example = "150000")
+    private Integer currentPrice;
 
     @Schema(description = "입찰 수", example = "7")
-    private Integer bidCount;
+    private Integer bidderCount;
 
     @Schema(description = "스크랩 수", example = "23")
     private Integer scrapCount;
 
     @Schema(description = "현재 사용자가 이 상품을 스크랩했는지 여부", example = "true")
-    private boolean isScrapped;
+    private Boolean isScrapped;
 
     public static RelatedAuctionResponse of(Auction auction,
                                             String thumbnailUrl,
                                             Long loginUserId,
                                             ScrapRepository scrapRepository,
                                             BidRepository bidRepository) {
-        boolean scrapped;
-        if (loginUserId != null) {
-            scrapped = scrapRepository.existsByUserIdAndAuctionId(loginUserId, auction.getId());
-        } else {
-            scrapped = false;
-        }
+
+        boolean isScrapped =
+                loginUserId != null && scrapRepository.existsByUserIdAndAuctionId(loginUserId, auction.getId());
         int scrapCount = scrapRepository.countByAuctionId(auction.getId());
-
         int bidCount = bidRepository.countByAuctionIdAndIsDeletedFalse(auction.getId());
-
         Integer winningPrice = bidRepository.findMaxBidPriceByAuctionId(auction.getId());
 
-        int price;
-        if (bidCount == 0 || winningPrice == null) {
-            price = auction.getBasePrice();
-        } else {
-            price = winningPrice;
-        }
-
         return RelatedAuctionResponse.builder()
-                .auctionId(auction.getId())
+                .id(auction.getId())
                 .title(auction.getTitle())
-                .status(auction.getStatus().name())
+                .status(auction.getStatus().name().toLowerCase()) // pending, active, etc.
                 .thumbnailUrl(thumbnailUrl)
                 .endTime(auction.getEndTime().toString())
-                .price(price)
-                .bidCount(bidCount)
+                .currentPrice((winningPrice != null && bidCount > 0) ? winningPrice : auction.getBasePrice())
+                .bidderCount(bidCount)
                 .scrapCount(scrapCount)
-                .isScrapped(scrapped)
+                .isScrapped(isScrapped)
                 .build();
     }
 
