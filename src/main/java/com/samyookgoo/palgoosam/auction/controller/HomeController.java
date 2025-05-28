@@ -1,8 +1,12 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
 import com.samyookgoo.palgoosam.auction.service.HomeService;
+import com.samyookgoo.palgoosam.common.response.BaseResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,5 +20,11 @@ public class HomeController {
     @GetMapping("/dashboard")
     public DashboardResponse getDashboard() {
         return homeService.getDashboard();
+    }
+
+    @GetMapping("/recentAuction")
+    public ResponseEntity<BaseResponse<List<RecentAuctionResponse>>> getRecentAuction() {
+        List<RecentAuctionResponse> responses = homeService.getRecentAuctions();
+        return ResponseEntity.ok(BaseResponse.success("최근 등록한 상품 목록 조회 성공", responses));
     }
 }
