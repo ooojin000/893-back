@@ -16,6 +16,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByAuctionIdAndStatus(Long auctionId, PaymentStatus status);
 
     Optional<Payment> findByAuctionId(Long auctionId);
-  
+
     boolean existsByAuctionIdAndStatusIn(Long auctionId, List<PaymentStatus> statuses);
+
+    boolean existsByAuction_IdAndStatus(Long auctionId, PaymentStatus status);
 }
