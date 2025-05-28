@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -152,6 +153,7 @@ public class AuctionService {
     public AuctionDetailResponse getAuctionDetail(Long auctionId) {
         User user = authService.getCurrentUser();
         log.info("현재 로그인 유저: {}", user != null ? user.getEmail() : "null");
+
         Auction auction = getValidatedAuction(auctionId);
 
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
@@ -168,17 +170,14 @@ public class AuctionService {
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
         String maskedEmail = maskEmail(auction.getSeller().getEmail());
 
-        Bid winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
-                .orElseThrow(() -> new IllegalStateException("낙찰된 입찰이 존재하지 않습니다."));
-
-        boolean isCurrentUserWinner =
-                user != null && winningBid.getBidder().getId().equals(user.getId());
-
-        boolean hasBeenPaid = paymentRepository.existsByAuction_IdAndStatus(auctionId, PaymentStatus.PAID);
+        Optional<Bid> winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId);
 
         if (user != null) {
             boolean isScraped = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
             boolean isSeller = auction.getSeller().getId().equals(user.getId());
+            boolean hasBeenPaid = paymentRepository.existsByAuction_IdAndStatus(auctionId, PaymentStatus.PAID);
+            boolean isCurrentUserWinner = winningBid.map(bid -> bid.getBidder().getId().equals(user.getId()))
+                    .orElse(false);
 
             return AuctionDetailResponse.builder()
                     .auctionId(auction.getId())
@@ -220,7 +219,6 @@ public class AuctionService {
                     .hasBeenPaid(false)
                     .build();
         }
-
     }
 
     @Transactional(readOnly = true)
