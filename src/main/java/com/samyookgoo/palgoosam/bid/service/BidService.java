@@ -5,6 +5,7 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
+import com.samyookgoo.palgoosam.bid.controller.response.BidResultResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
@@ -28,6 +29,7 @@ public class BidService {
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
+    private final SseService sseService;
 
     public Map<Long, Integer> getAuctionMaxPrices(List<Long> auctionIds) {
         return bidRepository
@@ -49,6 +51,7 @@ public class BidService {
         List<BidResponse> activeBids = new ArrayList<>();
         List<BidResponse> cancelledBids = new ArrayList<>();
         BidResponse recentUserBid = null; // 유저의 최근 1분 내 입찰 정보. 비회원이거나 1분 내 입찰 없으면 null
+        boolean canCancelBid = false;
         boolean isExistCancelled = false;
 
         LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
@@ -71,6 +74,7 @@ public class BidService {
             if (user != null && !isExistCancelled) {
                 if (recentUserBid == null && isRecentBidByUser(bid, user, oneMinuteAgo)) {
                     recentUserBid = response;
+                    canCancelBid = true;
                 }
             }
         }
@@ -82,6 +86,7 @@ public class BidService {
                 .auctionId(auctionId)
                 .totalBid(totalBid)
                 .totalBidder(totalBidder)
+                .canCancelBid(canCancelBid)
                 .recentUserBid(recentUserBid)
                 .bids(activeBids)
                 .cancelledBids(cancelledBids)
@@ -89,7 +94,7 @@ public class BidService {
     }
 
     @Transactional
-    public BidEventResponse placeBid(Long auctionId, Long userId, int price) {
+    public BidResultResponse placeBid(Long auctionId, Long userId, int price) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new NoSuchElementException("해당 경매를 찾을 수 없습니다."));
 
@@ -110,8 +115,12 @@ public class BidService {
 
         Bid savedBid = bidRepository.save(bid);
         BidResponse bidResponse = BidResponse.from(savedBid);
+        boolean canCancelBid = !isExistCancelledBidBefore(auctionId, userId);
 
-        return createBidEventResponse(auctionId, bidResponse, false);
+        BidEventResponse event = createBidEventResponse(auctionId, bidResponse, false);
+        sseService.broadcastBidUpdate(auctionId, event);
+
+        return BidResultResponse.from(bidResponse, canCancelBid);
     }
 
     @Transactional
