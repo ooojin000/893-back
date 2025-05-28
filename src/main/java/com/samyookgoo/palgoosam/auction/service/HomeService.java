@@ -1,9 +1,21 @@
 package com.samyookgoo.palgoosam.auction.service;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
+import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
+import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class HomeService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
+    private final AuctionImageRepository auctionImageRepository;
+    private final ScrapRepository scrapRepository;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard() {
@@ -27,5 +41,62 @@ public class HomeService {
                 .totalAuctionCount(totalAuctionCount)
                 .activeAuctionCount(activeAuctionCount)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UpcomingAuctionResponse> getUpcomingAuctions() {
+        List<Auction> auctionList = auctionRepository.findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(
+                AuctionStatus.pending, LocalDateTime.now());
+
+        Map<Long, String> thumbnailMap = getThumbnailMap(auctionList);
+
+        Map<Long, Integer> scrapCountMap = getScrapCounts(auctionList);
+
+        return auctionList.stream()
+                .map(auction -> UpcomingAuctionResponse.builder()
+                        .auctionId(auction.getId())
+                        .title(auction.getTitle())
+                        .description(auction.getDescription())
+                        .itemCondition(auction.getItemCondition())
+                        .basePrice(auction.getBasePrice())
+                        .scrapCount(scrapCountMap.getOrDefault(auction.getId(), 0))
+                        .thumbnailUrl(thumbnailMap.get(auction.getId()))
+                        .leftTime(formatLeftTime(auction.getStartTime()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private Map<Long, String> getThumbnailMap(List<Auction> auctionList) {
+        List<Long> auctionIds = auctionList.stream().map(Auction::getId).toList();
+        return auctionImageRepository.findMainImagesByAuctionIds(auctionIds).stream()
+                .collect(Collectors.toMap(
+                        img -> img.getAuction().getId(),
+                        AuctionImage::getUrl
+                ));
+    }
+
+    private Map<Long, Integer> getScrapCounts(List<Auction> auctionList) {
+        List<Long> auctionIds = auctionList.stream()
+                .map(Auction::getId)
+                .toList();
+
+        if (auctionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<AuctionScrapCount> result = scrapRepository.countGroupedByAuctionIds(auctionIds);
+
+        return result.stream().collect(Collectors.toMap(
+                AuctionScrapCount::getAuctionId,
+                dto -> dto.getScrapCount().intValue()
+        ));
+    }
+
+    private String formatLeftTime(LocalDateTime startTime) {
+        Duration duration = Duration.between(LocalDateTime.now(), startTime);
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.getSeconds() % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }
