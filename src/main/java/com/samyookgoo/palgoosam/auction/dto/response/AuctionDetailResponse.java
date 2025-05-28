@@ -59,5 +59,11 @@ public class AuctionDetailResponse {
 
     @Schema(description = "이미지 목록")
     private List<AuctionImageResponse> images;
+
+    @Schema(description = "현재 사용자가 낙찰자인지 여부", example = "true")
+    private boolean isCurrentUserBuyer;
+
+    @Schema(description = "결제가 완료되었는지 여부", example = "false")
+    private boolean hasBeenPaid;
 }
 

@@ -8,7 +8,7 @@ import com.samyookgoo.palgoosam.bid.controller.request.BidRequest;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
-import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
+import com.samyookgoo.palgoosam.bid.controller.response.BidResultResponse;
 import com.samyookgoo.palgoosam.bid.service.BidService;
 import com.samyookgoo.palgoosam.bid.service.SseService;
 import com.samyookgoo.palgoosam.user.domain.User;
@@ -50,7 +50,7 @@ public class BidController {
 
     @PlaceBidApi
     @PostMapping("/{auctionId}/bids")
-    public BaseResponse<BidResponse> placeBid(
+    public BaseResponse<BidResultResponse> placeBid(
             @Parameter(name = "auctionId", description = "입찰할 경매 ID", required = true)
             @PathVariable Long auctionId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -63,12 +63,11 @@ public class BidController {
         if (user == null) {
             throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
         }
-        BidEventResponse response = bidService.placeBid(auctionId, user.getId(), request.getPrice());
-        sseService.broadcastBidUpdate(auctionId, response);
 
-        return BaseResponse.success(response.getBid());
+        BidResultResponse response = bidService.placeBid(auctionId, user.getId(), request.getPrice());
+        return BaseResponse.success(response);
     }
-    
+
     @CancelBidApi
     @CrossOrigin(origins = "http://localhost:3000")
     @PatchMapping("/{auctionId}/bids/{bidId}")
