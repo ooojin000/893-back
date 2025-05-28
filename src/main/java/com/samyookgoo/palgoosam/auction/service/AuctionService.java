@@ -574,12 +574,12 @@ public class AuctionService {
                                 .bidderCount((long) (bids != null ? bids.size() : 0))
                                 .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
                                 .scrapCount((long) (scraps != null ? scraps.size() : 0))
-                                .isScrapped(false)
+                                .isScraped(false)
                                 .build();
                     }
             ).toList();
         } else {
-            Map<Long, Scrap> isScrappedMap = scrapRepository.findAllByUser_Id(user.getId()).stream()
+            Map<Long, Scrap> isScrapedMap = scrapRepository.findAllByUser_Id(user.getId()).stream()
                     .collect(Collectors.toMap(scrap -> scrap.getAuction().getId(), scrap -> scrap));
             resultWithoutSort = auctionList.stream().map(auction -> {
                         Long auctionId = auction.getId();
@@ -597,7 +597,7 @@ public class AuctionService {
                                 .bidderCount((long) (bids != null ? bids.size() : 0))
                                 .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
                                 .scrapCount((long) (scraps != null ? scraps.size() : 0))
-                                .isScrapped(isScrappedMap.get(auctionId) != null)
+                                .isScraped(isScrapedMap.get(auctionId) != null)
                                 .build();
                     }
             ).toList();
@@ -690,12 +690,12 @@ public class AuctionService {
                                 .bidderCount((long) (bids != null ? bids.size() : 0))
                                 .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
                                 .scrapCount((long) (scraps != null ? scraps.size() : 0))
-                                .isScrapped(false)
+                                .isScraped(false)
                                 .build();
                     }
             ).toList();
         } else {
-            Map<Long, Scrap> isScrappedMap = scrapRepository.findAllByUser_Id(user.getId()).stream()
+            Map<Long, Scrap> isScrapedMap = scrapRepository.findAllByUser_Id(user.getId()).stream()
                     .collect(Collectors.toMap(scrap -> scrap.getAuction().getId(), scrap -> scrap));
             result = auctionList.stream().map(auction -> {
                         Long auctionId = auction.getId();
@@ -713,7 +713,7 @@ public class AuctionService {
                                 .bidderCount((long) (bids != null ? bids.size() : 0))
                                 .currentPrice(bids != null ? bids.getFirst().getPrice() : auction.getBasePrice())
                                 .scrapCount((long) (scraps != null ? scraps.size() : 0))
-                                .isScrapped(isScrappedMap.get(auctionId) != null)
+                                .isScraped(isScrapedMap.get(auctionId) != null)
                                 .build();
                     }
             ).toList();

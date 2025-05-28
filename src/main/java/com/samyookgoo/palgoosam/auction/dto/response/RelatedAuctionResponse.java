@@ -38,7 +38,7 @@ public class RelatedAuctionResponse {
     private Integer scrapCount;
 
     @Schema(description = "현재 사용자가 이 상품을 스크랩했는지 여부", example = "true")
-    private Boolean isScrapped;
+    private Boolean isScraped;
 
     public static RelatedAuctionResponse of(Auction auction,
                                             String thumbnailUrl,
@@ -46,7 +46,7 @@ public class RelatedAuctionResponse {
                                             ScrapRepository scrapRepository,
                                             BidRepository bidRepository) {
 
-        boolean isScrapped =
+        boolean isScraped =
                 loginUserId != null && scrapRepository.existsByUserIdAndAuctionId(loginUserId, auction.getId());
         int scrapCount = scrapRepository.countByAuctionId(auction.getId());
         int bidCount = bidRepository.countByAuctionIdAndIsDeletedFalse(auction.getId());
@@ -61,7 +61,7 @@ public class RelatedAuctionResponse {
                 .currentPrice((winningPrice != null && bidCount > 0) ? winningPrice : auction.getBasePrice())
                 .bidderCount(bidCount)
                 .scrapCount(scrapCount)
-                .isScrapped(isScrapped)
+                .isScraped(isScraped)
                 .build();
     }
 
