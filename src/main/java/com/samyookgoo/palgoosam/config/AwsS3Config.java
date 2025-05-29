@@ -11,9 +11,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
 public class AwsS3Config {
+    // TODO: 배포 후 삭제
     @Value("${cloud.aws.credentials.access-key}")
     private String accessKey;
 
+    // TODO: 배포 후 삭제
     @Value("${cloud.aws.credentials.secret-key}")
     private String secretKey;
 
@@ -25,11 +27,14 @@ public class AwsS3Config {
 
     @Bean
     public S3Client amazonS3() {
+        // TODO: 배포 후 삭제
         AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(accessKey, secretKey);
+
         return S3Client.builder()
                 .region(Region.of(region))
                 .endpointOverride(URI.create(s3EndpointUrl))
-                .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
+                //.credentialsProvider(DefaultCredentialsProvider.create()) // TODO: 배포 후 적용 (IAM 역할을 통한 자격 증명 자동 처리)
+                .credentialsProvider(StaticCredentialsProvider.create(awsCredentials)) // TODO: 배포 후 삭제
                 .build();
     }
 }
