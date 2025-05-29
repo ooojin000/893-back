@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.auction.controller;
 
 import com.samyookgoo.palgoosam.auction.dto.home.ActiveRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.PendingRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.TopBidResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
@@ -48,5 +49,11 @@ public class HomeController {
     public ResponseEntity<BaseResponse<List<ActiveRankingResponse>>> getActiveRanking() {
         List<ActiveRankingResponse> responses = homeService.getActiveRanking();
         return ResponseEntity.ok(BaseResponse.success("경매중 실시간 랭킹 조회 성공", responses));
+    }
+
+    @GetMapping("/ranking/pending")
+    public ResponseEntity<BaseResponse<List<PendingRankingResponse>>> getPendingRanking() {
+        List<PendingRankingResponse> responses = homeService.getPendingRanking();
+        return ResponseEntity.ok(BaseResponse.success("경매 예정 실시간 랭킹 조회 성공", responses));
     }
 }
