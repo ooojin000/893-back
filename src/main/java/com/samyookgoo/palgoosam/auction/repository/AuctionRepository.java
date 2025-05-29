@@ -42,4 +42,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findTop12ByOrderByCreatedAtDesc();
 
     long countByStatus(AuctionStatus status);
+
+    List<Auction> findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(AuctionStatus status, LocalDateTime now);
+
+    List<Auction> findTop6ByStatusInOrderByCreatedAtDesc(List<AuctionStatus> statuses);
 }

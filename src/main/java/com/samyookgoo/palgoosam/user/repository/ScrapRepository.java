@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.user.repository;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import java.util.List;
@@ -28,4 +29,15 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     Optional<Scrap> findByUserAndAuction(User user, Auction auction);
 
     boolean existsByUserIdAndAuctionId(Long userId, Long auctionId);
+
+    @Query("""
+            SELECT s.auction.id AS auctionId, COUNT(s) AS scrapCount
+            FROM Scrap s 
+            WHERE s.auction.id IN :auctionIds 
+            GROUP BY s.auction.id
+            """)
+    List<AuctionScrapCount> countGroupedByAuctionIds(List<Long> auctionIds);
+
+    @Query("SELECT s.auction.id FROM Scrap s WHERE s.user.id = :userId")
+    List<Long> findAuctionIdsByUserId(@Param("userId") Long userId);
 }
