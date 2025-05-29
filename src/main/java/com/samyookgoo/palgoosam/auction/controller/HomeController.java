@@ -1,8 +1,8 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
-import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
 import com.samyookgoo.palgoosam.auction.service.HomeService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import java.util.List;
@@ -27,7 +27,8 @@ public class HomeController {
     public ResponseEntity<BaseResponse<List<RecentAuctionResponse>>> getRecentAuction() {
         List<RecentAuctionResponse> responses = homeService.getRecentAuctions();
         return ResponseEntity.ok(BaseResponse.success("최근 등록한 상품 목록 조회 성공", responses));
-  
+    }
+
     @GetMapping("/upcoming")
     public ResponseEntity<BaseResponse<List<UpcomingAuctionResponse>>> getUpcomingAuctions() {
         List<UpcomingAuctionResponse> upcomingAuctions = homeService.getUpcomingAuctions();

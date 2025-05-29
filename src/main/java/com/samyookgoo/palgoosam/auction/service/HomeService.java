@@ -4,17 +4,18 @@ import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
-import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Collections;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
+import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,7 @@ public class HomeService {
                         .isScraped(isScraped.contains(auction.getId()))
                         .build())
                 .collect(Collectors.toList());
+    }
 
     @Transactional(readOnly = true)
     public List<UpcomingAuctionResponse> getUpcomingAuctions() {
