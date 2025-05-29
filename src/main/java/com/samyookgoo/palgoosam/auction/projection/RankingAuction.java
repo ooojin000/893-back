@@ -2,7 +2,7 @@ package com.samyookgoo.palgoosam.auction.projection;
 
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 
-public interface ActiveRanking {
+public interface RankingAuction {
     Long getAuctionId();
 
     String getTitle();
