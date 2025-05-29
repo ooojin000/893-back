@@ -5,12 +5,13 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.dto.home.ActiveRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.PendingRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.TopBidResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
-import com.samyookgoo.palgoosam.auction.projection.ActiveRanking;
 import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
 import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
 import com.samyookgoo.palgoosam.auction.projection.TopWinningBid;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
@@ -147,14 +148,16 @@ public class HomeService {
                 .map(AuctionBidCount::getAuctionId)
                 .toList();
 
-        List<ActiveRanking> rankingList = auctionRepository.findActiveRankingByIds(auctionIds);
+        List<RankingAuction> rankingList = auctionRepository.findRankingByIds(auctionIds);
 
-        Map<Long, ActiveRanking> rankingMap = rankingList.stream()
-                .collect(Collectors.toMap(ActiveRanking::getAuctionId, r -> r));
+        Map<Long, RankingAuction> rankingMap = rankingList.stream()
+                .collect(Collectors.toMap(RankingAuction::getAuctionId, r -> r));
+
+        AtomicInteger rank = new AtomicInteger(1);
 
         return bidCounts.stream()
                 .map(b -> {
-                    ActiveRanking r = rankingMap.get(b.getAuctionId());
+                    RankingAuction r = rankingMap.get(b.getAuctionId());
                     return ActiveRankingResponse.builder()
                             .auctionId(r.getAuctionId())
                             .title(r.getTitle())
@@ -162,6 +165,39 @@ public class HomeService {
                             .itemCondition(r.getItemCondition())
                             .thumbnailUrl(r.getThumbnailUrl())
                             .bidCount(b.getBidCount())
+                            .rankNum(rank.getAndIncrement())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PendingRankingResponse> getPendingRanking() {
+        Pageable topEight = PageRequest.of(0, 8);
+        List<AuctionScrapCount> scrapCounts = auctionRepository.findTop8AuctionScrapCounts(topEight);
+
+        List<Long> auctionIds = scrapCounts.stream()
+                .map(AuctionScrapCount::getAuctionId)
+                .toList();
+
+        List<RankingAuction> rankingList = auctionRepository.findRankingByIds(auctionIds);
+
+        Map<Long, RankingAuction> rankingMap = rankingList.stream()
+                .collect(Collectors.toMap(RankingAuction::getAuctionId, r -> r));
+
+        AtomicInteger rank = new AtomicInteger(1);
+
+        return scrapCounts.stream()
+                .map(b -> {
+                    RankingAuction r = rankingMap.get(b.getAuctionId());
+                    return PendingRankingResponse.builder()
+                            .auctionId(r.getAuctionId())
+                            .title(r.getTitle())
+                            .description(r.getDescription())
+                            .itemCondition(r.getItemCondition())
+                            .thumbnailUrl(r.getThumbnailUrl())
+                            .scrapCount(b.getScrapCount())
+                            .rankNum(rank.getAndIncrement())
                             .build();
                 })
                 .toList();
