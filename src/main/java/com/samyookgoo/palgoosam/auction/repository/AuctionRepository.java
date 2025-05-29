@@ -2,8 +2,9 @@ package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.projection.ActiveRanking;
 import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
+import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
 import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -101,10 +102,10 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             SELECT a.id AS auctionId, a.title AS title, a.description AS description,
                    a.itemCondition AS itemCondition, img.url AS thumbnailUrl
             FROM Auction a
-            JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
+            LEFT JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
             WHERE a.id IN :auctionIds
             """)
-    List<ActiveRanking> findActiveRankingByIds(@Param("auctionIds") List<Long> auctionIds);
+    List<RankingAuction> findRankingByIds(@Param("auctionIds") List<Long> auctionIds);
 
     @Query("""
             SELECT a.id AS auctionId, COUNT(b.id) AS bidCount
@@ -115,4 +116,14 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             ORDER BY COUNT(b.id) DESC, a.id ASC
             """)
     List<AuctionBidCount> findTop8AuctionBidCounts(Pageable pageable);
+
+    @Query("""
+            SELECT a.id AS auctionId, COUNT(s.id) AS scrapCount
+            FROM Auction a
+            LEFT JOIN Scrap s ON s.auction.id = a.id
+            WHERE a.status = 'pending'
+            GROUP BY a.id
+            ORDER BY COUNT(s.id) DESC, a.id ASC
+            """)
+    List<AuctionScrapCount> findTop8AuctionScrapCounts(Pageable pageable);
 }

@@ -6,12 +6,12 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ActiveRankingResponse {
+public class PendingRankingResponse {
     private Long auctionId;
     private String title;
     private String description;
     private ItemCondition itemCondition;
     private String thumbnailUrl;
-    private Integer bidCount;
+    private Integer scrapCount;
     private Integer rankNum;
 }
