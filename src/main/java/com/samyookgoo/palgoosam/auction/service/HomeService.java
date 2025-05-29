@@ -4,6 +4,10 @@ import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
@@ -65,6 +69,28 @@ public class HomeService {
                         .isScraped(isScraped.contains(auction.getId()))
                         .build())
                 .collect(Collectors.toList());
+
+    @Transactional(readOnly = true)
+    public List<UpcomingAuctionResponse> getUpcomingAuctions() {
+        List<Auction> auctionList = auctionRepository.findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(
+                AuctionStatus.pending, LocalDateTime.now());
+
+        Map<Long, String> thumbnailMap = getThumbnailMap(auctionList);
+
+        Map<Long, Integer> scrapCountMap = getScrapCounts(auctionList);
+
+        return auctionList.stream()
+                .map(auction -> UpcomingAuctionResponse.builder()
+                        .auctionId(auction.getId())
+                        .title(auction.getTitle())
+                        .description(auction.getDescription())
+                        .itemCondition(auction.getItemCondition())
+                        .basePrice(auction.getBasePrice())
+                        .scrapCount(scrapCountMap.getOrDefault(auction.getId(), 0))
+                        .thumbnailUrl(thumbnailMap.get(auction.getId()))
+                        .leftTime(formatLeftTime(auction.getStartTime()))
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private List<Auction> getRecentAuctionStatus() {
@@ -81,10 +107,34 @@ public class HomeService {
                 ));
     }
 
+    private Map<Long, Integer> getScrapCounts(List<Auction> auctionList) {
+        List<Long> auctionIds = auctionList.stream()
+                .map(Auction::getId)
+                .toList();
+
+        if (auctionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<AuctionScrapCount> result = scrapRepository.countGroupedByAuctionIds(auctionIds);
+
+        return result.stream().collect(Collectors.toMap(
+                AuctionScrapCount::getAuctionId,
+                dto -> dto.getScrapCount().intValue()
+        ));
+    }
+
+    private String formatLeftTime(LocalDateTime startTime) {
+        Duration duration = Duration.between(LocalDateTime.now(), startTime);
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.getSeconds() % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
     private Set<Long> getScrapedAuctionIds(User user) {
         return user != null
                 ? new HashSet<>(scrapRepository.findAuctionIdsByUserId(user.getId()))
                 : Set.of();
     }
-
 }
