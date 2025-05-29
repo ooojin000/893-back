@@ -3,13 +3,15 @@ package com.samyookgoo.palgoosam.auction.service;
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
+import com.samyookgoo.palgoosam.auction.dto.home.ActiveRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.TopBidResponse;
-import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
-import com.samyookgoo.palgoosam.auction.projection.TopWinningBid;
 import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
+import com.samyookgoo.palgoosam.auction.projection.ActiveRanking;
+import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
 import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.TopWinningBid;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
@@ -102,8 +104,8 @@ public class HomeService {
                         .build())
                 .collect(Collectors.toList());
     }
-  
-    @Transactional(readOnly = true)    
+
+    @Transactional(readOnly = true)
     public List<TopBidResponse> getTopBid() {
         LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
         Pageable topFive = PageRequest.of(0, 5);
@@ -134,7 +136,36 @@ public class HomeService {
                         .rankNum(rank.getAndIncrement())
                         .build())
                 .toList();
-    }  
+    }
+
+    @Transactional(readOnly = true)
+    public List<ActiveRankingResponse> getActiveRanking() {
+        Pageable topEight = PageRequest.of(0, 8);
+        List<AuctionBidCount> bidCounts = auctionRepository.findTop8AuctionBidCounts(topEight);
+
+        List<Long> auctionIds = bidCounts.stream()
+                .map(AuctionBidCount::getAuctionId)
+                .toList();
+
+        List<ActiveRanking> rankingList = auctionRepository.findActiveRankingByIds(auctionIds);
+
+        Map<Long, ActiveRanking> rankingMap = rankingList.stream()
+                .collect(Collectors.toMap(ActiveRanking::getAuctionId, r -> r));
+
+        return bidCounts.stream()
+                .map(b -> {
+                    ActiveRanking r = rankingMap.get(b.getAuctionId());
+                    return ActiveRankingResponse.builder()
+                            .auctionId(r.getAuctionId())
+                            .title(r.getTitle())
+                            .description(r.getDescription())
+                            .itemCondition(r.getItemCondition())
+                            .thumbnailUrl(r.getThumbnailUrl())
+                            .bidCount(b.getBidCount())
+                            .build();
+                })
+                .toList();
+    }
 
     private List<Auction> getRecentAuctionStatus() {
         List<AuctionStatus> statuses = List.of(AuctionStatus.active, AuctionStatus.pending);
