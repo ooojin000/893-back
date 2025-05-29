@@ -13,4 +13,5 @@ public class ActiveRankingResponse {
     private ItemCondition itemCondition;
     private String thumbnailUrl;
     private Integer bidCount;
+    private Integer rankNum;
 }
