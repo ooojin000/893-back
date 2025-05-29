@@ -42,4 +42,6 @@ public class AuctionSearchDto {
 
     @NotNull
     private String sortBy = "latest";
+
+    private Integer offset;
 }
