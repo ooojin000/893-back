@@ -32,5 +32,5 @@ public class AuctionSearchResultDto {
     private String thumbnailUrl;
 
     // 로그인 구현에 따라 수정 필요
-    private Boolean isScrapped = false;
+    private Boolean isScraped = false;
 }

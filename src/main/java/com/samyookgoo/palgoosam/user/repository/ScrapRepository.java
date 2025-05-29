@@ -37,4 +37,7 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
             GROUP BY s.auction.id
             """)
     List<AuctionScrapCount> countGroupedByAuctionIds(List<Long> auctionIds);
+
+    @Query("SELECT s.auction.id FROM Scrap s WHERE s.user.id = :userId")
+    List<Long> findAuctionIdsByUserId(@Param("userId") Long userId);
 }
