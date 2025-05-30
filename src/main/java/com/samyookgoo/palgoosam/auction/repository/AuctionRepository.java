@@ -2,9 +2,14 @@ package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
+import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
+import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -46,4 +51,33 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(AuctionStatus status, LocalDateTime now);
 
     List<Auction> findTop6ByStatusInOrderByCreatedAtDesc(List<AuctionStatus> statuses);
+
+    @Query("""
+            SELECT a.id AS auctionId, a.title AS title, a.description AS description,
+                   a.itemCondition AS itemCondition, img.url AS thumbnailUrl
+            FROM Auction a
+            LEFT JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
+            WHERE a.id IN :auctionIds
+            """)
+    List<RankingAuction> findRankingByIds(@Param("auctionIds") List<Long> auctionIds);
+
+    @Query("""
+            SELECT a.id AS auctionId, COUNT(b.id) AS bidCount
+            FROM Auction a
+            LEFT JOIN Bid b ON b.auction.id = a.id
+            WHERE a.status = 'ACTIVE'
+            GROUP BY a.id
+            ORDER BY COUNT(b.id) DESC, a.id ASC
+            """)
+    List<AuctionBidCount> findTop8AuctionBidCounts(Pageable pageable);
+
+    @Query("""
+            SELECT a.id AS auctionId, COUNT(s.id) AS scrapCount
+            FROM Auction a
+            LEFT JOIN Scrap s ON s.auction.id = a.id
+            WHERE a.status = 'pending'
+            GROUP BY a.id
+            ORDER BY COUNT(s.id) DESC, a.id ASC
+            """)
+    List<AuctionScrapCount> findTop8AuctionScrapCounts(Pageable pageable);
 }

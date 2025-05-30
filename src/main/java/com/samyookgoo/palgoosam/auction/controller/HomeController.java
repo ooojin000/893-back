@@ -1,7 +1,10 @@
 package com.samyookgoo.palgoosam.auction.controller;
 
+import com.samyookgoo.palgoosam.auction.dto.home.ActiveRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.DashboardResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.PendingRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.RecentAuctionResponse;
+import com.samyookgoo.palgoosam.auction.dto.home.TopBidResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
 import com.samyookgoo.palgoosam.auction.service.HomeService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
@@ -29,9 +32,28 @@ public class HomeController {
         return ResponseEntity.ok(BaseResponse.success("최근 등록한 상품 목록 조회 성공", responses));
     }
 
+
     @GetMapping("/upcoming")
     public ResponseEntity<BaseResponse<List<UpcomingAuctionResponse>>> getUpcomingAuctions() {
-        List<UpcomingAuctionResponse> upcomingAuctions = homeService.getUpcomingAuctions();
-        return ResponseEntity.ok(BaseResponse.success("임박한 경매 상품 목록 조회 성공", upcomingAuctions));
+        List<UpcomingAuctionResponse> responses = homeService.getUpcomingAuctions();
+        return ResponseEntity.ok(BaseResponse.success("임박한 경매 상품 목록 조회 성공", responses));
+    }
+
+    @GetMapping("/topBid")
+    public ResponseEntity<BaseResponse<List<TopBidResponse>>> getTopBid() {
+        List<TopBidResponse> responses = homeService.getTopBid();
+        return ResponseEntity.ok(BaseResponse.success("이번주 최고 낙찰가 top 5 조회 성공", responses));
+    }
+
+    @GetMapping("/ranking/active")
+    public ResponseEntity<BaseResponse<List<ActiveRankingResponse>>> getActiveRanking() {
+        List<ActiveRankingResponse> responses = homeService.getActiveRanking();
+        return ResponseEntity.ok(BaseResponse.success("경매중 실시간 랭킹 조회 성공", responses));
+    }
+
+    @GetMapping("/ranking/pending")
+    public ResponseEntity<BaseResponse<List<PendingRankingResponse>>> getPendingRanking() {
+        List<PendingRankingResponse> responses = homeService.getPendingRanking();
+        return ResponseEntity.ok(BaseResponse.success("경매 예정 실시간 랭킹 조회 성공", responses));
     }
 }

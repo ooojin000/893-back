@@ -2,17 +2,12 @@ package com.samyookgoo.palgoosam.payment.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.config.TossPaymentsConfig;
-import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
-import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
-import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
@@ -32,17 +27,14 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
