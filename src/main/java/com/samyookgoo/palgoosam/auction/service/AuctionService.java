@@ -565,7 +565,7 @@ public class AuctionService {
                         .bidderCount(auction.getBidderCount())
                         .currentPrice(auction.getCurrentPrice())
                         .scrapCount(auction.getScrapCount())
-                        .isScrapped(user != null && scrapRepository.existsByUserIdAndAuctionId(user.getId(),
+                        .isScraped(user != null && scrapRepository.existsByUserIdAndAuctionId(user.getId(),
                                 auction.getId()))
                         .build()
         ).toList();
