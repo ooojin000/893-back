@@ -53,7 +53,8 @@ public class AuctionSearchRequestDto {
     public AuctionSearchDto toAuctionSearchDto() {
         Long categoryId = this.checkCategoryId();
         return new AuctionSearchDto(keyword, categoryId, isBrandNew, isLikeNew, isGentlyUsed, isHeavilyUsed,
-                isDamaged, minPrice, maxPrice, isPending, isActive, isCompleted, page, limit, sortBy);
+                isDamaged, minPrice, maxPrice, isPending, isActive, isCompleted, page, limit, sortBy,
+                (this.page - 1) * this.limit);
     }
 
     private Long checkCategoryId() {
