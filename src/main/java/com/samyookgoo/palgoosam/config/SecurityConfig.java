@@ -55,12 +55,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/auctions",
                                 "/api/auctions/**",
+                                "/api/home/**",
                                 "/api/category",
                                 "/api/search/suggestions/**",
                                 "/uploads/**"   // 이미지, TODO S3 연동시 삭제
                         ).permitAll()
                         .requestMatchers("/", "/login", "/oauth2/**", "/error").permitAll()
-                        
                         .requestMatchers("/api/users/*").authenticated()
                         .requestMatchers("/api/payments/**").authenticated()
                         .anyRequest().authenticated()

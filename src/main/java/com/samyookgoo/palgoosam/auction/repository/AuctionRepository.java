@@ -2,10 +2,14 @@ package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
+import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
 import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,52 +17,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findAllBySeller_Id(Long sellerId);
-
-    @Query(value = """
-             SELECT a.*  FROM auction a
-             JOIN user u ON a.seller_id = u.id
-             JOIN category c ON a.category_id = c.id
-             WHERE
-             MATCH(a.title, a.description)
-             AGAINST (:#{#request.keyword} IN NATURAL LANGUAGE MODE) AND
-             -- 카테고리 SQL
-             (:#{#request.categoryId} IS NULL OR a.category_id IN (
-                 WITH RECURSIVE CategoryHierarchy AS (
-                 SELECT id FROM category WHERE id = :#{#request.categoryId}
-                 UNION ALL
-                 SELECT c.id FROM category c
-                 JOIN CategoryHierarchy ch ON c.parent_id = ch.id
-                 )
-                 SELECT id FROM CategoryHierarchy
-             )) AND
-             --
-             (:#{#request.minPrice} IS NULL OR a.base_price >= :#{#request.minPrice}) AND
-             (:#{#request.maxPrice} IS NULL OR a.base_price <= :#{#request.maxPrice}) AND
-                     (
-                         ((:#{#request.isBrandNew} IS NULL OR :#{#request.isBrandNew} = FALSE) AND
-                          (:#{#request.isLikeNew} IS NULL OR :#{#request.isLikeNew} = FALSE) AND
-                          (:#{#request.isGentlyUsed} IS NULL OR :#{#request.isGentlyUsed} = FALSE) AND
-                          (:#{#request.isHeavilyUsed} IS NULL OR :#{#request.isHeavilyUsed} = FALSE) AND
-                          (:#{#request.isDamaged} IS NULL OR :#{#request.isDamaged} = FALSE))
-                         OR
-                         ((:#{#request.isBrandNew} = TRUE AND a.item_condition = 'brand_new') OR
-                          (:#{#request.isLikeNew} = TRUE AND a.item_condition = 'like_new' ) OR
-                          (:#{#request.isGentlyUsed} = TRUE AND a.item_condition = 'gently_used' ) OR
-                          (:#{#request.isHeavilyUsed} = TRUE AND a.item_condition = 'heavily_used' ) OR
-                          (:#{#request.isDamaged} = TRUE AND a.item_condition = 'damaged' ))
-                     ) AND
-                     (
-                         ((:#{#request.isPending} IS NULL OR :#{#request.isPending} = FALSE) AND
-                          (:#{#request.isActive} IS NULL OR :#{#request.isActive} = FALSE) AND
-                          (:#{#request.isCompleted} IS NULL OR :#{#request.isCompleted} = FALSE))
-                         OR
-                         ((:#{#request.isPending} = TRUE AND a.status = 'pending' ) OR
-                          (:#{#request.isActive} = TRUE AND a.status = 'active' ) OR
-                          (:#{#request.isCompleted} = TRUE AND a.status = 'completed' ))
-                     )
-            ORDER BY a.created_at DESC
-            """, nativeQuery = true)
-    List<Auction> findAllWithDetails(@Param("request") AuctionSearchDto auctionSearchDto);
 
     Optional<Auction> findById(Long id);
 
@@ -93,4 +51,33 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(AuctionStatus status, LocalDateTime now);
 
     List<Auction> findTop6ByStatusInOrderByCreatedAtDesc(List<AuctionStatus> statuses);
+
+    @Query("""
+            SELECT a.id AS auctionId, a.title AS title, a.description AS description,
+                   a.itemCondition AS itemCondition, img.url AS thumbnailUrl
+            FROM Auction a
+            LEFT JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
+            WHERE a.id IN :auctionIds
+            """)
+    List<RankingAuction> findRankingByIds(@Param("auctionIds") List<Long> auctionIds);
+
+    @Query("""
+            SELECT a.id AS auctionId, COUNT(b.id) AS bidCount
+            FROM Auction a
+            LEFT JOIN Bid b ON b.auction.id = a.id
+            WHERE a.status = 'ACTIVE'
+            GROUP BY a.id
+            ORDER BY COUNT(b.id) DESC, a.id ASC
+            """)
+    List<AuctionBidCount> findTop8AuctionBidCounts(Pageable pageable);
+
+    @Query("""
+            SELECT a.id AS auctionId, COUNT(s.id) AS scrapCount
+            FROM Auction a
+            LEFT JOIN Scrap s ON s.auction.id = a.id
+            WHERE a.status = 'pending'
+            GROUP BY a.id
+            ORDER BY COUNT(s.id) DESC, a.id ASC
+            """)
+    List<AuctionScrapCount> findTop8AuctionScrapCounts(Pageable pageable);
 }
