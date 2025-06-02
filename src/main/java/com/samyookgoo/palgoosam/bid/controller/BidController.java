@@ -12,11 +12,11 @@ import com.samyookgoo.palgoosam.bid.controller.response.BidResultResponse;
 import com.samyookgoo.palgoosam.bid.service.BidService;
 import com.samyookgoo.palgoosam.bid.service.SseService;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -61,7 +61,7 @@ public class BidController {
     ) {
         User user = authService.getCurrentUser();
         if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         BidResultResponse response = bidService.placeBid(auctionId, user.getId(), request.getPrice());
@@ -80,7 +80,7 @@ public class BidController {
     ) {
         User user = authService.getCurrentUser();
         if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
         BidEventResponse response = bidService.cancelBid(auctionId, bidId, user);
         sseService.broadcastBidUpdate(auctionId, response);
