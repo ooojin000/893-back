@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -30,9 +29,8 @@ class SearchHistoryRepositoryTest {
     private UserRepository userRepository;
 
     @Test
-    @Rollback
     @DisplayName("회원인 사용자의 검색 내역을 저장한다.")
-    public void Given_SearchHistory_When_Save_Then_NormallySave() throws Exception {
+    public void Given_SearchHistory_When_Save_Then_NormallySave() {
         //given
         User testUser = createTestUser("tester", "test@test.com");
         SearchHistory searchHistory = createSearchHistory("test", testUser);
