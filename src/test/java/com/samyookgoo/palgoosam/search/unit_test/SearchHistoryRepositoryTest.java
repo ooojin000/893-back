@@ -31,7 +31,7 @@ class SearchHistoryRepositoryTest {
 
     @Test
     @Rollback
-    @DisplayName("SearchHistory를 저장한다.")
+    @DisplayName("회원인 사용자의 검색 내역을 저장한다.")
     public void Given_SearchHistory_When_Save_Then_NormallySave() throws Exception {
         //given
         User testUser = createTestUser("tester", "test@test.com");
@@ -48,7 +48,7 @@ class SearchHistoryRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByAllUserId를 호출하면 10개 이하의 개수를 보여준다.")
+    @DisplayName("회원은 10개 이하의 검색 기록을 볼 수 있다.")
     public void Given_UserId_When_CallfindAllByUserIdMethod_Then_ReturnListLengthUnder10() {
         //given
         User testUser = createTestUser("tester2", "test2@test.com");
@@ -72,7 +72,7 @@ class SearchHistoryRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByKeywordAndUserId를 호출하면 Optional<SearchHistory>를 반환한다.")
+    @DisplayName("사용자가 검색어를 입력하면 기존 검색 기록을 확인할 수 있다.")
     public void Given_KeywordAndUserId_When_CallfindByKeywordAndUserId_Then_ReturnOptionalSearchHistory() {
         //given
         User testUser = createTestUser("tester", "test@test.com");

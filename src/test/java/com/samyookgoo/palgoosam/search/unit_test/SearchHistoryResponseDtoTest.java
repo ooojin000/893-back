@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class SearchHistoryResponseDtoTest {
 
     @Test
-    @DisplayName("from() 메서드를 호출하면 SearchHistory의 데이터를 기반으로 SearchHistoryResponseDto를 생성한다.")
+    @DisplayName("SearchHistoryResponseDto는 엔티티를 기반으로 해당 DTO를 생성할 수 있다.")
     public void Given_SearchHistory_When_CallFromMethod_Then_CreateSearchHistoryResponseDto() {
         //given
         LocalDateTime now = LocalDateTime.now();

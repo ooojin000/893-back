@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class SearchHistoryEntityTest {
 
     @Test
-    @DisplayName("restoreAndIncrement() 메서드를 호출하면 SearchHistory의 IsDeleted는 false로, SearchCount는 1만큼 더해져서 갱신된다.")
+    @DisplayName("검색 기록은 검색 카운트를 1회 증가시키고, 논리적인 삭제 상태를 복구할 수 있다.")
     public void Given_SearchHistory_When_CallRestoreAndIncrementMethod_Then_UpdateIsDeleteAndSearchCount() {
         //given
         SearchHistory target = SearchHistory.builder()
@@ -32,7 +32,7 @@ class SearchHistoryEntityTest {
     }
 
     @Test
-    @DisplayName("softDeleteSearchHistory() 메서드를 호출하면 SearchHistory의 IsDeleted는 true로 갱신된다.")
+    @DisplayName("검색 기록은 논리적인 삭제 상태로 변경할 수 있다.")
     public void Given_SearchHistory_When_CallsoftDeleteSearchHistoryMethod_Then_UpdateIsDelete() {
         //given
         SearchHistory target = SearchHistory.builder()
@@ -50,7 +50,7 @@ class SearchHistoryEntityTest {
     }
 
     @Test
-    @DisplayName("현재 유저가 SearchHistory에 대한 권한이 있을 때, hasPermission() 메서드를 호출하면 참을 반환한다.")
+    @DisplayName("유저가 검색 기록에 대한 권한이 없다면 참을 반환한다.")
     public void Given_SearchHistoryAndUserId_When_CallhasPermissionMethod_Then_ReturnTrue() {
         //given
         User user = User.builder()
@@ -70,7 +70,7 @@ class SearchHistoryEntityTest {
     }
 
     @Test
-    @DisplayName("현재 유저가 SearchHistory에 대한 권한이 없을 때, hasPermission() 메서드를 호출하면 거짓을 반환한다.")
+    @DisplayName("유저가 검색 기록에 대한 권한이 없다면 거짓을 반환한다.")
     public void Given_SearchHistoryAndUserId_When_CallhasPermissionMethod_Then_ReturnFalse() {
         //given
         User userWithPermission = User.builder()
