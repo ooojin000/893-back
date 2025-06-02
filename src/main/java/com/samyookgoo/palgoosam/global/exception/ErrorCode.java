@@ -6,8 +6,8 @@ import lombok.Getter;
 public enum ErrorCode {
     // 인증/권한
     UNAUTHORIZED_USER(401, "A_001", "클라이언트 인증 부재, 로그인 해주세요."),
-
     USER_NOT_FOUND(404, "U_001", "해당 유저를 찾을 수 없습니다."),
+    FORBIDDEN(403, "A_002", "해당 리소스에 접근할 수 없습니다."),
     CATEGORY_NOT_FOUND(404, "C_001", "카테고리가 존재하지 않습니다."),
     ADDRESS_NOT_FOUND(404, "ADR_001", "변경할 주소를 찾을 수 없습니다."),
     DELETE_ADDRESS_NOT_FOUND(404, "ADR_002", "삭제할 주소를 찾을 수 없습니다."),
@@ -49,6 +49,10 @@ public enum ErrorCode {
     SELLER_CANNOT_PURCHASE(403, "PAY_007", "판매자는 자신의 경매를 구매할 수 없습니다."),
     TOSS_PAYMENT_FAILED(502, "PAY_008", "Toss 결제 오류가 발생했습니다."),
     TOSS_PAYMENT_EMPTY_RESPONSE(502, "PAY_009", "Toss 응답이 비어 있습니다."),
+
+    // 검색 기록
+    SEARCH_HISTORY_NOT_FOUND(404, "SEARCH_HIST_001", "해당 검색 기록을 찾을 수 없습니다."),
+    SEARCH_HISTORY_BAD_REQUEST(400, "SEARCH_HIST_002", "처리할 수 없는 공백 요청입니다."),
 
 
     INTERNAL_SERVER_ERROR(500, "SYS_001", "서버가 오류가 발생했습니다."),
