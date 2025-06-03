@@ -54,6 +54,8 @@ public enum ErrorCode {
     SEARCH_HISTORY_NOT_FOUND(404, "SEARCH_HIST_001", "해당 검색 기록을 찾을 수 없습니다."),
     SEARCH_HISTORY_BAD_REQUEST(400, "SEARCH_HIST_002", "처리할 수 없는 공백 요청입니다."),
 
+    // 배송지
+    DELIVERY_ADDRESS_NOT_FOUND(404, "DELIVERY_ADDR_001", "해당 배송지 정보를 찾을 수 없습니다."),
 
     INTERNAL_SERVER_ERROR(500, "SYS_001", "서버가 오류가 발생했습니다."),
     METHOD_NOT_ALLOWED(405, "SYS_002", "API는 열려있으나 메소드는 사용 불가합니다."),
