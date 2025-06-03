@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.deliveryaddress.domain;
 
+import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressRequestDto;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,4 +54,28 @@ public class DeliveryAddress {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    public Boolean hasPermission(Long userId) {
+        return this.getUser().getId().equals(userId);
+    }
+
+    public void removeDefault() {
+        this.isDefault = false;
+    }
+
+    public void setDefault() {
+        this.isDefault = true;
+    }
+
+    static public DeliveryAddress from(DeliveryAddressRequestDto requestDto, User user) {
+        return DeliveryAddress.builder()
+                .user(user)
+                .name(requestDto.getName())
+                .phoneNumber(requestDto.getPhoneNumber())
+                .zipCode(requestDto.getZipCode())
+                .addressLine1(requestDto.getAddressLine1())
+                .addressLine2(requestDto.getAddressLine2())
+                .isDefault(requestDto.isDefault())
+                .build();
+    }
 }
