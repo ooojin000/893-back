@@ -31,7 +31,6 @@ import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
-import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import java.time.LocalDateTime;
@@ -67,38 +66,6 @@ public class AuctionService {
     private final AuthService authService;
     private final PaymentRepository paymentRepository;
     private final AuctionSearchRepository auctionSearchRepository;
-
-    public List<Long> getAuctionIdsByAuctions(List<Auction> auctions) {
-        return auctions.stream()
-                .map(Auction::getId)
-                .distinct()
-                .toList();
-    }
-
-    public List<Long> getAuctionIdsByBids(List<Bid> bids) {
-        return bids.stream()
-                .map(b -> b.getAuction().getId())
-                .distinct()
-                .toList();
-    }
-
-    public List<Long> getAuctionIdsByScraps(List<Scrap> scraps) {
-        return scraps.stream()
-                .map(s -> s.getAuction().getId())
-                .distinct()
-                .toList();
-    }
-
-    public List<Long> getAuctionIdsByPayment(List<Payment> payments) {
-        return payments.stream()
-                .map(p -> p.getAuction().getId())
-                .distinct()
-                .toList();
-    }
-
-    public List<Auction> getAuctionsByAuctionIds(List<Long> auctionIds) {
-        return auctionRepository.findAllById(auctionIds);
-    }
 
     @Transactional
     public AuctionCreateResponse createAuction(AuctionCreateRequest request, List<ResultFileStore> resultFileStores) {
@@ -570,33 +537,5 @@ public class AuctionService {
                         .build()
         ).toList();
         return new AuctionSearchResponseDto(auctionCount, resultDtoList);
-    }
-
-    private List<Long> getAuctionIdList(List<Auction> auctionList) {
-        return auctionList.stream().map(Auction::getId).collect(Collectors.toList());
-    }
-
-    private Map<Long, String> getThumbnailMap(List<Long> auctionIList) {
-        List<AuctionImage> thumbnailList = auctionImageRepository.findThumbnailsByAuctionIds(auctionIList);
-
-        return thumbnailList.stream()
-                .collect(Collectors.toMap(
-                        image -> image.getAuction().getId(),
-                        AuctionImage::getUrl,
-                        (existing, replacement) -> existing
-                ));
-    }
-
-    private Map<Long, List<Bid>> getBidListByAuctionMap(List<Long> auctionIdList) {
-        List<Bid> bidList = bidRepository.findByAuctionIdList(auctionIdList);
-        return bidList.stream()
-                .collect(Collectors.groupingBy(bid -> bid.getAuction().getId()));
-    }
-
-    private Map<Long, List<Scrap>> getScrapListByAuctionMap(List<Long> auctionIdList) {
-
-        List<Scrap> scrapList = scrapRepository.findByAuctionIdList(auctionIdList);
-        return scrapList.stream()
-                .collect(Collectors.groupingBy(scrap -> scrap.getAuction().getId()));
     }
 }
