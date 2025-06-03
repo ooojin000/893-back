@@ -56,7 +56,6 @@ public class UserService {
 
         return createUserAuctionsResponseDtoList(auctions, maxBidMap);
     }
-// 이까지 급한 불은 껐다.
 
     public List<UserAuctionsResponseDto> getUserScraps() {
         User user = getAuthenticatedUser(authService.getCurrentUser());
