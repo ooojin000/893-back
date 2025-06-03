@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.search.dto;
 
+import com.samyookgoo.palgoosam.search.domain.SearchHistory;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,4 +18,13 @@ public class SearchHistoryResponseDto {
     private String keyword;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public static SearchHistoryResponseDto from(SearchHistory searchHistory) {
+        return SearchHistoryResponseDto.builder()
+                .id(searchHistory.getId())
+                .keyword(searchHistory.getKeyword())
+                .createdAt(searchHistory.getCreatedAt())
+                .updatedAt(searchHistory.getUpdatedAt())
+                .build();
+    }
 }
