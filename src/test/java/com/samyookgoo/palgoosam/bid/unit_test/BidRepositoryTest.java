@@ -68,7 +68,7 @@ class BidRepositoryTest {
         auction1 = createAuction(seller, "첫번째 경매", 1000, savedCategory);
         auction2 = createAuction(seller, "두번째 경매", 2000, savedCategory);
 
-        // 경매 이미지 생성 (필수)
+        // 경매 이미지 생성
         createAuctionImage(auction1, "image1.jpg");
         createAuctionImage(auction2, "image2.jpg");
 
