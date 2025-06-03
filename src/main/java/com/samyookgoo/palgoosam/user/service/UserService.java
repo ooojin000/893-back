@@ -33,12 +33,7 @@ public class UserService {
         if (user == null) {
             throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
         }
-        return new UserInfoResponseDto(
-                user.getEmail(),
-                user.getName(),
-                user.getProfileImage(),
-                user.getProvider()
-        );
+        return UserInfoResponseDto.from(user);
     }
 
     public List<UserBidsResponseDto> getUserBids() {
