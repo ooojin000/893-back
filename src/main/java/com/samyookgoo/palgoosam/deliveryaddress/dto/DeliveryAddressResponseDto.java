@@ -19,15 +19,15 @@ public class DeliveryAddressResponseDto {
     private String zipCode;
     private Boolean isDefault;
 
-    public static DeliveryAddressResponseDto of(DeliveryAddress e) {
+    public static DeliveryAddressResponseDto of(DeliveryAddress deliveryAddress) {
         return new DeliveryAddressResponseDto(
-                e.getId(),
-                e.getName(),
-                e.getPhoneNumber(),
-                e.getAddressLine1(),
-                e.getAddressLine2(),
-                e.getZipCode(),
-                e.getIsDefault()
+                deliveryAddress.getId(),
+                deliveryAddress.getName(),
+                deliveryAddress.getPhoneNumber(),
+                deliveryAddress.getAddressLine1(),
+                deliveryAddress.getAddressLine2(),
+                deliveryAddress.getZipCode(),
+                deliveryAddress.getIsDefault()
         );
     }
 }
