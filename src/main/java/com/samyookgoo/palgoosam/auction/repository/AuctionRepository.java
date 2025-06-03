@@ -2,10 +2,10 @@ package com.samyookgoo.palgoosam.auction.repository;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.domain.AuctionForMyPageProjection;
 import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
 import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
 import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
-import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +16,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
-    List<Auction> findAllBySeller_Id(Long sellerId);
 
     Optional<Auction> findById(Long id);
 
@@ -43,8 +42,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                   AND a.endTime <= :now
             """)
     int updateStatusToCompleted(@Param("now") LocalDateTime now);
-
-    List<Auction> findTop12ByOrderByCreatedAtDesc();
 
     long countByStatus(AuctionStatus status);
 
@@ -80,4 +77,20 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             ORDER BY COUNT(s.id) DESC, a.id ASC
             """)
     List<AuctionScrapCount> findTop8AuctionScrapCounts(Pageable pageable);
+
+    @Query(value = """
+            SELECT a.id as auctionId, a.title as title, a.end_time as endTime, a.start_time as startTime, a.status as status, ai.url as mainImageUrl
+            FROM auction as a
+            JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+            WHERE a.seller_id = :sellerId
+            """, nativeQuery = true)
+    List<AuctionForMyPageProjection> findAllAuctionProjectionBySellerId(@Param("sellerId") Long sellerId);
+
+    @Query(value = """
+            SELECT a.id as auctionId, a.title as title, a.end_time as endTime, a.start_time as startTime, a.status as status, ai.url as mainImageUrl
+            FROM auction as a
+            JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
+            JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+            """, nativeQuery = true)
+    List<AuctionForMyPageProjection> findAllAuctionProjectionWithScrapByUserId(@Param("userId") Long userId);
 }
