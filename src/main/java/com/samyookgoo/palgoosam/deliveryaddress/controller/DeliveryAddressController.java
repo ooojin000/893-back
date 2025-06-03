@@ -3,13 +3,14 @@ package com.samyookgoo.palgoosam.deliveryaddress.controller;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.deliveryaddress.api_docs.DeleteUserDeliveryAddressApi;
 import com.samyookgoo.palgoosam.deliveryaddress.api_docs.GetUserDeliveryAddressesApi;
-import com.samyookgoo.palgoosam.deliveryaddress.api_docs.PatchUserDefaultAddress;
+import com.samyookgoo.palgoosam.deliveryaddress.api_docs.ModifyDefaultDeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.api_docs.PostUserDeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressRequestDto;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
 import com.samyookgoo.palgoosam.deliveryaddress.service.DeliveryAddressService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -64,13 +65,13 @@ public class DeliveryAddressController {
                 .body(BaseResponse.success("배송지가 등록되었습니다.", null));
     }
 
-    @PatchUserDefaultAddress
+    @ModifyDefaultDeliveryAddress
     @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
     @PatchMapping("/addresses/{id}/default")
-    public ResponseEntity<BaseResponse<Void>> patchUserDefaultAddress(
+    public ResponseEntity<BaseResponse<Void>> modifyDefaultDeliveryAddress(
             @Parameter(name = "id", description = "기본 설정할 배송지 ID", required = true)
-            @PathVariable Long id) {
-        deliveryAddressService.patchUserDefaultAddress(id);
+            @PathVariable @NotNull Long id) {
+        deliveryAddressService.modifyDefaultDeliveryAddress(id);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(BaseResponse.success("기본 배송지가 변경됐습니다.", null));
