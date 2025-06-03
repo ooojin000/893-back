@@ -13,11 +13,11 @@ import com.samyookgoo.palgoosam.user.dto.UserAuctionsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserBidsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserInfoResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserPaymentsResponseDto;
+import com.samyookgoo.palgoosam.user.exception.UserUnauthorizedException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,24 +29,15 @@ public class UserService {
     private final AuthService authService;
 
     public UserInfoResponseDto getUserInfo() {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
+        User user = getAuthenticatedUser(authService.getCurrentUser());
         return UserInfoResponseDto.from(user);
     }
 
     public List<UserBidsResponseDto> getUserBids() {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
+        User user = getAuthenticatedUser(authService.getCurrentUser());
+
         List<BidForHighestPriceProjection> bids = bidRepository.findHighestBidProjectsByBidderId(user.getId());
-        Map<Long, Integer> maxBidMap = bids.stream().collect(Collectors.toMap(
-                BidForHighestPriceProjection::getAuctionId,
-                BidForHighestPriceProjection::getBidHighestPrice,
-                (existing, replacement) -> existing
-        ));
+        Map<Long, Integer> maxBidMap = getMaxBidMap(bids);
 
         List<BidForMyPageProjection> bidProjections = bidRepository.findAllBidsByUserId(user.getId());
 
@@ -56,61 +47,60 @@ public class UserService {
     }
 
     public List<UserAuctionsResponseDto> getUserAuctions() {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
-        List<AuctionForMyPageProjection> auctions = auctionRepository.findAllAuctionProjectionBySellerId(user.getId());
-        // 경매별 최고 입찰가
-        List<BidForHighestPriceProjection> bids = bidRepository.findHighestBidProjectsBySellerId(user.getId());
-        Map<Long, Integer> maxBidMap = bids.stream().collect(Collectors.toMap(
-                BidForHighestPriceProjection::getAuctionId,
-                BidForHighestPriceProjection::getBidHighestPrice,
-                (existing, replacement) -> existing
-        ));
+        User user = getAuthenticatedUser(authService.getCurrentUser());
 
-        return auctions.stream()
-                .map(auctionProjection -> UserAuctionsResponseDto.of(
-                        auctionProjection,
-                        maxBidMap.getOrDefault(auctionProjection.getAuctionId(), 0)
-                ))
-                .toList();
+        List<AuctionForMyPageProjection> auctions = auctionRepository.findAllAuctionProjectionBySellerId(user.getId());
+
+        List<BidForHighestPriceProjection> bids = bidRepository.findHighestBidProjectsBySellerId(user.getId());
+        Map<Long, Integer> maxBidMap = getMaxBidMap(bids);
+
+        return createUserAuctionsResponseDtoList(auctions, maxBidMap);
     }
 // 이까지 급한 불은 껐다.
 
     public List<UserAuctionsResponseDto> getUserScraps() {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
+        User user = getAuthenticatedUser(authService.getCurrentUser());
 
         List<AuctionForMyPageProjection> auctions = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
                 user.getId());
 
-        // 경매별 최고 입찰가
         List<BidForHighestPriceProjection> bids = bidRepository.findHighestBidProjectsBySellerId(user.getId());
-        Map<Long, Integer> maxBidMap = bids.stream().collect(Collectors.toMap(
+        Map<Long, Integer> maxBidMap = getMaxBidMap(bids);
+
+        return createUserAuctionsResponseDtoList(auctions, maxBidMap);
+    }
+
+    public List<UserPaymentsResponseDto> getUserPayments() {
+        User user = getAuthenticatedUser(authService.getCurrentUser());
+
+        List<PaymentForMyPageProjection> payments = paymentRepository.findAllPaymentForMyPageProjectionByBuyerId(
+                user.getId());
+
+        return payments.stream().map(UserPaymentsResponseDto::of).toList();
+    }
+
+    public User getAuthenticatedUser(User user) {
+        if (user == null) {
+            throw new UserUnauthorizedException();
+        }
+        return user;
+    }
+
+    private Map<Long, Integer> getMaxBidMap(List<BidForHighestPriceProjection> bids) {
+        return bids.stream().collect(Collectors.toMap(
                 BidForHighestPriceProjection::getAuctionId,
                 BidForHighestPriceProjection::getBidHighestPrice,
                 (existing, replacement) -> existing
         ));
+    }
 
+    private List<UserAuctionsResponseDto> createUserAuctionsResponseDtoList(List<AuctionForMyPageProjection> auctions,
+                                                                            Map<Long, Integer> maxBidMap) {
         return auctions.stream()
                 .map(auctionProjection -> UserAuctionsResponseDto.of(
                         auctionProjection,
                         maxBidMap.getOrDefault(auctionProjection.getAuctionId(), 0)
                 ))
                 .toList();
-    }
-
-    public List<UserPaymentsResponseDto> getUserPayments() {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
-        List<PaymentForMyPageProjection> payments = paymentRepository.findAllPaymentForMyPageProjectionByBuyerId(
-                user.getId());
-
-        return payments.stream().map(UserPaymentsResponseDto::of).toList();
     }
 }
