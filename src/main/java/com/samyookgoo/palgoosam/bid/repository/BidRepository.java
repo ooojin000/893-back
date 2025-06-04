@@ -87,7 +87,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             FROM bid as b
             JOIN user as u ON u.id = b.bidder_id
             JOIN auction as a ON b.auction_id = a.id
-            JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq=0
+            LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq=0
             WHERE u.id = :userId
             GROUP BY b.id, b.is_winning, a.title, a.end_time, a.start_time, a.status, a.id, ai.url
             """, nativeQuery = true)
