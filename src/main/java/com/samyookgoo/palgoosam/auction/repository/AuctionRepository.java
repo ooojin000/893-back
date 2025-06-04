@@ -95,7 +95,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Query(value = """
             SELECT a.id as auctionId, a.title as title, a.end_time as endTime, a.start_time as startTime, a.status as status, ai.url as mainImageUrl
             FROM auction as a
-            JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+            LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
             WHERE a.seller_id = :sellerId
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionBySellerId(@Param("sellerId") Long sellerId);
@@ -104,7 +104,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             SELECT a.id as auctionId, a.title as title, a.end_time as endTime, a.start_time as startTime, a.status as status, ai.url as mainImageUrl
             FROM auction as a
             JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
-            JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+            LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionWithScrapByUserId(@Param("userId") Long userId);
 }
