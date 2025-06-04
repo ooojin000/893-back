@@ -125,4 +125,13 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             GROUP BY a.id
             """, nativeQuery = true)
     List<BidForHighestPriceProjection> findHighestBidProjectsBySellerId(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
+            FROM auction as a
+            JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
+            LEFT JOIN bid as b ON b.auction_id = a.id
+            GROUP BY a.id
+            """, nativeQuery = true)
+    List<BidForHighestPriceProjection> findHighestBidProjectsByScraperId(@Param("userId") Long id);
 }
