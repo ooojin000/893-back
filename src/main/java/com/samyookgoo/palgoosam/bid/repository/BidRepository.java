@@ -82,14 +82,26 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     List<TopWinningBid> findTop5WinningBids(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo, Pageable pageable);
 
     @Query(value = """
-            SELECT b.id as bidId, b.is_winning as isWinning, MAX(b.price) as userPrice, a.title as title,
-            a.end_time as endTime, a.start_time as startTime, a.status as status, a.id as auctionId, ai.url as mainImageUrl
-            FROM bid as b
-            JOIN user as u ON u.id = b.bidder_id
-            JOIN auction as a ON b.auction_id = a.id
-            LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq=0
-            WHERE u.id = :userId
-            GROUP BY b.id, b.is_winning, a.title, a.end_time, a.start_time, a.status, a.id, ai.url
+            SELECT bidId, isWinning, userPrice, title, endTime, startTime, status, auctionId, mainImageUrl
+            FROM (
+                SELECT
+                    b.id as bidId,
+                    b.is_winning as isWinning,
+                    b.price as userPrice,
+                    a.title as title,
+                    a.end_time as endTime,
+                    a.start_time as startTime,
+                    a.status as status,
+                    a.id as auctionId,
+                    ai.url as mainImageUrl,
+                    ROW_NUMBER() OVER (PARTITION BY a.id ORDER BY b.price DESC) as rn
+                FROM bid as b
+                JOIN user as u ON u.id = b.bidder_id
+                JOIN auction as a ON b.auction_id = a.id
+                LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+                WHERE u.id = :userId
+            ) as ranked
+            WHERE rn = 1;
             """, nativeQuery = true)
     List<BidForMyPageProjection> findAllBidsByUserId(@Param("userId") Long userId);
 
