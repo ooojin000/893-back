@@ -7,4 +7,8 @@ public class PaymentNotFoundException extends ApiException {
     public PaymentNotFoundException() {
         super(ErrorCode.PAYMENT_NOT_FOUND);
     }
+
+    public PaymentNotFoundException(ErrorCode errorCode) {
+        super(errorCode);
+    }
 }

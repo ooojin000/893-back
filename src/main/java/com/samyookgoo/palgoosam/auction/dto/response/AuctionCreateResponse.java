@@ -1,6 +1,8 @@
 package com.samyookgoo.palgoosam.auction.dto.response;
 
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
+import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.domain.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import lombok.Builder;
@@ -38,4 +40,24 @@ public class AuctionCreateResponse {
 
     @Schema(description = "경매 이미지 목록")
     private List<AuctionImageResponse> images;
+
+    public static AuctionCreateResponse from(
+            Auction auction,
+            List<AuctionImageResponse> images,
+            Category category,
+            int startDelay,
+            int durationTime) {
+        
+        return AuctionCreateResponse.builder()
+                .auctionId(auction.getId())
+                .title(auction.getTitle())
+                .description(auction.getDescription())
+                .basePrice(auction.getBasePrice())
+                .itemCondition(auction.getItemCondition())
+                .startDelay(startDelay)
+                .durationTime(durationTime)
+                .category(CategoryResponse.from(category))
+                .images(images)
+                .build();
+    }
 }

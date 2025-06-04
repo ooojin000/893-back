@@ -18,6 +18,13 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.CategoryResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.RelatedAuctionResponse;
+import com.samyookgoo.palgoosam.auction.exception.AuctionCategoryException;
+import com.samyookgoo.palgoosam.auction.exception.AuctionForbiddenException;
+import com.samyookgoo.palgoosam.auction.exception.AuctionImageException;
+import com.samyookgoo.palgoosam.auction.exception.AuctionInvalidStateException;
+import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
+import com.samyookgoo.palgoosam.auction.exception.AuctionUpdateLockedException;
+import com.samyookgoo.palgoosam.auction.exception.CategoryNotFoundException;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
@@ -27,31 +34,32 @@ import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.auction.service.dto.AuctionSearchDto;
 import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
+import com.samyookgoo.palgoosam.payment.exception.PaymentNotFoundException;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -102,10 +110,7 @@ public class AuctionService {
 
     @Transactional
     public AuctionCreateResponse createAuction(AuctionCreateRequest request, List<ResultFileStore> resultFileStores) {
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
-        }
+        User user = getValidatedCurrentUser();
 
         Category category = getValidatedCategory(request.getCategory().getId());
 
@@ -120,54 +125,25 @@ public class AuctionService {
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
 
-        List<AuctionImageResponse> imageResponses = new ArrayList<>();
-        for (int i = 0; i < resultFileStores.size(); i++) {
-            ResultFileStore file = resultFileStores.get(i);
-            AuctionImage image = ResultFileStore.toEntity(file, auction, i);
-            auctionImageRepository.save(image);
+        validateImageFiles(resultFileStores);
+        List<AuctionImageResponse> imageResponses = saveAuctionImages(resultFileStores, auction);
 
-            imageResponses.add(
-                    AuctionImageResponse.builder()
-                            .originalName(image.getOriginalName())
-                            .storeName(image.getStoreName())
-                            .url(image.getUrl())
-                            .imageSeq(image.getImageSeq())
-                            .build());
-        }
-
-        return AuctionCreateResponse.builder()
-                .auctionId(auction.getId())
-                .title(auction.getTitle())
-                .description(auction.getDescription())
-                .basePrice(auction.getBasePrice())
-                .itemCondition(auction.getItemCondition())
-                .startDelay(request.getStartDelay())
-                .durationTime(request.getDurationTime())
-                .category(CategoryResponse.builder()
-                        .id(category.getId())
-                        .mainCategory(request.getCategory().getMainCategory())
-                        .subCategory(request.getCategory().getSubCategory())
-                        .detailCategory(request.getCategory().getDetailCategory()).build())
-                .images(imageResponses)
-                .build();
+        return AuctionCreateResponse.from(auction, imageResponses, category,
+                request.getStartDelay(), request.getDurationTime());
     }
 
     @Transactional(readOnly = true)
     public AuctionDetailResponse getAuctionDetail(Long auctionId) {
         User user = authService.getCurrentUser();
-        log.info("현재 로그인 유저: {}", user != null ? user.getEmail() : "null");
 
         Auction auction = getValidatedAuction(auctionId);
 
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
-
         List<AuctionImageResponse> imageResponses = images.stream()
                 .map(AuctionImageResponse::from)
                 .collect(Collectors.toList());
 
-        AuctionImageResponse mainImage = imageResponses.stream()
-                .filter(img -> img.getImageSeq() == 0).findFirst()
-                .orElse(null);
+        AuctionImageResponse mainImage = getMainImage(imageResponses);
 
         CategoryResponse categoryResponse = CategoryResponse.from(auction.getCategory());
         int scrapCount = scrapRepository.countByAuctionId(auctionId);
@@ -175,53 +151,41 @@ public class AuctionService {
 
         Optional<Bid> winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId);
 
+        AuctionDetailResponse.AuctionDetailResponseBuilder builder = AuctionDetailResponse.builder()
+                .auctionId(auction.getId())
+                .title(auction.getTitle())
+                .description(auction.getDescription())
+                .sellerEmailMasked(maskedEmail)
+                .status(auction.getStatus())
+                .itemCondition(auction.getItemCondition())
+                .basePrice(auction.getBasePrice())
+                .scrapCount(scrapCount)
+                .category(categoryResponse)
+                .startTime(auction.getStartTime())
+                .endTime(auction.getEndTime())
+                .mainImage(mainImage)
+                .images(imageResponses);
+
         if (user != null) {
             boolean isScraped = scrapRepository.existsByUserIdAndAuctionId(user.getId(), auctionId);
             boolean isSeller = auction.getSeller().getId().equals(user.getId());
             boolean hasBeenPaid = paymentRepository.existsByAuction_IdAndStatus(auctionId, PaymentStatus.PAID);
-            boolean isCurrentUserWinner = winningBid.map(bid -> bid.getBidder().getId().equals(user.getId()))
+            boolean isCurrentUserWinner = winningBid
+                    .map(bid -> bid.getBidder().getId().equals(user.getId()))
                     .orElse(false);
 
-            return AuctionDetailResponse.builder()
-                    .auctionId(auction.getId())
-                    .title(auction.getTitle())
-                    .description(auction.getDescription())
-                    .sellerEmailMasked(maskedEmail)
-                    .status(auction.getStatus())
-                    .itemCondition(auction.getItemCondition())
-                    .basePrice(auction.getBasePrice())
-                    .isScraped(isScraped)
-                    .scrapCount(scrapCount)
+            builder.isScraped(isScraped)
                     .isSeller(isSeller)
-                    .category(categoryResponse)
-                    .startTime(auction.getStartTime())
-                    .endTime(auction.getEndTime())
-                    .mainImage(mainImage)
-                    .images(imageResponses)
                     .isCurrentUserBuyer(isCurrentUserWinner)
-                    .hasBeenPaid(hasBeenPaid)
-                    .build();
+                    .hasBeenPaid(hasBeenPaid);
         } else {
-            return AuctionDetailResponse.builder()
-                    .auctionId(auction.getId())
-                    .title(auction.getTitle())
-                    .description(auction.getDescription())
-                    .sellerEmailMasked(maskedEmail)
-                    .status(auction.getStatus())
-                    .itemCondition(auction.getItemCondition())
-                    .basePrice(auction.getBasePrice())
-                    .isScraped(false)
-                    .scrapCount(scrapCount)
+            builder.isScraped(false)
                     .isSeller(false)
-                    .category(categoryResponse)
-                    .startTime(auction.getStartTime())
-                    .endTime(auction.getEndTime())
-                    .mainImage(mainImage)
-                    .images(imageResponses)
                     .isCurrentUserBuyer(false)
-                    .hasBeenPaid(false)
-                    .build();
+                    .hasBeenPaid(false);
         }
+
+        return builder.build();
     }
 
     @Transactional(readOnly = true)
@@ -258,18 +222,18 @@ public class AuctionService {
     public AuctionUpdateResponse updateAuction(Long auctionId, AuctionUpdateRequest request,
                                                List<MultipartFile> images) {
         Auction auction = getValidatedAuction(auctionId);
-        User user = authService.getCurrentUser();
+        User user = getValidatedCurrentUser();
 
         if (user == null) {
-            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         if (!auction.getSeller().getId().equals(user.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 경매만 삭제할 수 있습니다.");
+            throw new AuctionForbiddenException(ErrorCode.AUCTION_UPDATE_FORBIDDEN);
         }
 
         if (auction.getStartTime().minusMinutes(10).isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("경매 시작 10분 전부터는 수정이 불가능합니다.");
+            throw new AuctionUpdateLockedException();
         }
 
         if (request.getTitle() != null) {
@@ -318,7 +282,7 @@ public class AuctionService {
                 .anyMatch(img -> img.getImageSeq() != null && img.getImageSeq() == 0);
 
         if (!hasMainImage) {
-            throw new IllegalArgumentException("대표 이미지를 반드시 포함해야 합니다. (imageSeq == 0)");
+            throw new AuctionImageException(ErrorCode.AUCTION_MAIN_IMAGE_REQUIRED);
         }
 
         Set<Long> requestedIds = imageRequests.stream()
@@ -358,7 +322,7 @@ public class AuctionService {
         }
 
         CategoryResponse categoryResponse = (request.getCategory() != null)
-                ? CategoryResponse.from(category, request.getCategory())
+                ? CategoryResponse.from(request.getCategory())
                 : CategoryResponse.from(category);
 
         return AuctionUpdateResponse.builder()
@@ -377,13 +341,10 @@ public class AuctionService {
     @Transactional
     public void deleteAuction(Long auctionId) {
         Auction auction = getValidatedAuction(auctionId);
-        User user = authService.getCurrentUser();
-        if (user == null) {
-            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
-        }
+        User user = getValidatedCurrentUser();
 
         if (!auction.getSeller().getId().equals(user.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 경매만 삭제할 수 있습니다.");
+            throw new AuctionForbiddenException(ErrorCode.AUCTION_DELETE_FORBIDDEN);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -406,48 +367,21 @@ public class AuctionService {
 
             boolean hasWinningBid = bidRepository.existsByAuctionIdAndIsWinningTrue(auctionId);
             if (!hasWinningBid) {
-                throw new IllegalStateException("낙찰 정보가 존재하지 않아 삭제할 수 없습니다.");
+                throw new BidNotFoundException(ErrorCode.WINNING_BID_NOT_FOUND);
             }
 
             Payment payment = paymentRepository.findByAuctionId(auctionId)
-                    .orElseThrow(() -> new IllegalStateException("결제 정보가 존재하지 않아 삭제할 수 없습니다."));
+                    .orElseThrow(PaymentNotFoundException::new);
 
             if (payment.getStatus() != PaymentStatus.PAID) {
-                throw new IllegalStateException("낙찰자의 결제가 완료되지 않아 삭제할 수 없습니다.");
+                throw new PaymentNotFoundException(ErrorCode.PAYMENT_NOT_COMPLETED);
             }
 
             softDeleteAuction(auctionId, auction);
             return;
         }
 
-        throw new IllegalStateException("경매 시작 10분 전이 지나거나, 경매 중에는 삭제할 수 없습니다.");
-    }
-
-    private void softDeleteAuction(Long auctionId, Auction auction) {
-        // 대표이미지만 논리 삭제
-        softDeleteAuctionImages(auctionId);
-
-        // 논리 삭제
-        auction.setStatus(AuctionStatus.deleted);
-        auction.setIsDeleted(true);
-        auctionRepository.save(auction);
-    }
-
-    private void softDeleteAuctionImages(Long auctionId) {
-        // 이미지 처리
-        List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
-
-        for (AuctionImage image : images) {
-            if (image.getImageSeq() != null && image.getImageSeq() == 0) {
-                // 대표 이미지는 soft delete
-                image.setIsDeleted(true);
-                auctionImageRepository.save(image);
-            } else {
-                // 나머지 이미지는 물리 삭제
-                fileStore.delete(image.getStoreName());
-                auctionImageRepository.delete(image);
-            }
-        }
+        throw new AuctionForbiddenException(ErrorCode.AUCTION_DELETE_AFTER_START_FORBIDDEN);
     }
 
     @Transactional(readOnly = true)
@@ -456,13 +390,11 @@ public class AuctionService {
 
         User user = authService.getCurrentUser();
 
-        Long detailCategoryId = auction.getCategory().getId();
+        Category category = auction.getCategory();
 
-        Long subCategoryId = auction.getCategory().getParent() != null
-                ? auction.getCategory().getParent().getId()
-                : null;
+        Long subCategoryId = category.getParent() != null ? category.getParent().getId() : null;
 
-        List<Auction> detailCategoryList = auctionRepository.findByCategoryIdAndStatus(detailCategoryId,
+        List<Auction> detailCategoryList = auctionRepository.findByCategoryIdAndStatus(category.getId(),
                         AuctionStatus.active)
                 .stream()
                 .filter(a -> !a.getId().equals(auctionId))
@@ -499,14 +431,102 @@ public class AuctionService {
                 .collect(Collectors.toList());
     }
 
+    private User getValidatedCurrentUser() {
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            throw new UserNotFoundException();
+        }
+        return user;
+    }
+
     private Auction getValidatedAuction(Long auctionId) {
         return auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NoSuchElementException("경매 상품이 존재하지 않습니다."));
+                .orElseThrow(AuctionNotFoundException::new);
     }
 
     private Category getValidatedCategory(Long categoryId) {
         return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new NoSuchElementException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(CategoryNotFoundException::new);
+    }
+
+    private void validateLeafCategory(Category category) {
+        if (!category.getChildren().isEmpty()) {
+            throw new AuctionCategoryException(ErrorCode.AUCTION_CATEGORY_NOT_LEAF);
+        }
+    }
+
+    private void validateBasePrice(Integer basePrice) {
+        if (basePrice == null || basePrice < 0) {
+            throw new AuctionInvalidStateException(ErrorCode.AUCTION_INVALID_MIN_BASE_PRICE);
+        }
+        if (basePrice > 100_000_000) {
+            throw new AuctionInvalidStateException(ErrorCode.AUCTION_INVALID_MAX_BASE_PRICE);
+        }
+    }
+
+    private void validateAuctionTime(int startDelay, int durationTime) {
+        if (startDelay < 0 || startDelay > 1440) {
+            throw new AuctionInvalidStateException(ErrorCode.AUCTION_OPEN_TIME_INVALID);
+        }
+        if (durationTime < 10 || durationTime > 1440) {
+            throw new AuctionInvalidStateException(ErrorCode.AUCTION_DURATION_INVALID);
+        }
+    }
+
+    private AuctionImageResponse getMainImage(List<AuctionImageResponse> images) {
+        return images.stream()
+                .filter(img -> img.getImageSeq() == 0)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<AuctionImageResponse> saveAuctionImages(List<ResultFileStore> files, Auction auction) {
+        return IntStream.range(0, files.size())
+                .mapToObj(i -> saveSingleAuctionImage(files.get(i), auction, i))
+                .toList();
+    }
+
+    private AuctionImageResponse saveSingleAuctionImage(ResultFileStore file, Auction auction, int order) {
+        try {
+            AuctionImage image = ResultFileStore.toEntity(file, auction, order);
+            auctionImageRepository.save(image);
+            return AuctionImageResponse.from(image);
+        } catch (Exception e) {
+            log.error("이미지 저장 실패: {}", e.getMessage(), e);
+            throw new AuctionImageException(ErrorCode.AUCTION_IMAGE_SAVE_FAILED);
+        }
+    }
+
+    private void validateImageFiles(List<ResultFileStore> files) {
+        if (files == null || files.isEmpty()) {
+            throw new AuctionImageException(ErrorCode.AUCTION_MAIN_IMAGE_REQUIRED);
+        }
+    }
+
+    private void softDeleteAuction(Long auctionId, Auction auction) {
+        softDeleteAuctionImages(auctionId);
+
+        auction.setStatus(AuctionStatus.deleted);
+        auction.setIsDeleted(true);
+        auctionRepository.save(auction);
+    }
+
+    private void softDeleteAuctionImages(Long auctionId) {
+        List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
+
+        images.forEach(image -> {
+            try {
+                if (image.getImageSeq() == 0) {
+                    image.setIsDeleted(true);
+                    auctionImageRepository.save(image);
+                } else {
+                    fileStore.delete(image.getStoreName());
+                    auctionImageRepository.delete(image);
+                }
+            } catch (Exception e) {
+                throw new AuctionImageException(ErrorCode.AUCTION_IMAGE_DELETE_FAILED);
+            }
+        });
     }
 
     private static String maskEmail(String email) {
@@ -517,30 +537,6 @@ public class AuctionService {
         String masked = "*".repeat(localPart.length() - 3);
 
         return localPart.substring(0, 3) + masked + domain;
-    }
-
-    private void validateLeafCategory(Category category) {
-        if (!category.getChildren().isEmpty()) {
-            throw new IllegalArgumentException("소분류 카테고리만 선택할 수 있습니다.");
-        }
-    }
-
-    private void validateBasePrice(Integer basePrice) {
-        if (basePrice == null || basePrice < 0) {
-            throw new IllegalArgumentException("시작가는 0원 이상이어야 합니다.");
-        }
-        if (basePrice > 100_000_000) {
-            throw new IllegalArgumentException("시작가는 초대 1억 원까지만 입력 가능합니다.");
-        }
-    }
-
-    private void validateAuctionTime(int startDelay, int durationTime) {
-        if (startDelay < 0 || startDelay > 1440) {
-            throw new IllegalArgumentException("경매 오픈 시간은 현재 시각 이후부터 24시간 이내여야 합니다.");
-        }
-        if (durationTime < 10 || durationTime > 1440) {
-            throw new IllegalArgumentException("경매 소요 시간은 10분 이상, 24시간(1440분) 이내여야 합니다.");
-        }
     }
 
     public AuctionSearchResponseDto search(AuctionSearchRequestDto auctionSearchRequestDto) {
