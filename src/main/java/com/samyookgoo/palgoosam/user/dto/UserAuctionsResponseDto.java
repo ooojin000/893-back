@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.user.dto;
 
-import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.auction.domain.AuctionForMyPageProjection;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,18 +19,17 @@ public class UserAuctionsResponseDto {
     private String mainImageUrl;
 
     public static UserAuctionsResponseDto of(
-            Auction auction,
-            String mainImageUrl,
+            AuctionForMyPageProjection auctionProjection,
             Integer highestBid
     ) {
         return new UserAuctionsResponseDto(
-                auction.getId(),
+                auctionProjection.getAuctionId(),
                 highestBid,
-                auction.getTitle(),
-                auction.getEndTime(),
-                auction.getStartTime(),
-                auction.getStatus().toString(),
-                mainImageUrl
+                auctionProjection.getTitle(),
+                auctionProjection.getEndTime(),
+                auctionProjection.getStartTime(),
+                auctionProjection.getStatus().toString(),
+                auctionProjection.getMainImageUrl()
         );
     }
 }
