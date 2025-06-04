@@ -53,7 +53,16 @@ public class SearchHistory {
     @ColumnDefault("false")
     private Boolean isDeleted = false;
 
-    public void incrementSearchCount() {
+    public void restoreAndIncrement() {
         this.searchCount++;
+        this.isDeleted = false;
+    }
+
+    public void softDeleteSearchHistory() {
+        this.isDeleted = true;
+    }
+
+    public Boolean hasPermission(Long userId) {
+        return this.getUser().getId().equals(userId);
     }
 }
