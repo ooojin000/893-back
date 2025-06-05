@@ -13,6 +13,9 @@ public class OrderResponse {
     @Schema(description = "경매 ID", example = "101")
     private Long auctionId;
 
+    @Schema(description = "구매자 이름", example = "홍길동")
+    private String customerName;
+
     @Schema(description = "경매 상품 금액", example = "530000")
     private Integer itemPrice;
 
