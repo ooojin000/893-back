@@ -53,9 +53,11 @@ public class Bid {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @ColumnDefault("false")
     private Boolean isWinning = false;
 
+    @Builder.Default
     @ColumnDefault("false")
     private Boolean isDeleted = false;
 

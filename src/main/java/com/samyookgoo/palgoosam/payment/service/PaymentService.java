@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.payment.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
@@ -141,7 +142,6 @@ public class PaymentService {
         payment.setPaymentKey(request.getPaymentKey());
 
         try {
-            @SuppressWarnings("unchecked")
             TossPaymentConfirmResponse tossResponse = tossRestTemplate.postForObject(url, request,
                     TossPaymentConfirmResponse.class);
 
@@ -166,7 +166,8 @@ public class PaymentService {
             String message = ErrorCode.TOSS_PAYMENT_FAILED.getMessage();
 
             try {
-                Map<String, Object> errorMap = objectMapper.readValue(responseBody, Map.class);
+                Map<String, Object> errorMap = objectMapper.readValue(responseBody, new TypeReference<>() {
+                });
                 code = errorMap.getOrDefault("code", code).toString();
                 message = errorMap.getOrDefault("message", message).toString();
             } catch (Exception parseEx) {

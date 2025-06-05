@@ -49,6 +49,7 @@ public class DeliveryAddress {
     @Column(nullable = false)
     private String zipCode;
 
+    @Builder.Default
     @ColumnDefault("false")
     private Boolean isDefault = false;
 
