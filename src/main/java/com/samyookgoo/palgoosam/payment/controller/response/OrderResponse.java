@@ -13,15 +13,6 @@ public class OrderResponse {
     @Schema(description = "경매 ID", example = "101")
     private Long auctionId;
 
-    @Schema(description = "구매자 이름", example = "홍길동")
-    private String customerName;
-
-    @Schema(description = "경매 상품 제목", example = "아이폰 13 미개봉 새제품")
-    private String auctionTitle;
-
-    @Schema(description = "경매 상품 썸네일 이미지 URL", example = "https://cdn.893auction.com/images/thumb_101.jpg")
-    private String auctionThumbnail;
-
     @Schema(description = "경매 상품 금액", example = "530000")
     private Integer itemPrice;
 

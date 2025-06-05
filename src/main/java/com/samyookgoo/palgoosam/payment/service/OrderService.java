@@ -67,9 +67,6 @@ public class OrderService {
 
         return OrderResponse.builder()
                 .auctionId(auction.getId())
-                .customerName(winningBid.getBidder().getName())
-                .auctionTitle(auction.getTitle())
-                .auctionThumbnail(image.getUrl())
                 .itemPrice(itemPrice)
                 .deliveryFee(deliveryFee)
                 .finalPrice(finalPrice)
