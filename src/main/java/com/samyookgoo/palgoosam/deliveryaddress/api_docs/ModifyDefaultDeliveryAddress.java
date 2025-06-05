@@ -18,5 +18,5 @@ import java.lang.annotation.Target;
         @ApiResponse(responseCode = "200", description = "기본 배송지 설정 성공"),
         @ApiResponse(responseCode = "400", description = "기본 배송지 설정 실패")
 })
-public @interface PatchUserDefaultAddress {
+public @interface ModifyDefaultDeliveryAddress {
 }

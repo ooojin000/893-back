@@ -308,9 +308,7 @@ public class HomeService {
         } else if (length >= 3) {
             StringBuilder masked = new StringBuilder();
             masked.append(name.charAt(0));
-            for (int i = 1; i < length - 1; i++) {
-                masked.append("*");
-            }
+            masked.append("*".repeat(length - 2));
             masked.append(name.charAt(length - 1));
             return masked.toString();
         }

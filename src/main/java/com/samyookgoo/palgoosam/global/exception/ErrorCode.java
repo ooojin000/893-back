@@ -6,8 +6,8 @@ import lombok.Getter;
 public enum ErrorCode {
     // 인증/권한
     UNAUTHORIZED_USER(401, "A_001", "클라이언트 인증 부재, 로그인 해주세요."),
-
     USER_NOT_FOUND(404, "U_001", "해당 유저를 찾을 수 없습니다."),
+    FORBIDDEN(403, "A_002", "해당 리소스에 접근할 수 없습니다."),
     CATEGORY_NOT_FOUND(404, "C_001", "카테고리가 존재하지 않습니다."),
     ADDRESS_NOT_FOUND(404, "ADR_001", "변경할 주소를 찾을 수 없습니다."),
     DELETE_ADDRESS_NOT_FOUND(404, "ADR_002", "삭제할 주소를 찾을 수 없습니다."),
@@ -17,10 +17,17 @@ public enum ErrorCode {
     AUCTION_UPDATE_LOCKED(400, "AUC_002", "경매 시작 10분 전부터는 수정이 불가능합니다."),
     AUCTION_TIME_REQUIRED(400, "AUC_003", "경매 시작 시간 및 경매 소요 시간은 필수입니다."),
     AUCTION_MAIN_IMAGE_REQUIRED(400, "AUC_004", "대표 이미지를 반드시 포함해야 합니다. (imageSeq == 0)"),
-    AUCTION_SHOULD_BE_LEAF_CATEGORY(400, "AUC_005", "소분류 카테고리만 선택할 수 있습니다."),
-    AUCTION_BASE_PRICE_INVALID(400, "AUC_006", "시작가는 0원 이상이어야 합니다."),
-    AUCTION_OPEN_TIME_INVALID(400, "AUC_007", "경매 오픈 시간은 현재 시각 이후부터 24시간 이내여야 합니다."),
-    AUCTION_DURATION_INVALID(400, "AUC_008", "경매 소요 시간은 10분 이상, 24시간(1440분) 이내여야 합니다."),
+    AUCTION_CATEGORY_NOT_LEAF(400, "AUC_005", "카테고리를 소분류까지 모두 선택해야 합니다."),
+    AUCTION_INVALID_MIN_BASE_PRICE(400, "AUC_006", "시작가는 0원 이상이어야 합니다."),
+    AUCTION_INVALID_MAX_BASE_PRICE(400, "AUC_007", "시작가는 1억 원까지만 입력 가능합니다."),
+    AUCTION_OPEN_TIME_INVALID(400, "AUC_008", "경매 오픈 시간은 현재 시각 이후부터 24시간 이내여야 합니다."),
+    AUCTION_DURATION_INVALID(400, "AUC_009", "경매 소요 시간은 10분 이상, 24시간(1440분) 이내여야 합니다."),
+    AUCTION_IMAGE_UPLOAD_FAILED(500, "AUC_010", "경매 이미지 업로드에 실패했습니다."),
+    AUCTION_IMAGE_SAVE_FAILED(500, "AUC_011", "경매 이미지 저장 중 문제가 발생했습니다."),
+    AUCTION_IMAGE_DELETE_FAILED(500, "AUC_012", "경매 이미지 삭제 중 문제가 발생했습니다."),
+    AUCTION_DELETE_FORBIDDEN(403, "AUC_013", "본인의 경매만 삭제할 수 있습니다."),
+    AUCTION_UPDATE_FORBIDDEN(403, "AUC_014", "본인의 경매만 수정할 수 있습니다."),
+    AUCTION_DELETE_AFTER_START_FORBIDDEN(400, "AUC_015", "경매 시작 10분 전이 지나거나, 경매 중에는 삭제할 수 없습니다."),
 
     // 입찰 관련
     BID_NOT_FOUND(404, "BID_001", "해당 입찰 내역이 존재하지 않습니다."),
@@ -50,7 +57,14 @@ public enum ErrorCode {
     SELLER_CANNOT_PURCHASE(403, "PAY_007", "판매자는 자신의 경매를 구매할 수 없습니다."),
     TOSS_PAYMENT_FAILED(502, "PAY_008", "Toss 결제 오류가 발생했습니다."),
     TOSS_PAYMENT_EMPTY_RESPONSE(502, "PAY_009", "Toss 응답이 비어 있습니다."),
+    PAYMENT_NOT_COMPLETED(400, "PAY_010", "낙찰자의 결제가 완료되지 않아 삭제할 수 없습니다."),
 
+    // 검색 기록
+    SEARCH_HISTORY_NOT_FOUND(404, "SEARCH_HIST_001", "해당 검색 기록을 찾을 수 없습니다."),
+    SEARCH_HISTORY_BAD_REQUEST(400, "SEARCH_HIST_002", "처리할 수 없는 공백 요청입니다."),
+
+    // 배송지
+    DELIVERY_ADDRESS_NOT_FOUND(404, "DELIVERY_ADDR_001", "해당 배송지 정보를 찾을 수 없습니다."),
 
     INTERNAL_SERVER_ERROR(500, "SYS_001", "서버가 오류가 발생했습니다."),
     METHOD_NOT_ALLOWED(405, "SYS_002", "API는 열려있으나 메소드는 사용 불가합니다."),

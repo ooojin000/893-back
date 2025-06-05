@@ -2,6 +2,7 @@ package com.samyookgoo.palgoosam.search.repository;
 
 import com.samyookgoo.palgoosam.search.domain.SearchHistory;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,7 +23,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             FROM search_history
             WHERE keyword = :keyword AND user_id = :userId
             """, nativeQuery = true)
-    SearchHistory findByKeywordAndUserId(@Param("keyword") String keyword, @Param("userId") Long userId);
+    Optional<SearchHistory> findByKeywordAndUserId(@Param("keyword") String keyword, @Param("userId") Long userId);
 
     @Query(value = """
             SELECT *

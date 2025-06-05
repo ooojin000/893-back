@@ -23,8 +23,8 @@ public class HomeController {
     private final HomeService homeService;
 
     @GetMapping("/dashboard")
-    public DashboardResponse getDashboard() {
-        return homeService.getDashboard();
+    public ResponseEntity<BaseResponse<DashboardResponse>> getDashboard() {
+        return ResponseEntity.ok(BaseResponse.success("대시보드 조회 성공", homeService.getDashboard()));
     }
 
     @GetMapping("/recentAuction")

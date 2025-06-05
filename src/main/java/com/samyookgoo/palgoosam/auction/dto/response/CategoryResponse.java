@@ -42,9 +42,9 @@ public class CategoryResponse {
                 .build();
     }
 
-    public static CategoryResponse from(Category category, CategoryRequest request) {
+    public static CategoryResponse from(CategoryRequest request) {
         return CategoryResponse.builder()
-                .id(category != null ? category.getId() : null)
+                .id(request != null ? request.getId() : null)
                 .mainCategory(request.getMainCategory())
                 .subCategory(request.getSubCategory())
                 .detailCategory(request.getDetailCategory())

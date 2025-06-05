@@ -1,6 +1,6 @@
 package com.samyookgoo.palgoosam.user.dto;
 
-import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.domain.BidForMyPageProjection;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,21 +22,20 @@ public class UserBidsResponseDto {
     private String mainImageUrl;
 
     public static UserBidsResponseDto of(
-            Bid bid,
-            String mainImageUrl,
+            BidForMyPageProjection bidProjection,
             Integer highestBid
     ) {
         return new UserBidsResponseDto(
-                bid.getId(),
-                bid.getIsWinning(),
+                bidProjection.getBidId(),
+                bidProjection.getIsWinning(),
                 highestBid,
-                bid.getPrice(),
-                bid.getAuction().getTitle(),
-                bid.getAuction().getEndTime(),
-                bid.getAuction().getStartTime(),
-                bid.getAuction().getStatus().toString(),
-                bid.getAuction().getId(),
-                mainImageUrl
+                bidProjection.getUserPrice(),
+                bidProjection.getTitle(),
+                bidProjection.getEndTime(),
+                bidProjection.getStartTime(),
+                bidProjection.getStatus().toString(),
+                bidProjection.getAuctionId(),
+                bidProjection.getMainImageUrl()
         );
     }
 }
