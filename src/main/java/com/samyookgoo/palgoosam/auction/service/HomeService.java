@@ -1,8 +1,6 @@
 package com.samyookgoo.palgoosam.auction.service;
 
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
-import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.dto.home.ActiveRankingResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.BestItemResponse;
@@ -14,24 +12,21 @@ import com.samyookgoo.palgoosam.auction.dto.home.TopBidResponse;
 import com.samyookgoo.palgoosam.auction.dto.home.UpcomingAuctionResponse;
 import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
 import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.DashboardProjection;
 import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
+import com.samyookgoo.palgoosam.auction.projection.RecentAuction;
 import com.samyookgoo.palgoosam.auction.projection.SubCategoryBestItem;
 import com.samyookgoo.palgoosam.auction.projection.TopWinningBid;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
+import com.samyookgoo.palgoosam.auction.projection.UpcomingAuction;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
-import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
-import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -45,69 +40,57 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class HomeService {
-    private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
-    private final AuctionImageRepository auctionImageRepository;
     private final ScrapRepository scrapRepository;
-    private final AuthService authService;
     private final BidRepository bidRepository;
     private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard() {
-        long totalUserCount = userRepository.count();
-        long totalAuctionCount = auctionRepository.count();
-        long activeAuctionCount = auctionRepository.countByStatus(AuctionStatus.active);
+        DashboardProjection counts = auctionRepository.getDashboardCounts();
 
         return DashboardResponse.builder()
-                .totalUserCount(totalUserCount)
-                .totalAuctionCount(totalAuctionCount)
-                .activeAuctionCount(activeAuctionCount)
+                .totalUserCount(counts.getTotalUserCount())
+                .totalAuctionCount(counts.getTotalAuctionCount())
+                .activeAuctionCount(counts.getActiveAuctionCount())
                 .build();
     }
 
     @Transactional(readOnly = true)
     public List<RecentAuctionResponse> getRecentAuctions() {
-        User user = authService.getCurrentUser();
+        List<AuctionStatus> statuses = List.of(AuctionStatus.active, AuctionStatus.pending);
 
-        List<Auction> auctionList = getRecentAuctionStatus();
+        List<RecentAuction> recentAuctions = auctionRepository.findTop6RecentAuctions(statuses, PageRequest.of(0, 6));
 
-        Map<Long, String> thumbnailMap = getThumbnailMap(auctionList);
-
-        Set<Long> isScraped = getScrapedAuctionIds(user);
-
-        return auctionList.stream()
-                .map(auction -> RecentAuctionResponse.builder()
-                        .auctionId(auction.getId())
-                        .title(auction.getTitle())
-                        .description(auction.getDescription())
-                        .status(auction.getStatus())
-                        .basePrice(auction.getBasePrice())
-                        .thumbnailUrl(thumbnailMap.get(auction.getId()))
-                        .isScraped(isScraped.contains(auction.getId()))
+        return recentAuctions.stream()
+                .map(r -> RecentAuctionResponse.builder()
+                        .auctionId(r.getAuctionId())
+                        .title(r.getTitle())
+                        .description(r.getDescription())
+                        .status(r.getStatus())
+                        .basePrice(r.getBasePrice())
+                        .thumbnailUrl(r.getThumbnailUrl())
                         .build())
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<UpcomingAuctionResponse> getUpcomingAuctions() {
-        List<Auction> auctionList = auctionRepository.findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(
-                AuctionStatus.pending, LocalDateTime.now());
+        List<UpcomingAuction> upcomingAuctions = auctionRepository.findTop3UpcomingAuctions(
+                AuctionStatus.pending, PageRequest.of(0, 3));
 
-        Map<Long, String> thumbnailMap = getThumbnailMap(auctionList);
+        Map<Long, Integer> scrapCountMap = getScrapCounts(upcomingAuctions);
 
-        Map<Long, Integer> scrapCountMap = getScrapCounts(auctionList);
-
-        return auctionList.stream()
-                .map(auction -> UpcomingAuctionResponse.builder()
-                        .auctionId(auction.getId())
-                        .title(auction.getTitle())
-                        .description(auction.getDescription())
-                        .itemCondition(auction.getItemCondition())
-                        .basePrice(auction.getBasePrice())
-                        .scrapCount(scrapCountMap.getOrDefault(auction.getId(), 0))
-                        .thumbnailUrl(thumbnailMap.get(auction.getId()))
-                        .leftTime(formatLeftTime(auction.getStartTime()))
+        return upcomingAuctions.stream()
+                .map(u -> UpcomingAuctionResponse.builder()
+                        .auctionId(u.getAuctionId())
+                        .title(u.getTitle())
+                        .description(u.getDescription())
+                        .itemCondition(u.getItemCondition())
+                        .basePrice(u.getBasePrice())
+                        .scrapCount(scrapCountMap.getOrDefault(u.getAuctionId(), 0))
+                        .thumbnailUrl(u.getThumbnailUrl())
+                        .leftTime(formatLeftTime(u.getStartTime()))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -251,23 +234,9 @@ public class HomeService {
         return startTime.isAfter(now) && Duration.between(now, startTime).toHours() <= 1;
     }
 
-    private List<Auction> getRecentAuctionStatus() {
-        List<AuctionStatus> statuses = List.of(AuctionStatus.active, AuctionStatus.pending);
-        return auctionRepository.findTop6ByStatusInOrderByCreatedAtDesc(statuses);
-    }
-
-    private Map<Long, String> getThumbnailMap(List<Auction> auctionList) {
-        List<Long> auctionIds = auctionList.stream().map(Auction::getId).toList();
-        return auctionImageRepository.findMainImagesByAuctionIds(auctionIds).stream()
-                .collect(Collectors.toMap(
-                        img -> img.getAuction().getId(),
-                        AuctionImage::getUrl
-                ));
-    }
-
-    private Map<Long, Integer> getScrapCounts(List<Auction> auctionList) {
+    private Map<Long, Integer> getScrapCounts(List<UpcomingAuction> auctionList) {
         List<Long> auctionIds = auctionList.stream()
-                .map(Auction::getId)
+                .map(UpcomingAuction::getAuctionId)
                 .toList();
 
         if (auctionIds.isEmpty()) {
@@ -288,12 +257,6 @@ public class HomeService {
         long minutes = duration.toMinutes() % 60;
         long seconds = duration.getSeconds() % 60;
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
-
-    private Set<Long> getScrapedAuctionIds(User user) {
-        return user != null
-                ? new HashSet<>(scrapRepository.findAuctionIdsByUserId(user.getId()))
-                : Set.of();
     }
 
     public String maskName(String name) {
