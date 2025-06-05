@@ -50,6 +50,7 @@ public class SearchHistory {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @ColumnDefault("false")
     private Boolean isDeleted = false;
 
