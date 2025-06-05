@@ -10,7 +10,6 @@ import com.samyookgoo.palgoosam.search.exception.SearchHistoryBadRequestExceptio
 import com.samyookgoo.palgoosam.search.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
-import com.samyookgoo.palgoosam.user.exception.UserUnauthorizedException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,27 +26,25 @@ public class SearchHistoryService {
     private final AuthService authService;
 
     @Transactional(readOnly = true)
-    public List<SearchHistoryResponseDto> getSearchHistory() {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
-
-        List<SearchHistory> searchHistoryList = searchHistoryRepository.findAllByUserId(user.getId());
+    public List<SearchHistoryResponseDto> getSearchHistory(User currentUser) {
+        List<SearchHistory> searchHistoryList = searchHistoryRepository.findAllByUserId(currentUser.getId());
 
         return searchHistoryList.stream().map(SearchHistoryResponseDto::from).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<String> getSearchSuggestionList(String keyword) {
         return searchHistoryRepository.findByFullTextKeyword(keyword).stream().map(SearchHistory::getKeyword)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void deleteSearchHistory(Long searchHistoryId) {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
+    public void deleteSearchHistory(Long searchHistoryId, User currentUser) {
 
         SearchHistory target = searchHistoryRepository.findById(searchHistoryId)
                 .orElseThrow(() -> new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_NOT_FOUND));
 
-        if (target.hasPermission(user.getId())) {
+        if (target.hasPermission(currentUser.getId())) {
             target.softDeleteSearchHistory();
         } else {
             throw new UserForbiddenException();
@@ -55,15 +52,14 @@ public class SearchHistoryService {
     }
 
     @Transactional
-    public void recordUserSearch(SearchHistoryCreateRequestDto requestDto) {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
+    public void recordUserSearch(SearchHistoryCreateRequestDto requestDto, User currentUser) {
 
         String keyword = requestDto.getKeyword().trim();
 
         validateKeyword(keyword);
 
         Optional<SearchHistory> existingSearch = searchHistoryRepository.findByKeywordAndUserId(keyword,
-                user.getId());
+                currentUser.getId());
 
         if (existingSearch.isPresent()) {
             existingSearch.get().restoreAndIncrement();
@@ -71,18 +67,11 @@ public class SearchHistoryService {
             SearchHistory newSearch = SearchHistory.builder()
                     .keyword(keyword)
                     .isDeleted(false)
-                    .user(user)
+                    .user(currentUser)
                     .searchCount(1L)
                     .build();
             searchHistoryRepository.save(newSearch);
         }
-    }
-
-    public User getAuthenticatedUser(User user) {
-        if (user == null) {
-            throw new UserUnauthorizedException();
-        }
-        return user;
     }
 
     public void validateKeyword(String keyword) {

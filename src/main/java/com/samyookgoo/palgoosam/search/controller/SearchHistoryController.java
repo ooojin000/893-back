@@ -1,5 +1,6 @@
 package com.samyookgoo.palgoosam.search.controller;
 
+import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import com.samyookgoo.palgoosam.search.api_docs.DeleteSearchHistory;
 import com.samyookgoo.palgoosam.search.api_docs.GetSearchHistoryApi;
@@ -8,6 +9,7 @@ import com.samyookgoo.palgoosam.search.api_docs.RecordUserSearchApi;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryCreateRequestDto;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryResponseDto;
 import com.samyookgoo.palgoosam.search.service.SearchHistoryService;
+import com.samyookgoo.palgoosam.user.domain.User;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -29,29 +31,32 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "검색 기록", description = "사용자 검색 기록 및 자동완성 API")
 public class SearchHistoryController {
     private final SearchHistoryService searchHistoryService;
+    private final AuthService authService;
 
     @GetSearchHistoryApi
     @GetMapping
     public ResponseEntity<BaseResponse<List<SearchHistoryResponseDto>>> getSearchHistory() {
+        User currentUser = authService.getAuthorizedUser(authService.getCurrentUser());
         return ResponseEntity.status(HttpStatus.OK)
-                .body(BaseResponse.success("검색 기록을 정상적으로 조회했습니다.", searchHistoryService.getSearchHistory()));
+                .body(BaseResponse.success("검색 기록을 정상적으로 조회했습니다.", searchHistoryService.getSearchHistory(currentUser)));
     }
 
     @RecordUserSearchApi
     @PostMapping
-    public ResponseEntity<BaseResponse> recordUserSearch(
+    public ResponseEntity<BaseResponse<Void>> recordUserSearch(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "검색 기록 저장 요청 정보", required = true)
             @RequestBody SearchHistoryCreateRequestDto requestDto
     ) {
-        searchHistoryService.recordUserSearch(requestDto);
+        User currentUser = authService.getAuthorizedUser(authService.getCurrentUser());
+        searchHistoryService.recordUserSearch(requestDto, currentUser);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(BaseResponse.success("검색 기록을 정상적으로 저장했습니다.", null));
     }
 
     @GetSuggestionsApi
     @GetMapping("/suggestions")
-    public ResponseEntity<BaseResponse> getSuggestions(
+    public ResponseEntity<BaseResponse<List<String>>> getSuggestions(
             @Parameter(name = "keyword", description = "사용자가 입력 중인 검색어", required = true)
             @RequestParam String keyword
     ) {
@@ -62,11 +67,12 @@ public class SearchHistoryController {
 
     @DeleteSearchHistory
     @DeleteMapping("/{searchHistoryId}")
-    public ResponseEntity<BaseResponse> deleteSearchHistory(
+    public ResponseEntity<BaseResponse<Void>> deleteSearchHistory(
             @Parameter(name = "searchHistoryId", description = "삭제할 검색 기록 ID", required = true)
             @PathVariable Long searchHistoryId
     ) {
-        searchHistoryService.deleteSearchHistory(searchHistoryId);
+        User currentUser = authService.getAuthorizedUser(authService.getCurrentUser());
+        searchHistoryService.deleteSearchHistory(searchHistoryId, currentUser);
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success("검색 기록을 삭제했습니다.", null));
     }
 
