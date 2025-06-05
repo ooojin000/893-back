@@ -6,6 +6,7 @@ import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.bid.domain.BidForMyPageProjection;
 import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
+import com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -51,9 +52,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     Integer countByAuctionIdAndIsDeletedFalse(Long auctionId);
 
-    @Query("SELECT COUNT(DISTINCT b.bidder.id) FROM Bid b WHERE b.auction.id = :auctionId AND b.isDeleted = false")
-    Integer countDistinctBidderByAuctionId(Long auctionId);
-
     Boolean existsByAuctionIdAndBidderIdAndIsDeletedTrue(Long auctionId, Long bidderId);
 
     List<Bid> findByAuctionId(Long auctionId);
@@ -80,6 +78,17 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             ORDER BY itemPrice DESC
             """)
     List<TopWinningBid> findTop5WinningBids(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo, Pageable pageable);
+
+    @Query("""
+                SELECT new com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse(
+                    MAX(b.price),
+                    COUNT(*),
+                    COUNT(DISTINCT b.bidder)
+                )
+                FROM Bid b
+                WHERE b.auction.id = :auctionId AND b.isDeleted = false
+            """)
+    BidStatsResponse findBidStatsByAuctionId(@Param("auctionId") Long auctionId);
 
     @Query(value = """
             SELECT bidId, isWinning, userPrice, title, endTime, startTime, status, auctionId, mainImageUrl

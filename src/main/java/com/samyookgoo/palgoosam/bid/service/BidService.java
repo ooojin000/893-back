@@ -4,22 +4,19 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
-import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
+import com.samyookgoo.palgoosam.bid.controller.response.BidOverviewResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResultResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.exception.BidBadRequestException;
-import com.samyookgoo.palgoosam.bid.exception.BidForbiddenException;
 import com.samyookgoo.palgoosam.bid.exception.BidInvalidStateException;
 import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
 import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
-import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
-import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class BidService {
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
-    private final UserRepository userRepository;
     private final SseService sseService;
 
     public Map<Long, Integer> getAuctionMaxPrices(List<Long> auctionIds) {
@@ -45,52 +41,38 @@ public class BidService {
                 ));
     }
 
-    public BidListResponse getBidsByAuctionId(Long auctionId, User user) {
+    @Transactional(readOnly = true)
+    public BidOverviewResponse getBidOverview(Long auctionId, User user) {
         if (!auctionRepository.existsById(auctionId)) {
             throw new AuctionNotFoundException();
         }
 
-        List<Bid> allBids = bidRepository.findByAuctionIdOrderByCreatedAtDesc(auctionId);
+        List<Bid> allBids = getByAuctionIdOrderByCreatedAtDesc(auctionId);
 
-        List<BidResponse> activeBids = new ArrayList<>();
-        List<BidResponse> cancelledBids = new ArrayList<>();
-        BidResponse recentUserBid = null; // 유저의 최근 1분 내 입찰 정보. 비회원이거나 1분 내 입찰 없으면 null
-        boolean canCancelBid = false;
-        boolean isExistCancelled = false;
+        Map<Boolean, List<Bid>> partitioned = allBids.stream()
+                .collect(Collectors.partitioningBy(Bid::isCancelled));
 
-        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+        List<BidResponse> activeBids = partitioned.get(false).stream()
+                .map(BidResponse::from)
+                .collect(Collectors.toList());
 
-        // 이전 입찰 취소 내역 존재 시, 취소 불가. recentUserBid = null
-        if (user != null) {
-            isExistCancelled = isExistCancelledBidBefore(auctionId, user.getId());
+        List<BidResponse> cancelledBids = partitioned.get(true).stream()
+                .map(BidResponse::from)
+                .collect(Collectors.toList());
+
+        BidResponse recentUserBid = null;
+        if (user != null && !hasUserCancelledBid(auctionId, user.getId())) {
+            LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+            recentUserBid = findRecentUserBid(partitioned.get(false), user.getId(), oneMinuteAgo);
         }
 
-        for (Bid bid : allBids) {
-            BidResponse response = BidResponse.from(bid);
-
-            if (Boolean.TRUE.equals(bid.getIsDeleted())) {
-                cancelledBids.add(response);
-                continue;
-            }
-
-            activeBids.add(response);
-
-            if (user != null && !isExistCancelled) {
-                if (recentUserBid == null && isRecentBidByUser(bid, user, oneMinuteAgo)) {
-                    recentUserBid = response;
-                    canCancelBid = true;
-                }
-            }
-        }
-
-        int totalBid = bidRepository.countByAuctionIdAndIsDeletedFalse(auctionId);
-        int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
-
-        return BidListResponse.builder()
+        BidStatsResponse bidStats = getBidStatsByAuctionId(auctionId);
+        return BidOverviewResponse.builder()
                 .auctionId(auctionId)
-                .totalBid(totalBid)
-                .totalBidder(totalBidder)
-                .canCancelBid(canCancelBid)
+                .currentPrice(bidStats.getMaxPrice())
+                .totalBid(bidStats.getTotalBid())
+                .totalBidder(bidStats.getTotalBidder())
+                .canCancelBid(recentUserBid != null)
                 .recentUserBid(recentUserBid)
                 .bids(activeBids)
                 .cancelledBids(cancelledBids)
@@ -98,131 +80,112 @@ public class BidService {
     }
 
     @Transactional
-    public BidResultResponse placeBid(Long auctionId, Long userId, int price) {
+    public BidResultResponse placeBid(Long auctionId, User user, int price) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(AuctionNotFoundException::new);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::new);
+        LocalDateTime now = LocalDateTime.now();
+        Bid newBid = createValidatedBid(auction, user, price, now);
 
-        validatePlaceBid(auction, user, price);
+        deactivatePreviousWinningBid(auctionId);
 
-        clearPreviousWinningBid(auctionId);
+        bidRepository.save(newBid);
 
-        Bid bid = Bid.builder()
-                .auction(auction)
-                .bidder(user)
-                .price(price)
-                .isWinning(Boolean.TRUE)
-                .isDeleted(Boolean.FALSE)
-                .build();
+        BidEventResponse event = createBidEventResponse(auctionId, newBid, false);
+        broadcastBidEvent(auctionId, event);
 
-        Bid savedBid = bidRepository.save(bid);
-        BidResponse bidResponse = BidResponse.from(savedBid);
-        boolean canCancelBid = !isExistCancelledBidBefore(auctionId, userId);
-
-        BidEventResponse event = createBidEventResponse(auctionId, bidResponse, false);
-        sseService.broadcastBidUpdate(auctionId, event);
-
-        return BidResultResponse.from(bidResponse, canCancelBid);
+        boolean canCancelBid = !hasUserCancelledBid(auctionId, user.getId());
+        return BidResultResponse.from(BidResponse.from(newBid), canCancelBid);
     }
 
     @Transactional
-    public BidEventResponse cancelBid(Long auctionId, Long bidId, User currentUser) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(AuctionNotFoundException::new);
+    public void cancelBid(Long auctionId, Long bidId, Long userId) {
+        if (!auctionRepository.existsById(auctionId)) {
+            throw new AuctionNotFoundException();
+        }
 
         Bid bid = bidRepository.findById(bidId)
                 .orElseThrow(BidNotFoundException::new);
 
-        validateCancelBid(auction, bid, currentUser);
+        validateBidCancelable(auctionId, userId, bid);
 
-        bid.setIsWinning(Boolean.FALSE);
-        bid.setIsDeleted(Boolean.TRUE);
+        bid.cancel();
 
-        updateWinningBid(auctionId);
+        activateNewWinningBid(auctionId);
 
-        BidResponse bidResponse = BidResponse.from(bid);
-
-        return createBidEventResponse(auctionId, bidResponse, true);
+        BidEventResponse event = createBidEventResponse(auctionId, bid, true);
+        broadcastBidEvent(auctionId, event);
     }
 
-    private void clearPreviousWinningBid(Long auctionId) {
-        bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
-                .ifPresent(prev -> prev.setIsWinning(false));
+    private List<Bid> getByAuctionIdOrderByCreatedAtDesc(Long auctionId) {
+        return bidRepository.findByAuctionIdOrderByCreatedAtDesc(auctionId);
     }
 
-    private void updateWinningBid(Long auctionId) {
-        bidRepository.findTopValidBidByAuctionId(auctionId)
-                .ifPresent(newWinner -> {
-                    newWinner.setIsWinning(true);
-                    bidRepository.save(newWinner);
-                });
+    private BidResponse findRecentUserBid(List<Bid> activeBids, Long userId, LocalDateTime thresholdTime) {
+        return activeBids.stream()
+                .filter(bid -> bid.isOwner(userId) && bid.getCreatedAt().isAfter(thresholdTime))
+                .findFirst()
+                .map(BidResponse::from)
+                .orElse(null);
     }
 
-    private BidEventResponse createBidEventResponse(Long auctionId, BidResponse bidResponse, boolean isCancelled) {
-        Integer currentPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
-        int totalBid = bidRepository.countByAuctionIdAndIsDeletedFalse(auctionId);
-        int totalBidder = bidRepository.countDistinctBidderByAuctionId(auctionId);
+    private void validateBidCancelable(Long auctionId, Long userId, Bid bid) {
+        bid.validateCancelConditions(userId, LocalDateTime.now());
 
-        return BidEventResponse.builder()
-                .currentPrice(currentPrice)
-                .totalBid(totalBid)
-                .totalBidder(totalBidder)
-                .isCancelled(isCancelled)
-                .bid(bidResponse)
-                .build();
+        if (hasUserCancelledBid(auctionId, userId)) {
+            throw new BidInvalidStateException(ErrorCode.BID_CANCEL_LIMIT_EXCEEDED);
+        }
     }
 
-    private boolean isRecentBidByUser(Bid bid, User user, LocalDateTime oneMinuteAgo) {
-        return bid.getBidder().getId().equals(user.getId()) && bid.getCreatedAt().isAfter(oneMinuteAgo);
-    }
-
-    private boolean isExistCancelledBidBefore(Long auctionId, Long userId) {
+    private boolean hasUserCancelledBid(Long auctionId, Long userId) {
         return bidRepository.existsByAuctionIdAndBidderIdAndIsDeletedTrue(auctionId, userId);
     }
 
-    private void validatePlaceBid(Auction auction, User user, int price) {
-        if (auction.getSeller().getId().equals(user.getId())) {
-            throw new BidForbiddenException(ErrorCode.SELLER_CANNOT_BID);
+    private Bid createValidatedBid(Auction auction, User user, int price, LocalDateTime now) {
+        if (price > 1_000_000_000) {
+            throw new BidBadRequestException(ErrorCode.BID_EXCEEDS_MAXIMUM);
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
-            throw new BidInvalidStateException(ErrorCode.BID_TIME_INVALID);
-        }
+        auction.validateBidConditions(user.getId(), price, now);
+        validatePriceIsHighest(auction.getId(), price);
 
-        if (price < auction.getBasePrice()) {
-            throw new BidBadRequestException(ErrorCode.BID_LESS_THAN_BASE);
-        }
+        return Bid.placeBy(auction, user, price);
+    }
 
-        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auction.getId());
+    private void deactivatePreviousWinningBid(Long auctionId) {
+        bidRepository.findTopValidBidByAuctionId(auctionId)
+                .ifPresent(prev -> prev.setIsWinning(false));
+    }
+
+    private void activateNewWinningBid(Long auctionId) {
+        bidRepository.findTopValidBidByAuctionId(auctionId)
+                .ifPresent(newWinner -> newWinner.setIsWinning(true));
+    }
+
+
+    private void validatePriceIsHighest(Long auctionId, int price) {
+        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
         if (highestPrice != null && price <= highestPrice) {
             throw new BidBadRequestException(ErrorCode.BID_NOT_HIGHEST);
         }
     }
 
-    private void validateCancelBid(Auction auction, Bid bid, User currentUser) {
-        LocalDateTime now = LocalDateTime.now();
+    private BidEventResponse createBidEventResponse(Long auctionId, Bid bid, boolean isCancelled) {
+        BidStatsResponse bidStats = getBidStatsByAuctionId(auctionId);
+        return BidEventResponse.builder()
+                .currentPrice(bidStats.getMaxPrice())
+                .totalBid(bidStats.getTotalBid())
+                .totalBidder(bidStats.getTotalBidder())
+                .isCancelled(isCancelled)
+                .bid(BidResponse.from(bid))
+                .build();
+    }
 
-        if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
-            throw new BidInvalidStateException(ErrorCode.BID_TIME_INVALID);
-        }
+    private BidStatsResponse getBidStatsByAuctionId(Long auctionId) {
+        return bidRepository.findBidStatsByAuctionId(auctionId);
+    }
 
-        if (!bid.getBidder().getId().equals(currentUser.getId())) {
-            throw new BidForbiddenException(ErrorCode.BID_CANCEL_FORBIDDEN);
-        }
-
-        if (Boolean.TRUE.equals(bid.getIsDeleted())) {
-            throw new BidInvalidStateException(ErrorCode.BID_ALREADY_CANCELED);
-        }
-
-        if (isExistCancelledBidBefore(auction.getId(), bid.getBidder().getId())) {
-            throw new BidInvalidStateException(ErrorCode.BID_CANCEL_LIMIT_EXCEEDED);
-        }
-
-        if (now.isAfter(bid.getCreatedAt().plusMinutes(1))) {
-            throw new BidInvalidStateException(ErrorCode.BID_CANCEL_EXPIRED);
-        }
+    private void broadcastBidEvent(Long auctionId, BidEventResponse event) {
+        sseService.broadcastBidUpdate(auctionId, event);
     }
 }

@@ -12,10 +12,10 @@ import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateRespons
 import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.service.PaymentService;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,7 +42,7 @@ public class PaymentController {
 
         User user = authService.getCurrentUser();
         if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
         PaymentCreateResponse response = paymentService.createPayment(auctionId, user, request);
         return BaseResponse.success(response);

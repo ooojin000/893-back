@@ -6,17 +6,15 @@ import com.samyookgoo.palgoosam.bid.api_docs.GetAuctionBidsApi;
 import com.samyookgoo.palgoosam.bid.api_docs.PlaceBidApi;
 import com.samyookgoo.palgoosam.bid.controller.request.BidRequest;
 import com.samyookgoo.palgoosam.bid.controller.response.BaseResponse;
-import com.samyookgoo.palgoosam.bid.controller.response.BidEventResponse;
-import com.samyookgoo.palgoosam.bid.controller.response.BidListResponse;
+import com.samyookgoo.palgoosam.bid.controller.response.BidOverviewResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResultResponse;
 import com.samyookgoo.palgoosam.bid.service.BidService;
-import com.samyookgoo.palgoosam.bid.service.SseService;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -34,23 +32,22 @@ public class BidController {
 
     private final BidService bidService;
     private final AuthService authService;
-    private final SseService sseService;
 
     @GetAuctionBidsApi
     @GetMapping("/{auctionId}/bids")
-    public BaseResponse<BidListResponse> auctionBids(
+    public BaseResponse<BidOverviewResponse> overview(
             @Parameter(name = "auctionId", description = "입찰 내역을 조회할 경매 ID", required = true)
             @PathVariable Long auctionId
     ) {
         User user = authService.getCurrentUser();
 
-        BidListResponse response = bidService.getBidsByAuctionId(auctionId, user);
+        BidOverviewResponse response = bidService.getBidOverview(auctionId, user);
         return BaseResponse.success(response);
     }
 
     @PlaceBidApi
     @PostMapping("/{auctionId}/bids")
-    public BaseResponse<BidResultResponse> placeBid(
+    public BaseResponse<BidResultResponse> place(
             @Parameter(name = "auctionId", description = "입찰할 경매 ID", required = true)
             @PathVariable Long auctionId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -61,17 +58,17 @@ public class BidController {
     ) {
         User user = authService.getCurrentUser();
         if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
-        BidResultResponse response = bidService.placeBid(auctionId, user.getId(), request.getPrice());
+        BidResultResponse response = bidService.placeBid(auctionId, user, request.getPrice());
         return BaseResponse.success(response);
     }
 
     @CancelBidApi
     @CrossOrigin(origins = "http://localhost:3000")
     @PatchMapping("/{auctionId}/bids/{bidId}")
-    public BaseResponse<String> cancelBid(
+    public BaseResponse<String> cancel(
             @Parameter(name = "auctionId", description = "경매 ID", required = true)
             @PathVariable Long auctionId,
 
@@ -80,10 +77,10 @@ public class BidController {
     ) {
         User user = authService.getCurrentUser();
         if (user == null) {
-            throw new UsernameNotFoundException("유저를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
-        BidEventResponse response = bidService.cancelBid(auctionId, bidId, user);
-        sseService.broadcastBidUpdate(auctionId, response);
+
+        bidService.cancelBid(auctionId, bidId, user.getId());
 
         return BaseResponse.success("입찰 취소 완료");
     }

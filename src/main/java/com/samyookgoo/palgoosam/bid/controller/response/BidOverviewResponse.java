@@ -6,8 +6,9 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class BidListResponse {
+public class BidOverviewResponse {
     private Long auctionId;
+    private Integer currentPrice;
     private Integer totalBid;
     private Integer totalBidder;
     private Boolean canCancelBid;
