@@ -3,6 +3,10 @@ package com.samyookgoo.palgoosam.auction.domain;
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.auction.dto.request.AuctionCreateRequest;
+import com.samyookgoo.palgoosam.bid.exception.BidBadRequestException;
+import com.samyookgoo.palgoosam.bid.exception.BidForbiddenException;
+import com.samyookgoo.palgoosam.bid.exception.BidInvalidStateException;
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -84,6 +88,24 @@ public class Auction {
 
     @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AuctionImage> auctionImages = new ArrayList<>();
+
+    public boolean isAuctionOpen(LocalDateTime now) {
+        return !now.isBefore(this.startTime) && !now.isAfter(this.endTime);
+    }
+
+    public void validateBidConditions(Long bidderId, int price, LocalDateTime now) {
+        if (seller.getId().equals(bidderId)) {
+            throw new BidForbiddenException(ErrorCode.SELLER_CANNOT_BID);
+        }
+
+        if (!isAuctionOpen(now)) {
+            throw new BidInvalidStateException(ErrorCode.BID_TIME_INVALID);
+        }
+
+        if (price < basePrice) {
+            throw new BidBadRequestException(ErrorCode.BID_LESS_THAN_BASE);
+        }
+    }
 
     public static Auction from(AuctionCreateRequest request,
                                Category category,

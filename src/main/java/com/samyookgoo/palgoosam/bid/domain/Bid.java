@@ -1,6 +1,9 @@
 package com.samyookgoo.palgoosam.bid.domain;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.bid.exception.BidForbiddenException;
+import com.samyookgoo.palgoosam.bid.exception.BidInvalidStateException;
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -55,4 +58,42 @@ public class Bid {
 
     @ColumnDefault("false")
     private Boolean isDeleted = false;
+
+    public boolean isOwner(Long userId) {
+        return bidder.getId().equals(userId);
+    }
+
+    public boolean isCancelled() {
+        return Boolean.TRUE.equals(this.isDeleted);
+    }
+
+    public void cancel() {
+        this.setIsWinning(false);
+        this.setIsDeleted(true);
+    }
+
+    public void validateCancelConditions(Long userId, LocalDateTime now) {
+        if (!auction.isAuctionOpen(now)) {
+            throw new BidInvalidStateException(ErrorCode.BID_TIME_INVALID);
+        }
+        if (!isOwner(userId)) {
+            throw new BidForbiddenException(ErrorCode.BID_CANCEL_FORBIDDEN);
+        }
+        if (Boolean.TRUE.equals(this.isDeleted)) {
+            throw new BidInvalidStateException(ErrorCode.BID_ALREADY_CANCELED);
+        }
+        if (now.isAfter(this.createdAt.plusMinutes(1))) {
+            throw new BidInvalidStateException(ErrorCode.BID_CANCEL_EXPIRED);
+        }
+    }
+
+    public static Bid placeBy(Auction auction, User user, int price) {
+        return Bid.builder()
+                .auction(auction)
+                .bidder(user)
+                .price(price)
+                .isWinning(true)
+                .isDeleted(false)
+                .build();
+    }
 }
