@@ -9,7 +9,6 @@ import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressReposi
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
-import com.samyookgoo.palgoosam.user.exception.UserUnauthorizedException;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +21,9 @@ public class DeliveryAddressService {
     private final DeliveryAddressRepository deliveryAddressRepository;
     private final AuthService authService;
 
-    public List<DeliveryAddressResponseDto> getUserDeliveryAddresses() {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
-        List<DeliveryAddress> deliveryAddressList = deliveryAddressRepository.findAllByUser_Id(user.getId());
+    @Transactional(readOnly = true)
+    public List<DeliveryAddressResponseDto> getUserDeliveryAddresses(User currentUser) {
+        List<DeliveryAddress> deliveryAddressList = deliveryAddressRepository.findAllByUser_Id(currentUser.getId());
 
         return deliveryAddressList.stream()
                 .map(DeliveryAddressResponseDto::of)
@@ -32,12 +31,11 @@ public class DeliveryAddressService {
     }
 
     @Transactional
-    public void deleteUserDeliveryAddress(Long deliveryAddressId) {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
-        DeliveryAddress deliveryAddress = deliveryAddressRepository.findByUserAndId(user, deliveryAddressId)
+    public void deleteUserDeliveryAddress(Long deliveryAddressId, User currentUser) {
+        DeliveryAddress deliveryAddress = deliveryAddressRepository.findByUserAndId(currentUser, deliveryAddressId)
                 .orElseThrow(() -> new DeliveryAddressNotFoundException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND));
 
-        if (deliveryAddress.hasPermission(user.getId())) {
+        if (deliveryAddress.hasPermission(currentUser.getId())) {
             deliveryAddressRepository.deleteById(deliveryAddress.getId());
         } else {
             throw new UserForbiddenException();
@@ -45,33 +43,24 @@ public class DeliveryAddressService {
     }
 
     @Transactional
-    public void postUserDeliveryAddress(DeliveryAddressRequestDto requestDto) {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
-        DeliveryAddress isDeliveryAddressSaveSuccess = DeliveryAddress.from(requestDto, user);
+    public void postUserDeliveryAddress(DeliveryAddressRequestDto requestDto, User currentUser) {
+        DeliveryAddress isDeliveryAddressSaveSuccess = DeliveryAddress.from(requestDto, currentUser);
         deliveryAddressRepository.save(isDeliveryAddressSaveSuccess);
     }
 
     @Transactional
-    public void modifyDefaultDeliveryAddress(Long deliveryAddressId) {
-        User user = getAuthenticatedUser(authService.getCurrentUser());
-        DeliveryAddress target = deliveryAddressRepository.findByUserAndIsDefaultTrue(user)
+    public void modifyDefaultDeliveryAddress(Long deliveryAddressId, User currentUser) {
+        DeliveryAddress target = deliveryAddressRepository.findByUserAndIsDefaultTrue(currentUser)
                 .orElseThrow(() -> new DeliveryAddressNotFoundException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND));
 
         DeliveryAddress deliveryAddressToDefault = deliveryAddressRepository.findById(deliveryAddressId)
                 .orElseThrow(() -> new DeliveryAddressNotFoundException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND));
 
-        if (target.hasPermission(user.getId()) && deliveryAddressToDefault.hasPermission(user.getId())) {
+        if (target.hasPermission(currentUser.getId()) && deliveryAddressToDefault.hasPermission(currentUser.getId())) {
             target.removeDefault();
             deliveryAddressToDefault.setDefault();
         } else {
             throw new UserForbiddenException();
         }
-    }
-
-    public User getAuthenticatedUser(User user) {
-        if (user == null) {
-            throw new UserUnauthorizedException();
-        }
-        return user;
     }
 }
