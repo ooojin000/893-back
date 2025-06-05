@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.auth.service;
 
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.exception.UserUnauthorizedException;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,5 +22,12 @@ public class AuthService {
                 .getName();
         return userRepository.findByProviderId(providerId)
                 .orElse(null);
+    }
+
+    public User getAuthorizedUser(User user) {
+        if (user == null) {
+            throw new UserUnauthorizedException();
+        }
+        return user;
     }
 }
