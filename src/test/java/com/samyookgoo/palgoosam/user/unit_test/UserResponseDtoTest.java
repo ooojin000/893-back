@@ -16,7 +16,9 @@ import com.samyookgoo.palgoosam.user.dto.UserPaymentsResponseDto;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles("test")
 @DisplayName("User 도메인의 응답 DTO 유닛 테스트")
 class UserResponseDtoTest {
 

@@ -61,7 +61,8 @@ public enum ErrorCode {
 
     // 검색 기록
     SEARCH_HISTORY_NOT_FOUND(404, "SEARCH_HIST_001", "해당 검색 기록을 찾을 수 없습니다."),
-    SEARCH_HISTORY_BAD_REQUEST(400, "SEARCH_HIST_002", "처리할 수 없는 공백 요청입니다."),
+    SEARCH_HISTORY_BLANK_BAD_REQUEST(400, "SEARCH_HIST_002", "처리할 수 없는 공백 요청입니다."),
+    SEARCH_HISTORY_ALREADY_DELETED_BAD_REQUEST(400, "SEARCH_HIST_003", "이미 삭제된 검색 기록입니다."),
 
     // 배송지
     DELIVERY_ADDRESS_NOT_FOUND(404, "DELIVERY_ADDR_001", "해당 배송지 정보를 찾을 수 없습니다."),
