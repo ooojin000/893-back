@@ -1,7 +1,6 @@
 package com.samyookgoo.palgoosam.search.service;
 
 
-import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.search.domain.SearchHistory;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryCreateRequestDto;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SearchHistoryService {
     private final SearchHistoryRepository searchHistoryRepository;
-    private final AuthService authService;
 
     @Transactional(readOnly = true)
     public List<SearchHistoryResponseDto> getSearchHistory(User currentUser) {
