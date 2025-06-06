@@ -49,7 +49,7 @@ class SearchHistoryServiceBusinessLogicTest {
 
     @Test
     @DisplayName("검색했던 단어를 검색하면 검색어 순위가 올라간다.")
-    public void methodName1() {
+    public void recordUserSearch_ExistingKeywords_IncrementsSearchCount() {
         //given
         String keyword1 = "test1";
         SearchHistory searchHistory1 = createSearchHistory(keyword1, tester);
@@ -90,7 +90,7 @@ class SearchHistoryServiceBusinessLogicTest {
 
     @Test
     @DisplayName("새로운 단어를 검색하면 새로운 검색 기록이 저장된다.")
-    public void methodName2() {
+    public void recordUserSearch_NewKeyword_CreatesNewRecord() {
         //given
         String keyword = "test";
         SearchHistoryCreateRequestDto requestDto = createSearchHistoryCreateRequestDto(keyword);
@@ -109,7 +109,7 @@ class SearchHistoryServiceBusinessLogicTest {
 
     @Test
     @DisplayName("사용자는 삭제되지 않은 검색 기록을 조회할 수 있다.")
-    public void methodName3() {
+    public void getSearchHistory_ActiveRecords_ReturnsInReverseOrder() {
         //given
         String keyword1 = "test1";
         SearchHistory searchHistory1 = createSearchHistory(keyword1, tester);
@@ -132,9 +132,51 @@ class SearchHistoryServiceBusinessLogicTest {
                 .containsExactly(keyword3, keyword2, keyword1);
     }
 
+
+    @Test
+    @DisplayName("검색 기록이 10개 일 때 조회")
+    public void getSearchHistory_ExactlyTenRecords_ReturnsAll() {
+        //given
+        List<SearchHistory> searchHistories = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            String keyword = "test" + i;
+            searchHistories.add(createSearchHistory(keyword, tester));
+
+        }
+        searchHistoryRepository.saveAll(searchHistories);
+
+        //when
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+
+        //then
+        Assertions.assertThat(result).hasSize(10);
+    }
+
+    @Test
+    @DisplayName("검색 기록이 11개일 때 조회")
+    public void getSearchHistory_OverTenRecords_ReturnsLatestTen() {
+        //given
+        List<SearchHistory> searchHistories = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            String keyword = "test" + i;
+            searchHistories.add(createSearchHistory(keyword, tester));
+
+        }
+        searchHistoryRepository.saveAll(searchHistories);
+
+        //when
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+
+        //then
+        Assertions.assertThat(result).hasSize(10);
+        Assertions.assertThat(result).extracting("keyword")
+                .containsExactly("test10", "test9", "test8", "test7", "test6", "test5", "test4", "test3", "test2",
+                        "test1");
+    }
+
     @Test
     @DisplayName("사용자는 검색 기록을 삭제할 수 있다.")
-    public void methodName4() {
+    public void deleteSearchHistory_ValidUser_SoftDeletesRecord() {
         //given
         String keyword1 = "test";
         SearchHistory searchHistory = createSearchHistory(keyword1, tester);
@@ -152,7 +194,7 @@ class SearchHistoryServiceBusinessLogicTest {
 
     @Test
     @DisplayName("다른 사용자의 검색 기록을 삭제할 수 없다.")
-    public void methodName5() {
+    public void deleteSearchHistory_UnauthorizedUser_ThrowsForbiddenException() {
         //given
         String keyword1 = "test";
         SearchHistory searchHistory = createSearchHistory(keyword1, tester);
@@ -171,7 +213,7 @@ class SearchHistoryServiceBusinessLogicTest {
 
     @Test
     @DisplayName("사용자는 존재하지 않는 검색 기록을 삭제할 수 없다.")
-    public void methodName6() {
+    public void deleteSearchHistory_NonExistentRecord_ThrowsNotFoundException() {
         //given
 
         //when
@@ -187,7 +229,7 @@ class SearchHistoryServiceBusinessLogicTest {
 
     @Test
     @DisplayName("사용자의 검색 기록이 없으면 아무것도 확인할 수 없다.")
-    public void methodName7() {
+    public void getSearchHistory_NoRecords_ReturnsEmptyList() {
         //given
 
         //when
@@ -195,6 +237,34 @@ class SearchHistoryServiceBusinessLogicTest {
 
         //then
         Assertions.assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("사용자는 논리 삭제된 검색 기록을 확인할 수 없다.")
+    public void getSearchHistory_WithDeletedRecords_ExcludesDeletedOnes() {
+        //given
+        String keyword1 = "saved1";
+        SearchHistory searchHistory1 = createSearchHistory(keyword1, tester);
+
+        String keyword2 = "deleted";
+        SearchHistory searchHistory2 = createSearchHistory(keyword2, tester);
+
+        String keyword3 = "saved2";
+        SearchHistory searchHistory3 = createSearchHistory(keyword3, tester);
+
+        List<SearchHistory> searchHistoryList = List.of(searchHistory1, searchHistory2, searchHistory3);
+        List<SearchHistory> searchHistories = new ArrayList<>(searchHistoryList);
+        saveInOrder(searchHistories);
+
+        searchHistoryRepository.delete(searchHistory3);
+
+        //when
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+
+        //then
+        Assertions.assertThat(result).extracting("keyword")
+                .containsExactly(keyword2, keyword1);
+
     }
 
     // 헬퍼 함수
