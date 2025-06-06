@@ -6,7 +6,9 @@ import com.samyookgoo.palgoosam.search.domain.SearchHistory;
 import com.samyookgoo.palgoosam.user.domain.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles("test")
 @DisplayName("SearchHistory 유닛 테스트")
 class SearchHistoryEntityTest {
 
