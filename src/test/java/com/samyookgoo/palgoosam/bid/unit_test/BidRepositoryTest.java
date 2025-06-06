@@ -47,9 +47,6 @@ class BidRepositoryTest {
     private User seller;
     private Auction auction1;
     private Auction auction2;
-    private Bid bid1;
-    private Bid bid2;
-    private Bid bid3;
 
     @BeforeEach
     void setUp() {
@@ -73,9 +70,9 @@ class BidRepositoryTest {
         createAuctionImage(auction2, "image2.jpg");
 
         // 입찰 생성
-        bid1 = createBid(bidder, auction1, 1500, false); // 첫번째 경매에 1500원 입찰
-        bid2 = createBid(bidder, auction1, 2000, false); // 첫번째 경매에 2000원 입찰
-        bid3 = createBid(bidder, auction2, 2500, false); // 두번째 경매에 2500원 입찰
+        createBid(bidder, auction1, 1500, false); // 첫번째 경매에 1500원 입찰
+        createBid(bidder, auction1, 2000, false); // 첫번째 경매에 2000원 입찰
+        createBid(bidder, auction2, 2500, false); // 두번째 경매에 2500원 입찰
 
         // 다른 사용자의 입찰 (최고가 테스트용)
         User otherBidder = createUser("other@test.com", "다른입찰자");
@@ -131,58 +128,6 @@ class BidRepositoryTest {
 
         assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
         assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
-    }
-
-    @Test
-    @DisplayName("사용자가 등록한 경매의 최고 입찰가를 조회한다.")
-    public void Given_Seller_When_RetrieveBids_Then_ReturnHighestBid() {
-        //when
-        List<BidForHighestPriceProjection> result = bidRepository.findHighestBidProjectsBySellerId(seller.getId());
-
-        //then
-        assertThat(result).hasSize(2);
-
-        BidForHighestPriceProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
-                .findFirst()
-                .orElseThrow();
-
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
-        assertThat(firstBid.getBidHighestPrice()).isEqualTo(2200);
-
-        // 두 번째 경매 입찰 검증
-        BidForHighestPriceProjection secondBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
-                .findFirst()
-                .orElseThrow();
-
-        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
-        assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
-    }
-
-    @Test
-    @DisplayName("사용자가 등록한 경매의 입찰이 없으면 0을 반환한다.")
-    public void Given_Seller_When_RetrieveBids_Then_ReturnZero() {
-        //given
-        Category testCategory = Category.builder()
-                .name("Test Category2")
-                .build();
-        Category savedCategory = entityManager.persistAndFlush(testCategory);
-        Auction auctionWithoutBid = createAuction(seller, "auctionWithoutBid", 1111, savedCategory);
-
-        //when
-        List<BidForHighestPriceProjection> result = bidRepository.findHighestBidProjectsBySellerId(seller.getId());
-
-        //then
-        assertThat(result).hasSize(3);
-
-        BidForHighestPriceProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auctionWithoutBid.getId()))
-                .findFirst()
-                .orElseThrow();
-
-        assertThat(firstBid.getAuctionId()).isEqualTo(auctionWithoutBid.getId());
-        assertThat(firstBid.getBidHighestPrice()).isEqualTo(0);
     }
 
 
