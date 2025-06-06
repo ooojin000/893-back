@@ -85,7 +85,7 @@ class AuctionRepositoryTest {
 
     @Test
     @DisplayName("사용자가 등록한 모든 경매를 조회한다.")
-    void Given_seller_When_RetrieveAuctions_Then_ReturnAuctions() {
+    void findAllAuctionProjectionBySellerId_ValidSeller_ReturnsAuctions() {
         //when
         List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionBySellerId(seller.getId());
 
@@ -126,7 +126,7 @@ class AuctionRepositoryTest {
 
     @Test
     @DisplayName("사용자가 스크랩한 모든 경매를 조회한다.")
-    void Given_scraper_When_RetrieveAuctions_Then_ReturnAuctions() {
+    void findAllAuctionProjectionWithScrapByUserId_ValidUser_ReturnsScrapedAuctions() {
         //when
         List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
                 scraper.getId());
@@ -167,7 +167,7 @@ class AuctionRepositoryTest {
 
     @Test
     @DisplayName("사용자가 등록한 경매가 없다면 아무 것도 없는 빈 값을 조회한다.")
-    void Given_sellNothing_When_RetrieveAuctions_Then_ReturnEmptyList() {
+    void findAllAuctionProjectionBySellerId_NoAuctions_ReturnsEmptyList() {
         //when
         List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionBySellerId(scraper.getId());
 
@@ -178,7 +178,7 @@ class AuctionRepositoryTest {
 
     @Test
     @DisplayName("사용자가 스크랩한 경매가 없다면 아무 것도 없는 빈 값을 조회한다.")
-    void Given_scrapedNothing_When_RetrieveAuctions_Then_ReturnEmptyList() {
+    void findAllAuctionProjectionWithScrapByUserId_NoScraps_ReturnsEmptyList() {
         //when
         List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
                 seller.getId());
