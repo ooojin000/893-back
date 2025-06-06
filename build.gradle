@@ -26,10 +26,11 @@ repositories {
 
 jacoco {
     toolVersion = "0.8.13"
+    layout.buildDirectory.dir("reports/jacoco")
 }
 
 jacocoTestReport {
-    dependsOn test // test 종속성 추가
+    dependsOn test
 
     reports {
         xml.required = false
@@ -40,14 +41,36 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                    '/Application',
-                    '/exception/',
-                    '/config/**',
+                    '**/*Application*',
+                    '**/exception/**',
+                    '**/config/**',
             ])
         }))
     }
 
     finalizedBy 'jacocoTestCoverageVerification'
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.30
+            }
+
+            excludes = [
+                    '**.*Application*',
+                    '**.exception.**',
+                    '**.aop.**',
+                    '**.config.**',
+            ]
+        }
+    }
 }
 
 dependencies {
