@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
@@ -45,9 +44,6 @@ public class BidServiceTest {
 
     @Autowired
     private BidRepository bidRepository;
-
-    @Autowired
-    private SseService sseService;
 
     @Autowired
     private BidService bidService;
@@ -853,19 +849,6 @@ public class BidServiceTest {
                 .status(AuctionStatus.pending)
                 .build();
     }
-
-
-    private AuctionImage createAuctionImage(Auction auction, String url) {
-        return AuctionImage.builder()
-                .auction(auction)
-                .url(url)
-                .originalName("test-original-" + url)
-                .storeName("test-store-" + url)
-                .imageSeq(0)
-                .isDeleted(false)
-                .build();
-    }
-
 
     private Bid createBid(Auction auction, User bidder, int price, boolean isWinning, boolean isDeleted) {
         return Bid.builder()
