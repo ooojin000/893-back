@@ -11,7 +11,6 @@ import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.exception.BidBadRequestException;
 import com.samyookgoo.palgoosam.bid.exception.BidInvalidStateException;
 import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
-import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
@@ -30,16 +29,6 @@ public class BidService {
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
     private final SseService sseService;
-
-    public Map<Long, Integer> getAuctionMaxPrices(List<Long> auctionIds) {
-        return bidRepository
-                .findMaxBidPricesByAuctionIds(auctionIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        AuctionMaxBid::getAuctionId,
-                        AuctionMaxBid::getMaxPrice
-                ));
-    }
 
     @Transactional(readOnly = true)
     public BidOverviewResponse getBidOverview(Long auctionId, User user) {
@@ -99,7 +88,7 @@ public class BidService {
     }
 
     @Transactional
-    public void cancelBid(Long auctionId, Long bidId, Long userId) {
+    public void cancelBid(Long auctionId, Long bidId, Long userId, LocalDateTime now) {
         if (!auctionRepository.existsById(auctionId)) {
             throw new AuctionNotFoundException();
         }
@@ -107,7 +96,7 @@ public class BidService {
         Bid bid = bidRepository.findById(bidId)
                 .orElseThrow(BidNotFoundException::new);
 
-        validateBidCancelable(auctionId, userId, bid);
+        validateBidCancelable(auctionId, userId, bid, now);
 
         bid.cancel();
 
@@ -129,8 +118,8 @@ public class BidService {
                 .orElse(null);
     }
 
-    private void validateBidCancelable(Long auctionId, Long userId, Bid bid) {
-        bid.validateCancelConditions(userId, LocalDateTime.now());
+    private void validateBidCancelable(Long auctionId, Long userId, Bid bid, LocalDateTime now) {
+        bid.validateCancelConditions(userId, now);
 
         if (hasUserCancelledBid(auctionId, userId)) {
             throw new BidInvalidStateException(ErrorCode.BID_CANCEL_LIMIT_EXCEEDED);
