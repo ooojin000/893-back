@@ -14,6 +14,7 @@ import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -80,7 +81,7 @@ public class BidController {
             throw new UserNotFoundException();
         }
 
-        bidService.cancelBid(auctionId, bidId, user.getId());
+        bidService.cancelBid(auctionId, bidId, user.getId(), LocalDateTime.now());
 
         return BaseResponse.success("입찰 취소 완료");
     }
