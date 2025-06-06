@@ -74,10 +74,6 @@ class BidRepositoryTest {
         createBid(bidder, auction1, 2000, false); // 첫번째 경매에 2000원 입찰
         createBid(bidder, auction2, 2500, false); // 두번째 경매에 2500원 입찰
 
-        // 다른 사용자의 입찰 (최고가 테스트용)
-        User otherBidder = createUser("other@test.com", "다른입찰자");
-        createBid(otherBidder, auction1, 2200, false); // 첫번째 경매에 더 높은 입찰
-
         entityManager.flush();
         entityManager.clear();
     }
