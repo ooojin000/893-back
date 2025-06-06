@@ -40,6 +40,7 @@ public class SearchHistory {
     @Column(length = 100)
     private String keyword;
 
+    @Builder.Default
     @Column(name = "search_count")
     @ColumnDefault("1")
     private Long searchCount = 1L;
@@ -50,6 +51,7 @@ public class SearchHistory {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @ColumnDefault("false")
     private Boolean isDeleted = false;
 

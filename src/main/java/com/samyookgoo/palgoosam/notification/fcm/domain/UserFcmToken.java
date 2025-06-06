@@ -38,6 +38,7 @@ public class UserFcmToken {
     @Column(nullable = false)
     private String token;
 
+    @Builder.Default
     @NotNull
     private String deviceType = "WEB";
 

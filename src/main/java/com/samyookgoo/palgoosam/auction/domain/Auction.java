@@ -86,6 +86,7 @@ public class Auction {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AuctionImage> auctionImages = new ArrayList<>();
 
