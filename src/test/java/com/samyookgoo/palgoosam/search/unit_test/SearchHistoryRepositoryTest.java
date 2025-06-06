@@ -88,7 +88,7 @@ class SearchHistoryRepositoryTest {
     }
 
     @Test
-    @DisplayName("사용자가 검색어를 입력하면 기존 검색 기록을 확인할 수 있다.")
+    @DisplayName("기존 검색 기록이 없다면 아무 것도 확인할 수 없다.")
     public void findByKeywordAndUserId_NonExistingKeyword_ReturnsEmpty() {
         //given
         User testUser = createTestUser("tester", "test@test.com");
