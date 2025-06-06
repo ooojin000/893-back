@@ -4,6 +4,8 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.bid.exception.BidForbiddenException;
 import com.samyookgoo.palgoosam.bid.exception.BidInvalidStateException;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
+import com.samyookgoo.palgoosam.payment.exception.PaymentBadRequestException;
+import com.samyookgoo.palgoosam.payment.exception.PaymentForbiddenException;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -86,6 +88,16 @@ public class Bid {
         }
         if (now.isAfter(this.createdAt.plusMinutes(1))) {
             throw new BidInvalidStateException(ErrorCode.BID_CANCEL_EXPIRED);
+        }
+    }
+
+    public void validatePaymentConditions(Long buyerId, Integer amount) {
+        if (!this.bidder.getId().equals(buyerId)) {
+            throw new PaymentForbiddenException(ErrorCode.NOT_WINNING_BIDDER);
+        }
+
+        if (this.price != amount) {
+            throw new PaymentBadRequestException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
     }
 

@@ -4,10 +4,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
 import lombok.Data;
 import org.hibernate.validator.constraints.URL;
 
 @Data
+@Builder
 public class PaymentCreateRequest {
     @NotBlank(message = "수령인 이름은 필수 항목입니다.")
     private String recipientName;

@@ -1,8 +1,12 @@
 package com.samyookgoo.palgoosam.payment.domain;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.constant.PaymentType;
+import com.samyookgoo.palgoosam.payment.controller.request.PaymentCreateRequest;
+import com.samyookgoo.palgoosam.payment.exception.PaymentBadRequestException;
+import com.samyookgoo.palgoosam.payment.exception.PaymentInvalidStateException;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +20,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -96,4 +101,48 @@ public class Payment {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    public void validatePaymentConditions(long amount) {
+        if (this.status == PaymentStatus.PAID) {
+            throw new PaymentInvalidStateException(ErrorCode.ALREADY_PAID);
+        }
+
+        if (this.finalPrice != amount) {
+            throw new PaymentBadRequestException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+        }
+    }
+
+    public void markAsPaid(OffsetDateTime approvedAt) {
+        this.status = PaymentStatus.PAID;
+        this.approvedAt = approvedAt.toLocalDateTime();
+    }
+
+    public void markAsFailed() {
+        if (this.status == PaymentStatus.PAID) {
+            throw new PaymentInvalidStateException(ErrorCode.INVALID_PAYMENT_STATUS);
+        }
+        if (this.status != PaymentStatus.FAILED) {
+            this.status = PaymentStatus.FAILED;
+        }
+    }
+
+    public static Payment of(Auction auction, User buyer, PaymentCreateRequest request, int deliveryFee,
+                             String orderNumber) {
+        return Payment.builder()
+                .buyer(buyer)
+                .seller(auction.getSeller())
+                .auction(auction)
+                .recipientName(request.getRecipientName())
+                .recipientEmail(buyer.getEmail())
+                .phoneNumber(request.getPhoneNumber())
+                .addressLine1(request.getAddressLine1())
+                .addressLine2(request.getAddressLine2())
+                .zipCode(request.getZipCode())
+                .itemPrice(request.getItemPrice())
+                .deliveryFee(deliveryFee)
+                .finalPrice(request.getItemPrice() + deliveryFee)
+                .orderNumber(orderNumber)
+                .status(PaymentStatus.READY)
+                .build();
+    }
 }

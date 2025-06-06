@@ -54,10 +54,10 @@ public enum ErrorCode {
     PAYMENT_IN_PROGRESS_OR_DONE(400, "PAY_004", "이미 결제 중이거나 완료된 주문입니다."),
     INVALID_DELIVERY_FEE(400, "PAY_005", "배송비가 올바르지 않습니다."),
     NOT_WINNING_BIDDER(403, "PAY_006", "낙찰자만 결제할 수 있습니다."),
-    SELLER_CANNOT_PURCHASE(403, "PAY_007", "판매자는 자신의 경매를 구매할 수 없습니다."),
     TOSS_PAYMENT_FAILED(502, "PAY_008", "Toss 결제 오류가 발생했습니다."),
     TOSS_PAYMENT_EMPTY_RESPONSE(502, "PAY_009", "Toss 응답이 비어 있습니다."),
     PAYMENT_NOT_COMPLETED(400, "PAY_010", "낙찰자의 결제가 완료되지 않아 삭제할 수 없습니다."),
+    INVALID_PAYMENT_STATUS(400, "PAY_011", "현재 결제 상태에서는 이 작업을 수행할 수 없습니다."),
 
     // 검색 기록
     SEARCH_HISTORY_NOT_FOUND(404, "SEARCH_HIST_001", "해당 검색 기록을 찾을 수 없습니다."),
