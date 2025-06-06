@@ -1,6 +1,9 @@
 package com.samyookgoo.palgoosam.search.domain;
 
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
+import com.samyookgoo.palgoosam.search.exception.SearchHistoryBadRequestException;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -60,11 +63,20 @@ public class SearchHistory {
         this.isDeleted = false;
     }
 
-    public void softDeleteSearchHistory() {
+    public void delete() {
         this.isDeleted = true;
     }
 
-    public Boolean hasPermission(Long userId) {
-        return this.getUser().getId().equals(userId);
+    public void checkPermission(Long userId) {
+        if (!this.getUser().getId().equals(userId)) {
+            throw new UserForbiddenException();
+        }
+    }
+
+    public void checkDeletable() {
+        if (isDeleted) {
+            throw new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_ALREADY_DELETED_BAD_REQUEST);
+        }
+
     }
 }
