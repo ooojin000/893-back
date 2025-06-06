@@ -1,9 +1,37 @@
+toss:
+  payments:
+    secret-key: test
+    base-url: https://api.tosspayments.com
+
+debug: true
+
+file:
+  dir: image
+
+springdoc:
+  swagger-ui:
+    path: /swagger
+
+cloud:
+  aws:
+    credentials: # 배포 후 삭제
+      access-key: test
+      secret-key: test
+    s3:
+      bucket: palgoosam-bucket
+      endpoint-url: "https://s3.amazonaws.com"
+
+    region:
+      static: region
+    cloudfront:
+      domain: net
+
 spring:
   datasource:
+    url: jdbc:h2:mem:test;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER
+    driver-class-name: org.h2.Driver
     username: sa
     password:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:test;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER
 
   jpa:
     hibernate:
