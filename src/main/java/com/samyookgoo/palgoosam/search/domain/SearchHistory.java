@@ -18,13 +18,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -77,6 +75,5 @@ public class SearchHistory {
         if (isDeleted) {
             throw new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_ALREADY_DELETED_BAD_REQUEST);
         }
-
     }
 }
