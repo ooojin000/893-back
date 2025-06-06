@@ -7,6 +7,7 @@ import com.samyookgoo.palgoosam.search.domain.SearchHistory;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryCreateRequestDto;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryResponseDto;
 import com.samyookgoo.palgoosam.search.exception.SearchHistoryBadRequestException;
+import com.samyookgoo.palgoosam.search.exception.SearchHistoryNotFoundException;
 import com.samyookgoo.palgoosam.search.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
@@ -42,7 +43,7 @@ public class SearchHistoryService {
     public void deleteSearchHistory(Long searchHistoryId, User currentUser) {
 
         SearchHistory target = searchHistoryRepository.findById(searchHistoryId)
-                .orElseThrow(() -> new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_NOT_FOUND));
+                .orElseThrow(() -> new SearchHistoryNotFoundException(ErrorCode.SEARCH_HISTORY_NOT_FOUND));
 
         if (target.hasPermission(currentUser.getId())) {
             target.softDeleteSearchHistory();
