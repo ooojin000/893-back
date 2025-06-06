@@ -30,7 +30,7 @@ class SearchHistoryRepositoryTest {
 
     @Test
     @DisplayName("회원인 사용자의 검색 내역을 저장한다.")
-    public void Given_SearchHistory_When_Save_Then_NormallySave() {
+    public void save_ValidSearchHistory_SavesSuccessfully() {
         //given
         User testUser = createTestUser("tester", "test@test.com");
         SearchHistory searchHistory = createSearchHistory("test", testUser);
@@ -47,7 +47,7 @@ class SearchHistoryRepositoryTest {
 
     @Test
     @DisplayName("회원은 10개 이하의 검색 기록을 볼 수 있다.")
-    public void Given_UserId_When_CallfindAllByUserIdMethod_Then_ReturnListLengthUnder10() {
+    public void findAllByUserId_OverTenRecords_ReturnsLatestTen() {
         //given
         User testUser = createTestUser("tester2", "test2@test.com");
         List<SearchHistory> searchHistoryList = new ArrayList<>();
@@ -71,23 +71,34 @@ class SearchHistoryRepositoryTest {
 
     @Test
     @DisplayName("사용자가 검색어를 입력하면 기존 검색 기록을 확인할 수 있다.")
-    public void Given_KeywordAndUserId_When_CallfindByKeywordAndUserId_Then_ReturnOptionalSearchHistory() {
+    public void findByKeywordAndUserId_ExistingKeyword_ReturnsSearchHistory() {
         //given
         User testUser = createTestUser("tester", "test@test.com");
         String existedKeyword = "test1";
         SearchHistory searchHistory = createSearchHistory(existedKeyword, testUser);
-        String notExistedKeyword = "test";
 
         searchHistoryRepository.save(searchHistory);
 
         //when
         Optional<SearchHistory> existingSearch = searchHistoryRepository.findByKeywordAndUserId(existedKeyword,
                 testUser.getId());
+
+        //then
+        assertThat(existingSearch.get().getKeyword()).isEqualTo(existedKeyword);
+    }
+
+    @Test
+    @DisplayName("사용자가 검색어를 입력하면 기존 검색 기록을 확인할 수 있다.")
+    public void findByKeywordAndUserId_NonExistingKeyword_ReturnsEmpty() {
+        //given
+        User testUser = createTestUser("tester", "test@test.com");
+        String notExistedKeyword = "test";
+
+        //when
         Optional<SearchHistory> nullSearch = searchHistoryRepository.findByKeywordAndUserId(notExistedKeyword,
                 testUser.getId());
 
         //then
-        assertThat(existingSearch.get().getKeyword()).isEqualTo(existedKeyword);
         assertThat(nullSearch.isEmpty()).isTrue();
     }
 
