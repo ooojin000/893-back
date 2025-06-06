@@ -7,6 +7,7 @@ import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
 import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
 import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
 import com.samyookgoo.palgoosam.auction.projection.SubCategoryBestItem;
+import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -107,4 +108,23 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionWithScrapByUserId(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
+            FROM auction as a
+            LEFT JOIN bid as b ON b.auction_id = a.id
+            JOIN user as u ON u.id = a.seller_id
+            WHERE u.id = :userId
+            GROUP BY a.id
+            """, nativeQuery = true)
+    List<BidForHighestPriceProjection> findHighestBidProjectsBySellerId(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
+            FROM auction as a
+            LEFT JOIN bid as b ON b.auction_id = a.id
+            JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
+            GROUP BY a.id
+            """, nativeQuery = true)
+    List<BidForHighestPriceProjection> findHighestBidProjectsByScraperId(@Param("userId") Long id);
 }
