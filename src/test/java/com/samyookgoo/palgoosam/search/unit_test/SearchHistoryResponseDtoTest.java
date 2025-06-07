@@ -8,7 +8,9 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles("test")
 @DisplayName("SearchHistoryResponseDto 유닛 테스트")
 class SearchHistoryResponseDtoTest {
 

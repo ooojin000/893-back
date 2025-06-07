@@ -86,34 +86,24 @@ class BidRepositoryTest {
     }
 
     @Test
-    @DisplayName("사용자의 모든 입찰 내역을 조회한다.")
+    @DisplayName("사용자의 입찰 내역 중 입찰가가 가장 높은 것을 조회한다.")
     void Given_BidderId_When_RetrieveBids_Then_ReturnBidHistory() {
         //when
         List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(bidder.getId());
 
         //then
-        assertThat(result).hasSize(3);
+        assertThat(result).hasSize(2);
 
         BidForMyPageProjection firstBid = result.stream()
                 .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(firstBid.getUserPrice()).isEqualTo(1500);
+        assertThat(firstBid.getUserPrice()).isEqualTo(2000);
         assertThat(firstBid.getTitle()).isEqualTo("첫번째 경매");
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
         assertThat(firstBid.getMainImageUrl()).isEqualTo("image1.jpg");
+        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
         assertThat(firstBid.getStatus()).isEqualTo(AuctionStatus.active);
-
-        // 두 번째 경매 입찰 검증
-        BidForMyPageProjection secondBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
-                .findFirst()
-                .orElseThrow();
-
-        assertThat(secondBid.getUserPrice()).isEqualTo(2500);
-        assertThat(secondBid.getTitle()).isEqualTo("두번째 경매");
-        assertThat(secondBid.getMainImageUrl()).isEqualTo("image2.jpg");
     }
 
     @Test

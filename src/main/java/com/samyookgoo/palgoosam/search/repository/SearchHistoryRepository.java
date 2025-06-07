@@ -13,7 +13,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
             SELECT *
             FROM search_history s
             WHERE user_id = :userId AND is_deleted = false
-            ORDER BY s.created_at DESC
+            ORDER BY s.updated_at DESC
             LIMIT 10
             """, nativeQuery = true)
     List<SearchHistory> findAllByUserId(@Param("userId") Long userId);

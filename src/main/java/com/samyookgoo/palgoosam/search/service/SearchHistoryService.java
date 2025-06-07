@@ -1,15 +1,14 @@
 package com.samyookgoo.palgoosam.search.service;
 
 
-import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.search.domain.SearchHistory;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryCreateRequestDto;
 import com.samyookgoo.palgoosam.search.dto.SearchHistoryResponseDto;
 import com.samyookgoo.palgoosam.search.exception.SearchHistoryBadRequestException;
+import com.samyookgoo.palgoosam.search.exception.SearchHistoryNotFoundException;
 import com.samyookgoo.palgoosam.search.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
-import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SearchHistoryService {
     private final SearchHistoryRepository searchHistoryRepository;
-    private final AuthService authService;
 
     @Transactional(readOnly = true)
     public List<SearchHistoryResponseDto> getSearchHistory(User currentUser) {
@@ -42,13 +40,11 @@ public class SearchHistoryService {
     public void deleteSearchHistory(Long searchHistoryId, User currentUser) {
 
         SearchHistory target = searchHistoryRepository.findById(searchHistoryId)
-                .orElseThrow(() -> new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_NOT_FOUND));
+                .orElseThrow(() -> new SearchHistoryNotFoundException(ErrorCode.SEARCH_HISTORY_NOT_FOUND));
 
-        if (target.hasPermission(currentUser.getId())) {
-            target.softDeleteSearchHistory();
-        } else {
-            throw new UserForbiddenException();
-        }
+        target.checkPermission(currentUser.getId());
+        target.checkDeletable();
+        target.delete();
     }
 
     @Transactional
@@ -76,7 +72,7 @@ public class SearchHistoryService {
 
     public void validateKeyword(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            throw new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_BAD_REQUEST);
+            throw new SearchHistoryBadRequestException(ErrorCode.SEARCH_HISTORY_BLANK_BAD_REQUEST);
         }
     }
 }
