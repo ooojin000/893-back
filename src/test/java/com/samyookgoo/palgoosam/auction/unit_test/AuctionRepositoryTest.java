@@ -201,7 +201,7 @@ class AuctionRepositoryTest {
         // 다른 사용자의 입찰 (최고가 테스트용)
         User otherBidder = createUser("other@test.com", "다른입찰자");
         createBid(otherBidder, auction1, 2200, false); // 첫번째 경매에 더 높은 입찰
-        
+
         //when
         List<BidForHighestPriceProjection> result = auctionRepository.findHighestBidProjectsBySellerId(seller.getId());
 
@@ -249,6 +249,84 @@ class AuctionRepositoryTest {
 
         assertThat(firstBid.getAuctionId()).isEqualTo(auctionWithoutBid.getId());
         assertThat(firstBid.getBidHighestPrice()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("사용자가 스크랩한 경매 중 삭제된 경매는 조회되지 않는다")
+    void findAllAuctionProjectionWithScrapByUserId_ExcludesDeletedAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction deletedAuction = createAuction(seller, "deletedAuction", 1111, savedCategory);
+        deletedAuction.setIsDeleted(true);
+        createScrap(scraper, deletedAuction);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
+                scraper.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount);
+    }
+
+    @Test
+    @DisplayName("스크랩한 경매 중 만료된 경매도 조회된다")
+    void findAllAuctionProjectionWithScrapByUserId_IncludesExpiredAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction completedAuction = createAuction(seller, "completedAuction", 1111, savedCategory);
+        completedAuction.setStatus(AuctionStatus.completed);
+        createScrap(scraper, completedAuction);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
+                scraper.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount + 1);
+    }
+
+    @Test
+    @DisplayName("사용자가 등록한 경매 중 삭제된 경매는 조회되지 않는다")
+    void findAllAuctionProjectionBySellerId_ExcludesDeletedAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction deletedAuction = createAuction(seller, "deletedAuction", 1111, savedCategory);
+        deletedAuction.setIsDeleted(true);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionBySellerId(
+                seller.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount);
+    }
+
+    @Test
+    @DisplayName("사용자가 등록한 경매 중 만료된 경매도 조회된다")
+    void findAllAuctionProjectionBySellerId_IncludesExpiredAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction completedAuction = createAuction(seller, "completedAuction", 1111, savedCategory);
+        completedAuction.setStatus(AuctionStatus.completed);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionBySellerId(
+                seller.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount + 1);
     }
 
 

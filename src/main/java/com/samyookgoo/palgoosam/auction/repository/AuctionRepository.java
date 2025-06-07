@@ -97,7 +97,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             SELECT a.id as auctionId, a.title as title, a.end_time as endTime, a.start_time as startTime, a.status as status, ai.url as mainImageUrl
             FROM auction as a
             LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
-            WHERE a.seller_id = :sellerId
+            WHERE a.seller_id = :sellerId AND a.is_deleted = false
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionBySellerId(@Param("sellerId") Long sellerId);
 
@@ -106,6 +106,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             FROM auction as a
             JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
             LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+            WHERE a.is_deleted = false
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionWithScrapByUserId(@Param("userId") Long userId);
 
@@ -114,7 +115,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             FROM auction as a
             LEFT JOIN bid as b ON b.auction_id = a.id
             JOIN user as u ON u.id = a.seller_id
-            WHERE u.id = :userId
+            WHERE u.id = :userId AND a.is_deleted = false
             GROUP BY a.id
             """, nativeQuery = true)
     List<BidForHighestPriceProjection> findHighestBidProjectsBySellerId(@Param("userId") Long userId);
@@ -124,6 +125,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             FROM auction as a
             LEFT JOIN bid as b ON b.auction_id = a.id
             JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
+            WHERE a.is_deleted = false
             GROUP BY a.id
             """, nativeQuery = true)
     List<BidForHighestPriceProjection> findHighestBidProjectsByScraperId(@Param("userId") Long id);
