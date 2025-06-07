@@ -74,6 +74,9 @@ class BidRepositoryTest {
         createBid(bidder, auction1, 2000, false); // 첫번째 경매에 2000원 입찰
         createBid(bidder, auction2, 2500, false); // 두번째 경매에 2500원 입찰
 
+        User otherUser = createUser("otherUser@test.com", "otherUser");
+        createBid(otherUser, auction1, 20000, false);
+
         entityManager.flush();
         entityManager.clear();
     }
@@ -114,7 +117,7 @@ class BidRepositoryTest {
                 .orElseThrow();
 
         assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
-        assertThat(firstBid.getBidHighestPrice()).isEqualTo(2200);
+        assertThat(firstBid.getBidHighestPrice()).isEqualTo(20000);
 
         // 두 번째 경매 입찰 검증
         BidForHighestPriceProjection secondBid = result.stream()
@@ -126,6 +129,108 @@ class BidRepositoryTest {
         assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
     }
 
+    @Test
+    @DisplayName("현재 입찰가 조회 중 삭제된 입찰은 조회되지 않는다")
+    void findHighestBidProjectsByBidderId_ExcludesDeletedBids() {
+        //given
+        Bid deletedBid = createBid(bidder, auction2, 5000, false);
+        deletedBid.cancel();
+
+        //when
+        List<BidForHighestPriceProjection> result = bidRepository.findHighestBidProjectsByBidderId(bidder.getId());
+
+        //then
+        assertThat(result).hasSize(2);
+
+        BidForHighestPriceProjection firstBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
+        assertThat(firstBid.getBidHighestPrice()).isEqualTo(20000);
+
+        // 두 번째 경매 입찰 검증
+        BidForHighestPriceProjection secondBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
+        assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
+
+    }
+
+    @Test
+    @DisplayName("사용자의 입찰 내역 조회 중 삭제된 입찰은 조회되지 않는다")
+    void findAllBidsByUserId_ExcludesDeletedBids() {
+        //given
+        Bid deletedBid1 = createBid(bidder, auction1, 50000, false);
+        Bid deletedBid2 = createBid(bidder, auction2, 50000, false);
+        deletedBid1.cancel();
+        deletedBid2.cancel();
+
+        //when
+        List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(bidder.getId());
+
+        //then
+        assertThat(result).hasSize(2);
+
+        BidForMyPageProjection firstBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
+        assertThat(firstBid.getUserPrice()).isEqualTo(2000);
+
+        // 두 번째 경매 입찰 검증
+        BidForMyPageProjection secondBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
+        assertThat(secondBid.getUserPrice()).isEqualTo(2500);
+
+    }
+
+    @Test
+    @DisplayName("입찰 내역이 없는 사용자는 빈 목록을 반환한다")
+    void findAllBidsByUserId_NoBids_ReturnsEmptyList() {
+        // given
+        User userWithoutBid = createUser("userWithoutBid@test.com", "userWithoutBid");
+
+        // when
+        List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(userWithoutBid.getId());
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("같은 경매에 여러 입찰 시 가장 높은 금액만 조회된다")
+    void findAllBidsByUserId_MultipleBindsOnSameAuction_ReturnsHighestOnly() {
+        //given
+        Bid bid1 = createBid(bidder, auction1, 10000, false);
+        Bid bid2 = createBid(bidder, auction1, 20000, false);
+        Bid bid3 = createBid(bidder, auction1, 30000, false);
+
+        //when
+        List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(bidder.getId());
+
+        //then
+        assertThat(result).hasSize(2);
+
+        BidForMyPageProjection firstBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
+        assertThat(firstBid.getUserPrice()).isEqualTo(30000);
+
+    }
 
     private User createUser(String email, String name) {
         User user = User.builder()
