@@ -5,8 +5,11 @@ import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionForMyPageProjection;
 import com.samyookgoo.palgoosam.auction.projection.AuctionBidCount;
 import com.samyookgoo.palgoosam.auction.projection.AuctionScrapCount;
+import com.samyookgoo.palgoosam.auction.projection.DashboardProjection;
 import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
+import com.samyookgoo.palgoosam.auction.projection.RecentAuction;
 import com.samyookgoo.palgoosam.auction.projection.SubCategoryBestItem;
+import com.samyookgoo.palgoosam.auction.projection.UpcomingAuction;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -46,9 +49,37 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     long countByStatus(AuctionStatus status);
 
-    List<Auction> findTop3ByStatusAndStartTimeAfterOrderByStartTimeAsc(AuctionStatus status, LocalDateTime now);
+    @Query("""
+            SELECT 
+                 a.id AS auctionId, 
+                 a.title AS title, 
+                 a.description AS description, 
+                 a.itemCondition AS itemCondition,
+                 a.basePrice AS basePrice, 
+                 ai.url AS thumbnailUrl, 
+                 a.startTime AS startTime
+            FROM Auction a
+            LEFT JOIN AuctionImage ai ON ai.auction.id = a.id AND ai.imageSeq = 0
+            WHERE a.status = :status AND a.startTime > CURRENT_TIMESTAMP
+            ORDER BY a.startTime ASC
+            """)
+    List<UpcomingAuction> findTop3UpcomingAuctions(@Param("status") AuctionStatus status, Pageable pageable);
 
-    List<Auction> findTop6ByStatusInOrderByCreatedAtDesc(List<AuctionStatus> statuses);
+    @Query("""
+            SELECT 
+                a.id AS auctionId,
+                a.title AS title,
+                a.description AS description,
+                a.status AS status,
+                a.basePrice AS basePrice,
+                ai.url AS thumbnailUrl
+            FROM Auction a
+            LEFT JOIN AuctionImage ai ON ai.auction.id = a.id AND ai.imageSeq = 0
+            WHERE a.status IN :statuses
+            ORDER BY a.createdAt DESC
+            """)
+    List<RecentAuction> findTop6RecentAuctions(@Param("statuses") List<AuctionStatus> statuses, Pageable pageable);
+
 
     @Query("""
             SELECT a.id AS auctionId, a.title AS title, a.description AS description,
@@ -107,4 +138,14 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionWithScrapByUserId(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT 
+                (SELECT COUNT(*) FROM user) AS totalUserCount,
+                (SELECT COUNT(*) FROM auction) AS totalAuctionCount,
+                (SELECT COUNT(*) FROM auction WHERE status = 'active') AS activeAuctionCount
+            """, nativeQuery = true)
+    DashboardProjection getDashboardCounts();
+
+    List<AuctionStatus> status(AuctionStatus status);
 }

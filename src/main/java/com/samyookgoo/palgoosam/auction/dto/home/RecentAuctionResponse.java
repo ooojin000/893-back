@@ -13,5 +13,4 @@ public class RecentAuctionResponse {
     private String thumbnailUrl;
     private AuctionStatus status;
     private Integer basePrice;
-    private Boolean isScraped;
 }
