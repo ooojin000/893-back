@@ -1,6 +1,5 @@
 package com.samyookgoo.palgoosam.deliveryaddress.service;
 
-import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.deliveryaddress.domain.DeliveryAddress;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressRequestDto;
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressResponseDto;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeliveryAddressService {
     private final DeliveryAddressRepository deliveryAddressRepository;
-    private final AuthService authService;
 
     @Transactional(readOnly = true)
     public List<DeliveryAddressResponseDto> getUserDeliveryAddresses(User currentUser) {
