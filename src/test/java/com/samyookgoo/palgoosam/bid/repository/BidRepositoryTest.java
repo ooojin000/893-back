@@ -54,10 +54,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, false, true, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, true, false, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, false, true);
+        Bid bid3 = createBid(auction, user, 2500, true, false);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -83,10 +82,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, true, false, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, false, true, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, true, false);
+        Bid bid3 = createBid(auction, user, 2500, false, true);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -108,10 +106,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, true, false, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, false, true, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, true, false);
+        Bid bid3 = createBid(auction, user, 2500, false, true);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -135,10 +132,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, true, false, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, false, true, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, true, false);
+        Bid bid3 = createBid(auction, user, 2500, false, true);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -161,10 +157,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, true, false, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, false, true, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, true, false);
+        Bid bid3 = createBid(auction, user, 2500, false, true);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -186,10 +181,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, true, false, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, false, true, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, true, false);
+        Bid bid3 = createBid(auction, user, 2500, false, true);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -211,10 +205,9 @@ class BidRepositoryTest {
         User user = createUser("user1@test.com", "유저1");
         userRepository.save(user);
 
-        LocalDateTime now = LocalDateTime.now();
-        Bid bid1 = createBid(auction, user, 1500, false, false, now);
-        Bid bid2 = createBid(auction, user, 2000, true, false, now.plusMinutes(1));
-        Bid bid3 = createBid(auction, user, 2500, false, true, now.plusMinutes(2));
+        Bid bid1 = createBid(auction, user, 1500, false, false);
+        Bid bid2 = createBid(auction, user, 2000, true, false);
+        Bid bid3 = createBid(auction, user, 2500, false, true);
         bidRepository.saveAll(List.of(bid1, bid2, bid3));
 
         //when
@@ -293,14 +286,12 @@ class BidRepositoryTest {
     }
 
 
-    private Bid createBid(Auction auction, User bidder, int price, boolean isWinning, boolean isDeleted,
-                          LocalDateTime createdAt) {
+    private Bid createBid(Auction auction, User bidder, int price, boolean isWinning, boolean isDeleted) {
         return Bid.builder()
                 .bidder(bidder)
                 .auction(auction)
                 .price(price)
                 .isWinning(isWinning)
-                .createdAt(createdAt)
                 .isDeleted(isDeleted)
                 .build();
     }

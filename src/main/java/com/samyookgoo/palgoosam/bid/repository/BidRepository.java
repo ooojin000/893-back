@@ -5,7 +5,6 @@ import com.samyookgoo.palgoosam.auction.projection.TopWinningBid;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.bid.domain.BidForMyPageProjection;
-import com.samyookgoo.palgoosam.bid.projection.AuctionMaxBid;
 import com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,16 +16,6 @@ import org.springframework.data.repository.query.Param;
 
 
 public interface BidRepository extends JpaRepository<Bid, Long> {
-    @Query("""
-                SELECT b.auction.id AS auctionId,
-                       MAX(b.price)     AS maxPrice
-                FROM Bid b
-                WHERE b.auction.id IN :auctionIds
-                GROUP BY b.auction.id
-            """)
-    List<AuctionMaxBid> findMaxBidPricesByAuctionIds(@Param("auctionIds") List<Long> auctionIds);
-
-    List<Bid> findAllByBidder_Id(Long bidderId);
 
     List<Bid> findByAuctionIdOrderByCreatedAtDesc(Long auctionId);
 

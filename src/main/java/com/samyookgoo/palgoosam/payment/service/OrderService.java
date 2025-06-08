@@ -1,7 +1,6 @@
 package com.samyookgoo.palgoosam.payment.service;
 
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
@@ -51,9 +50,6 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "기본 배송지가 존재하지 않습니다. 배송지를 먼저 등록해주세요."));
 
-        AuctionImage image = auctionImageRepository.findMainImageByAuctionId(auctionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 경매의 대표 이미지가 존재하지 않습니다."));
-
         final int itemPrice = winningBid.getPrice();
         final int deliveryFee = deliveryPolicy.calculate(itemPrice);
         final int finalPrice = itemPrice + deliveryFee;
@@ -67,6 +63,7 @@ public class OrderService {
 
         return OrderResponse.builder()
                 .auctionId(auction.getId())
+                .customerName(winningBid.getBidder().getName())
                 .itemPrice(itemPrice)
                 .deliveryFee(deliveryFee)
                 .finalPrice(finalPrice)

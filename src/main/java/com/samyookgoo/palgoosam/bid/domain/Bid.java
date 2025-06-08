@@ -47,7 +47,7 @@ public class Bid {
     private int price;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
