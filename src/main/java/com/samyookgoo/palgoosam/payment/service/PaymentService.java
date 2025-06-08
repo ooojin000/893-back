@@ -141,7 +141,7 @@ public class PaymentService {
         }
     }
 
-    public String generateOrderNumber(Long auctionId) {
+    private String generateOrderNumber(Long auctionId) {
         return String.format("ORD-%d-%s", auctionId, UUID.randomUUID().toString().substring(0, 8));
     }
 }
