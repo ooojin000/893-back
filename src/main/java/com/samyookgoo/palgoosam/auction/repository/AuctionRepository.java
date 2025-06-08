@@ -113,7 +113,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Query(value = """
             SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
             FROM auction as a
-            LEFT JOIN bid as b ON b.auction_id = a.id
+            LEFT JOIN bid as b ON b.auction_id = a.id AND b.is_deleted = false
             JOIN user as u ON u.id = a.seller_id
             WHERE u.id = :userId AND a.is_deleted = false
             GROUP BY a.id
@@ -123,7 +123,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Query(value = """
             SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
             FROM auction as a
-            LEFT JOIN bid as b ON b.auction_id = a.id
+            LEFT JOIN bid as b ON b.auction_id = a.id AND b.is_deleted = false
             JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
             WHERE a.is_deleted = false
             GROUP BY a.id
