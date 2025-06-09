@@ -7,7 +7,6 @@ import com.samyookgoo.palgoosam.deliveryaddress.exception.DeliveryAddressNotFoun
 import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressRepository;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
-import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -32,12 +31,7 @@ public class DeliveryAddressService {
     public void deleteUserDeliveryAddress(Long deliveryAddressId, User currentUser) {
         DeliveryAddress deliveryAddress = deliveryAddressRepository.findByUserAndId(currentUser, deliveryAddressId)
                 .orElseThrow(() -> new DeliveryAddressNotFoundException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND));
-
-        if (deliveryAddress.hasPermission(currentUser.getId())) {
-            deliveryAddressRepository.deleteById(deliveryAddress.getId());
-        } else {
-            throw new UserForbiddenException();
-        }
+        deliveryAddressRepository.deleteById(deliveryAddress.getId());
     }
 
     @Transactional
@@ -51,14 +45,11 @@ public class DeliveryAddressService {
         DeliveryAddress target = deliveryAddressRepository.findByUserAndIsDefaultTrue(currentUser)
                 .orElseThrow(() -> new DeliveryAddressNotFoundException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND));
 
-        DeliveryAddress deliveryAddressToDefault = deliveryAddressRepository.findById(deliveryAddressId)
+        DeliveryAddress deliveryAddressToDefault = deliveryAddressRepository.findByIdAndUser(deliveryAddressId,
+                        currentUser)
                 .orElseThrow(() -> new DeliveryAddressNotFoundException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND));
-
-        if (target.hasPermission(currentUser.getId()) && deliveryAddressToDefault.hasPermission(currentUser.getId())) {
-            target.removeDefault();
-            deliveryAddressToDefault.setDefault();
-        } else {
-            throw new UserForbiddenException();
-        }
+        deliveryAddressToDefault.checkDefault();
+        target.removeDefault();
+        deliveryAddressToDefault.setDefault();
     }
 }
