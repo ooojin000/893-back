@@ -19,10 +19,30 @@ public class BidResponse {
 
         return BidResponse.builder()
                 .bidId(bid.getId())
-                .bidderEmail(bid.getBidder().getEmail())
+                .bidderEmail(maskName(bid.getBidder().getName()))
                 .bidPrice(bid.getPrice())
                 .createdAt(bid.getCreatedAt().format(formatter))
                 .updatedAt(bid.getUpdatedAt() != null ? bid.getUpdatedAt().format(formatter) : null)
                 .build();
+    }
+
+    private static String maskName(String name) {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+
+        int length = name.length();
+
+        if (length == 2) {
+            return name.charAt(0) + "*";
+        } else if (length >= 3) {
+            StringBuilder masked = new StringBuilder();
+            masked.append(name.charAt(0));
+            masked.append("*".repeat(length - 2));
+            masked.append(name.charAt(length - 1));
+            return masked.toString();
+        }
+
+        return name;
     }
 }
