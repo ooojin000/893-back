@@ -17,9 +17,7 @@ import com.samyookgoo.palgoosam.payment.controller.request.TossPaymentFailCallba
 import com.samyookgoo.palgoosam.payment.controller.response.PaymentCreateResponse;
 import com.samyookgoo.palgoosam.payment.controller.response.TossPaymentConfirmResponse;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
-import com.samyookgoo.palgoosam.payment.exception.PaymentBadRequestException;
 import com.samyookgoo.palgoosam.payment.exception.PaymentExternalException;
-import com.samyookgoo.palgoosam.payment.exception.PaymentForbiddenException;
 import com.samyookgoo.palgoosam.payment.exception.PaymentInvalidStateException;
 import com.samyookgoo.palgoosam.payment.exception.PaymentNotFoundException;
 import com.samyookgoo.palgoosam.payment.policy.DeliveryPolicy;
@@ -49,78 +47,40 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final DeliveryPolicy deliveryPolicy;
 
-
     @Transactional
     public PaymentCreateResponse createPayment(Long auctionId, User buyer, PaymentCreateRequest request) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(AuctionNotFoundException::new);
 
-        if (auction.getSeller().getId().equals(buyer.getId())) {
-            throw new PaymentForbiddenException(ErrorCode.SELLER_CANNOT_PURCHASE);
-        }
-
         Bid winningBid = bidRepository.findByAuctionIdAndIsWinningTrue(auctionId)
                 .orElseThrow(() -> new BidNotFoundException(ErrorCode.WINNING_BID_NOT_FOUND));
 
-        if (!winningBid.getBidder().getId().equals(buyer.getId())) {
-            throw new PaymentForbiddenException(ErrorCode.NOT_WINNING_BIDDER);
-        }
+        winningBid.validatePaymentConditions(buyer.getId(), request.getItemPrice());
 
         if (paymentRepository.existsByAuctionIdAndStatusIn(auctionId,
                 List.of(PaymentStatus.PAID, PaymentStatus.PENDING))) {
             throw new PaymentInvalidStateException(ErrorCode.PAYMENT_IN_PROGRESS_OR_DONE);
         }
 
-        if (!request.getItemPrice().equals(winningBid.getPrice())) {
-            throw new PaymentBadRequestException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
-        }
-
-        int deliveryFee = deliveryPolicy.calculate(request.getItemPrice());
-        if (!request.getDeliveryFee().equals(deliveryFee)) {
-            throw new PaymentBadRequestException(ErrorCode.INVALID_DELIVERY_FEE);
-        }
+        deliveryPolicy.validateDeliveryFee(request.getItemPrice(), request.getDeliveryFee());
 
         Payment payment = paymentRepository.findByAuction_Id(auctionId)
                 .orElseGet(() -> {
+                    Integer deliveryFee = request.getDeliveryFee();
                     String orderNumber = generateOrderNumber(auctionId);
-                    Payment newPayment = Payment.builder()
-                            .buyer(buyer)
-                            .seller(auction.getSeller())
-                            .auction(auction)
-                            .recipientName(request.getRecipientName())
-                            .recipientEmail(buyer.getEmail())
-                            .phoneNumber(request.getPhoneNumber())
-                            .addressLine1(request.getAddressLine1())
-                            .addressLine2(request.getAddressLine2())
-                            .zipCode(request.getZipCode())
-                            .itemPrice(request.getItemPrice())
-                            .deliveryFee(request.getDeliveryFee())
-                            .finalPrice(request.getItemPrice() + request.getDeliveryFee())
-                            .orderNumber(orderNumber)
-                            .status(PaymentStatus.READY)
-                            .build();
+                    Payment newPayment = Payment.of(auction, buyer, request, deliveryFee, orderNumber);
                     return paymentRepository.save(newPayment);
                 });
 
-        return PaymentCreateResponse.builder()
-                .orderId(payment.getOrderNumber())
-                .orderName(auction.getTitle())
-                .successUrl(request.getSuccessUrl())
-                .failUrl(request.getFailUrl())
-                .customerEmail(payment.getRecipientEmail())
-                .customerName(payment.getRecipientName())
-                .customerMobilePhone(payment.getPhoneNumber())
-                .finalPrice(payment.getFinalPrice())
-                .build();
+        return PaymentCreateResponse.from(payment, auction.getTitle(), request.getSuccessUrl(), request.getFailUrl());
     }
 
-    public void handlePaymentFailure(TossPaymentFailCallbackRequest request) {
+    @Transactional
+    public void failPayment(TossPaymentFailCallbackRequest request) {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderNumber())
-                .orElseThrow(AuctionNotFoundException::new);
+                .orElseThrow(PaymentNotFoundException::new);
 
-        if (payment.getStatus() == PaymentStatus.READY) {
-            payment.setStatus(PaymentStatus.FAILED);
-        }
+        payment.markAsFailed();
     }
 
     @Transactional
@@ -128,13 +88,7 @@ public class PaymentService {
         Payment payment = paymentRepository.findByOrderNumber(request.getOrderId())
                 .orElseThrow(PaymentNotFoundException::new);
 
-        if (payment.getStatus().equals(PaymentStatus.PAID)) {
-            throw new PaymentInvalidStateException(ErrorCode.ALREADY_PAID);
-        }
-
-        if (payment.getFinalPrice() != request.getAmount()) {
-            throw new PaymentBadRequestException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
-        }
+        payment.validatePaymentConditions(request.getAmount());
 
         String url = config.getBaseUrl() + "/v1/payments/confirm";
 
@@ -146,20 +100,20 @@ public class PaymentService {
                     TossPaymentConfirmResponse.class);
 
             if (tossResponse == null) {
-                payment.setStatus(PaymentStatus.FAILED);
                 throw new PaymentExternalException(ErrorCode.TOSS_PAYMENT_EMPTY_RESPONSE);
             }
 
-            payment.setStatus(PaymentStatus.PAID);
-            payment.setApprovedAt(OffsetDateTime.parse(tossResponse.getApprovedAt()).toLocalDateTime());
+            payment.markAsPaid(OffsetDateTime.parse(tossResponse.getApprovedAt()));
 
-            tossResponse.setCustomerEmail(payment.getRecipientEmail());
-            tossResponse.setCustomerName(payment.getRecipientName());
-            tossResponse.setCustomerMobilePhone(payment.getPhoneNumber());
-            return tossResponse;
+            return TossPaymentConfirmResponse.from(
+                    tossResponse,
+                    payment.getRecipientEmail(),
+                    payment.getRecipientName(),
+                    payment.getPhoneNumber()
+            );
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            payment.setStatus(PaymentStatus.FAILED);
+            payment.markAsFailed();
 
             String responseBody = ex.getResponseBodyAsString();
             String code = "UNKNOWN";
@@ -178,7 +132,10 @@ public class PaymentService {
             throw new PaymentExternalException(ErrorCode.TOSS_PAYMENT_FAILED);
 
         } catch (Exception ex) {
-            payment.setStatus(PaymentStatus.FAILED);
+            payment.markAsFailed();
+            if (ex instanceof PaymentExternalException) {
+                throw ex;
+            }
             log.error("Toss 결제 처리 중 예외 발생", ex);
             throw new PaymentExternalException(ErrorCode.TOSS_PAYMENT_FAILED);
         }
@@ -187,5 +144,4 @@ public class PaymentService {
     private String generateOrderNumber(Long auctionId) {
         return String.format("ORD-%d-%s", auctionId, UUID.randomUUID().toString().substring(0, 8));
     }
-
 }

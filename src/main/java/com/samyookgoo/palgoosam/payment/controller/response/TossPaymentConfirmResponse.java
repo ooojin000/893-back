@@ -16,4 +16,14 @@ public class TossPaymentConfirmResponse {
     private String customerEmail;
     private String customerName;
     private String customerMobilePhone;
+
+    public static TossPaymentConfirmResponse from(TossPaymentConfirmResponse apiResponse,
+                                                  String recipientEmail,
+                                                  String recipientName,
+                                                  String phoneNumber) {
+        apiResponse.setCustomerEmail(recipientEmail);
+        apiResponse.setCustomerName(recipientName);
+        apiResponse.setCustomerMobilePhone(phoneNumber);
+        return apiResponse;
+    }
 }

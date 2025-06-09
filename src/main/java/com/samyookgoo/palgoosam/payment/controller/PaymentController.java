@@ -55,7 +55,7 @@ public class PaymentController {
                     description = "결제 실패 요청 정보", required = true)
             @RequestBody TossPaymentFailCallbackRequest request
     ) {
-        paymentService.handlePaymentFailure(request);
+        paymentService.failPayment(request);
 
         return BaseResponse.success(null);
     }
