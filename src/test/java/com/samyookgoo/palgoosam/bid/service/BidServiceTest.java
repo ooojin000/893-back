@@ -75,7 +75,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 1500);
+                .contains(maskName(user.getName()), 1500);
 
     }
 
@@ -117,7 +117,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user2.getEmail(), 2000);
+                .contains(maskName(user2.getName()), 2000);
     }
 
     @DisplayName("입찰가가 최고가 일 경우 예외가 발생한다.")
@@ -183,7 +183,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 2000);
+                .contains(maskName(user.getName()), 2000);
     }
 
     @DisplayName("입찰가가 시작가 일 경우 입찰에 성공한다.")
@@ -206,7 +206,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), auction.getBasePrice());
+                .contains(maskName(user.getName()), auction.getBasePrice());
     }
 
     @DisplayName("입찰가가 시작가보다 작을 경우 예외가 발생한다.")
@@ -245,7 +245,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 999_999_000);
+                .contains(maskName(user.getName()), 999_999_000);
     }
 
     @DisplayName("입찰가가 10억 일 경우 입찰에 성공한다.")
@@ -267,7 +267,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 1_000_000_000);
+                .contains(maskName(user.getName()), 1_000_000_000);
     }
 
     @DisplayName("입찰가가 10억보다 클 경우 예외가 발생한다.")
@@ -306,7 +306,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 1500);
+                .contains(maskName(user.getName()), 1500);
     }
 
     @DisplayName("경매 종료 후 입찰 시 예외가 발생한다.")
@@ -366,7 +366,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 1500);
+                .contains(maskName(user.getName()), 1500);
 
     }
 
@@ -393,7 +393,7 @@ public class BidServiceTest {
         assertThat(bidResultResponse.getBid()).isNotNull();
         assertThat(bidResultResponse.getBid())
                 .extracting("bidderEmail", "bidPrice")
-                .contains(user.getEmail(), 1500);
+                .contains(maskName(user.getName()), 1500);
     }
 
     @DisplayName("존재 하지 않는 경매 상품에 대한 입찰 시, 예외가 발생한다.")
@@ -858,6 +858,26 @@ public class BidServiceTest {
                 .isWinning(isWinning)
                 .isDeleted(isDeleted)
                 .build();
+    }
+
+    private String maskName(String name) {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+
+        int length = name.length();
+
+        if (length == 2) {
+            return name.charAt(0) + "*";
+        } else if (length >= 3) {
+            StringBuilder masked = new StringBuilder();
+            masked.append(name.charAt(0));
+            masked.append("*".repeat(length - 2));
+            masked.append(name.charAt(length - 1));
+            return masked.toString();
+        }
+
+        return name;
     }
 
 }
