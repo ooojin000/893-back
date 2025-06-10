@@ -9,6 +9,8 @@ import com.samyookgoo.palgoosam.auction.domain.AuctionForMyPageProjection;
 import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.Scrap;
 import com.samyookgoo.palgoosam.user.domain.User;
@@ -44,12 +46,11 @@ class AuctionRepositoryTest {
 
     private User seller;
     private User scraper;
+    private User bidder;
     private Auction auction1;
     private Auction auction2;
     private Auction auction3;
-    private Scrap scrap1;
-    private Scrap scrap2;
-    private Scrap scrap3;
+    private final Integer auctionCount = 3;
 
     @BeforeEach
     void setUp() {
@@ -63,6 +64,7 @@ class AuctionRepositoryTest {
         // 사용자 생성
         seller = createUser("seller@test.com", "판매자");
         scraper = createUser("scraper@test.com", "스크랩 사용자");
+        bidder = createUser("bidder@test.com", "입찰자");
 
         // 경매 생성
         auction1 = createAuction(seller, "첫번째 경매", 1000, savedCategory);
@@ -75,9 +77,14 @@ class AuctionRepositoryTest {
         createAuctionImage(auction3, "image3.jpg");
 
         // 스크랩 생성
-        scrap1 = createScrap(scraper, auction1);
-        scrap2 = createScrap(scraper, auction2);
-        scrap3 = createScrap(scraper, auction3);
+        createScrap(scraper, auction1);
+        createScrap(scraper, auction2);
+        createScrap(scraper, auction3);
+
+        // 입찰 생성
+        createBid(bidder, auction1, 1500, false); // 첫번째 경매에 1500원 입찰
+        createBid(bidder, auction1, 2000, false); // 첫번째 경매에 2000원 입찰
+        createBid(bidder, auction2, 2500, false); // 두번째 경매에 2500원 입찰
 
         entityManager.flush();
         entityManager.clear();
@@ -188,6 +195,140 @@ class AuctionRepositoryTest {
         assertThat(result).isEmpty();
     }
 
+    @Test
+    @DisplayName("사용자가 등록한 경매의 최고 입찰가를 조회한다.")
+    public void Given_Seller_When_RetrieveBids_Then_ReturnHighestBid() {
+        // 다른 사용자의 입찰 (최고가 테스트용)
+        User otherBidder = createUser("other@test.com", "다른입찰자");
+        createBid(otherBidder, auction1, 2200, false); // 첫번째 경매에 더 높은 입찰
+
+        //when
+        List<BidForHighestPriceProjection> result = auctionRepository.findHighestBidProjectsBySellerId(seller.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount);
+
+        BidForHighestPriceProjection firstBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
+        assertThat(firstBid.getBidHighestPrice()).isEqualTo(2200);
+
+        // 두 번째 경매 입찰 검증
+        BidForHighestPriceProjection secondBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
+        assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
+    }
+
+    @Test
+    @DisplayName("사용자가 등록한 경매의 입찰이 없으면 0을 반환한다.")
+    public void Given_Seller_When_RetrieveBids_Then_ReturnZero() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction auctionWithoutBid = createAuction(seller, "auctionWithoutBid", 1111, savedCategory);
+
+        //when
+        List<BidForHighestPriceProjection> result = auctionRepository.findHighestBidProjectsBySellerId(seller.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount + 1);
+
+        BidForHighestPriceProjection firstBid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(auctionWithoutBid.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(firstBid.getAuctionId()).isEqualTo(auctionWithoutBid.getId());
+        assertThat(firstBid.getBidHighestPrice()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("사용자가 스크랩한 경매 중 삭제된 경매는 조회되지 않는다")
+    void findAllAuctionProjectionWithScrapByUserId_ExcludesDeletedAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction deletedAuction = createAuction(seller, "deletedAuction", 1111, savedCategory);
+        deletedAuction.setIsDeleted(true);
+        createScrap(scraper, deletedAuction);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
+                scraper.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount);
+    }
+
+    @Test
+    @DisplayName("스크랩한 경매 중 만료된 경매도 조회된다")
+    void findAllAuctionProjectionWithScrapByUserId_IncludesExpiredAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction completedAuction = createAuction(seller, "completedAuction", 1111, savedCategory);
+        completedAuction.setStatus(AuctionStatus.completed);
+        createScrap(scraper, completedAuction);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
+                scraper.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount + 1);
+    }
+
+    @Test
+    @DisplayName("사용자가 등록한 경매 중 삭제된 경매는 조회되지 않는다")
+    void findAllAuctionProjectionBySellerId_ExcludesDeletedAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction deletedAuction = createAuction(seller, "deletedAuction", 1111, savedCategory);
+        deletedAuction.setIsDeleted(true);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionBySellerId(
+                seller.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount);
+    }
+
+    @Test
+    @DisplayName("사용자가 등록한 경매 중 만료된 경매도 조회된다")
+    void findAllAuctionProjectionBySellerId_IncludesExpiredAuctions() {
+        //given
+        Category testCategory = Category.builder()
+                .name("Test Category2")
+                .build();
+        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Auction completedAuction = createAuction(seller, "completedAuction", 1111, savedCategory);
+        completedAuction.setStatus(AuctionStatus.completed);
+
+        //when
+        List<AuctionForMyPageProjection> result = auctionRepository.findAllAuctionProjectionBySellerId(
+                seller.getId());
+
+        //then
+        assertThat(result).hasSize(auctionCount + 1);
+    }
+
 
     private User createUser(String email, String name) {
         User user = User.builder()
@@ -233,5 +374,16 @@ class AuctionRepositoryTest {
                 .auction(auction)
                 .build();
         return entityManager.persistAndFlush(scrap);
+    }
+
+    private Bid createBid(User bidder, Auction auction, int price, boolean isWinning) {
+        Bid bid = Bid.builder()
+                .bidder(bidder)
+                .auction(auction)
+                .price(price)
+                .isWinning(isWinning)
+                .isDeleted(false)
+                .build();
+        return entityManager.persistAndFlush(bid);
     }
 }

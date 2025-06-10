@@ -9,6 +9,7 @@ import com.samyookgoo.palgoosam.auction.projection.DashboardProjection;
 import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
 import com.samyookgoo.palgoosam.auction.projection.RecentAuction;
 import com.samyookgoo.palgoosam.auction.projection.SubCategoryBestItem;
+import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.auction.projection.UpcomingAuction;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -127,7 +128,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             SELECT a.id as auctionId, a.title as title, a.end_time as endTime, a.start_time as startTime, a.status as status, ai.url as mainImageUrl
             FROM auction as a
             LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
-            WHERE a.seller_id = :sellerId
+            WHERE a.seller_id = :sellerId AND a.is_deleted = false
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionBySellerId(@Param("sellerId") Long sellerId);
 
@@ -136,9 +137,30 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             FROM auction as a
             JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
             LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
+            WHERE a.is_deleted = false
             """, nativeQuery = true)
     List<AuctionForMyPageProjection> findAllAuctionProjectionWithScrapByUserId(@Param("userId") Long userId);
 
+    @Query(value = """
+            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
+            FROM auction as a
+            LEFT JOIN bid as b ON b.auction_id = a.id AND b.is_deleted = false
+            JOIN user as u ON u.id = a.seller_id
+            WHERE u.id = :userId AND a.is_deleted = false
+            GROUP BY a.id
+            """, nativeQuery = true)
+    List<BidForHighestPriceProjection> findHighestBidProjectsBySellerId(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
+            FROM auction as a
+            LEFT JOIN bid as b ON b.auction_id = a.id AND b.is_deleted = false
+            JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
+            WHERE a.is_deleted = false
+            GROUP BY a.id
+            """, nativeQuery = true)
+    List<BidForHighestPriceProjection> findHighestBidProjectsByScraperId(@Param("userId") Long id);
+    
     @Query(value = """
             SELECT 
                 (SELECT COUNT(*) FROM user) AS totalUserCount,

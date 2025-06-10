@@ -48,7 +48,8 @@ public class UserService {
         List<AuctionForMyPageProjection> auctions = auctionRepository.findAllAuctionProjectionBySellerId(
                 currentUser.getId());
 
-        List<BidForHighestPriceProjection> bids = bidRepository.findHighestBidProjectsBySellerId(currentUser.getId());
+        List<BidForHighestPriceProjection> bids = auctionRepository.findHighestBidProjectsBySellerId(
+                currentUser.getId());
         Map<Long, Integer> maxBidMap = getMaxBidMap(bids);
 
         return createUserAuctionsResponseDtoList(auctions, maxBidMap);
@@ -59,7 +60,8 @@ public class UserService {
         List<AuctionForMyPageProjection> auctions = auctionRepository.findAllAuctionProjectionWithScrapByUserId(
                 currentUser.getId());
 
-        List<BidForHighestPriceProjection> bids = bidRepository.findHighestBidProjectsByScraperId(currentUser.getId());
+        List<BidForHighestPriceProjection> bids = auctionRepository.findHighestBidProjectsByScraperId(
+                currentUser.getId());
         Map<Long, Integer> maxBidMap = getMaxBidMap(bids);
 
         return createUserAuctionsResponseDtoList(auctions, maxBidMap);

@@ -97,7 +97,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
                 JOIN user as u ON u.id = b.bidder_id
                 JOIN auction as a ON b.auction_id = a.id
                 LEFT JOIN auction_image as ai ON ai.auction_id = a.id AND ai.image_seq = 0
-                WHERE u.id = :userId
+                WHERE u.id = :userId AND b.is_deleted=false
             ) as ranked
             WHERE rn = 1;
             """, nativeQuery = true)
@@ -108,28 +108,11 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             FROM bid as b1
             JOIN auction as a ON a.id = b1.auction_id
             JOIN user as u ON u.id = b1.bidder_id
-            LEFT JOIN bid as b2 ON b2.auction_id = a.id
+            LEFT JOIN bid as b2 ON b2.auction_id = a.id and b2.is_deleted = false
             WHERE u.id = :userId
             GROUP BY a.id
             """, nativeQuery = true)
     List<BidForHighestPriceProjection> findHighestBidProjectsByBidderId(@Param("userId") Long userId);
 
-    @Query(value = """
-            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
-            FROM auction as a
-            JOIN user as u ON u.id = a.seller_id
-            LEFT JOIN bid as b ON b.auction_id = a.id
-            WHERE u.id = :userId
-            GROUP BY a.id
-            """, nativeQuery = true)
-    List<BidForHighestPriceProjection> findHighestBidProjectsBySellerId(@Param("userId") Long userId);
 
-    @Query(value = """
-            SELECT COALESCE(MAX(b.price), 0) as bidHighestPrice, a.id as auctionId
-            FROM auction as a
-            JOIN scrap as s ON s.auction_id = a.id AND s.user_id = :userId
-            LEFT JOIN bid as b ON b.auction_id = a.id
-            GROUP BY a.id
-            """, nativeQuery = true)
-    List<BidForHighestPriceProjection> findHighestBidProjectsByScraperId(@Param("userId") Long id);
 }
