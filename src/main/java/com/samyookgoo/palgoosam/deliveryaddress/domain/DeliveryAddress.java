@@ -1,6 +1,8 @@
 package com.samyookgoo.palgoosam.deliveryaddress.domain;
 
 import com.samyookgoo.palgoosam.deliveryaddress.dto.DeliveryAddressRequestDto;
+import com.samyookgoo.palgoosam.deliveryaddress.exception.DeliveryAddressBadRequestException;
+import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,12 +17,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,16 +56,18 @@ public class DeliveryAddress {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    public Boolean hasPermission(Long userId) {
-        return this.getUser().getId().equals(userId);
-    }
-
     public void removeDefault() {
         this.isDefault = false;
     }
 
     public void setDefault() {
         this.isDefault = true;
+    }
+
+    public void checkDefault() {
+        if (this.isDefault) {
+            throw new DeliveryAddressBadRequestException(ErrorCode.DELIVERY_ADDRESS_ALREADY_DEFAULT_BAD_REQUEST);
+        }
     }
 
     static public DeliveryAddress from(DeliveryAddressRequestDto requestDto, User user) {

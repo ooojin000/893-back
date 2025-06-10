@@ -66,6 +66,7 @@ public enum ErrorCode {
 
     // 배송지
     DELIVERY_ADDRESS_NOT_FOUND(404, "DELIVERY_ADDR_001", "해당 배송지 정보를 찾을 수 없습니다."),
+    DELIVERY_ADDRESS_ALREADY_DEFAULT_BAD_REQUEST(400, "DELIVERY_ADDR_002", "이미 기본 배송지입니다."),
 
     INTERNAL_SERVER_ERROR(500, "SYS_001", "서버가 오류가 발생했습니다."),
     METHOD_NOT_ALLOWED(405, "SYS_002", "API는 열려있으나 메소드는 사용 불가합니다."),
