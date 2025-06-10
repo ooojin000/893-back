@@ -5,8 +5,11 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.domain.UserJwtToken;
 import com.samyookgoo.palgoosam.user.repository.UserJwtTokenRepository;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -15,15 +18,16 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-
 @Component
 @RequiredArgsConstructor
-public class  OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtProvider;
     private final UserJwtTokenRepository userJwtTokenRepository;
     private final UserRepository userRepository;
+
+    @Value("${VERCEL_FRONTEND_URL}")
+    private String frontendUrl;
 
     @Override
     @Transactional
@@ -41,7 +45,7 @@ public class  OAuth2AuthenticationSuccessHandler implements AuthenticationSucces
         // 2-1) 유저 id 찾기
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) auth;
 
-        String provider   = oauthToken.getAuthorizedClientRegistrationId();
+        String provider = oauthToken.getAuthorizedClientRegistrationId();
         String providerId = auth.getName();
 
         User user = userRepository
@@ -86,7 +90,6 @@ public class  OAuth2AuthenticationSuccessHandler implements AuthenticationSucces
         res.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 4) 프론트로 리다이렉트
-        String frontUrl = "http://localhost:3000";
-        res.sendRedirect(frontUrl + "?loginSuccess");
+        res.sendRedirect(frontendUrl + "?loginSuccess");
     }
 }
