@@ -7,7 +7,6 @@ import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.AuctionForMyPageProjection;
 import com.samyookgoo.palgoosam.auction.domain.Category;
-import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
@@ -43,9 +42,6 @@ class AuctionRepositoryTest {
 
     @Autowired
     private AuctionRepository auctionRepository;
-
-    @Autowired
-    private AuctionImageRepository auctionImageRepository;
 
     @Autowired
     private ScrapRepository scrapRepository;
