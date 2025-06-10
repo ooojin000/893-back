@@ -1,0 +1,94 @@
+name: Deploy To EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Github Repository 파일 불러오기
+        uses: actions/checkout@v4
+
+      - name: JDK 21버전 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: application.yml 파일 만들기
+        run: echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./src/main/resources/application.yml
+
+      - name: env.production.properties 파일 만들기
+        run: echo "${{ secrets.ENV_PRODUCTION_PROPERTIES }}" > ./src/main/resources/properties/env.production.properties
+
+      - name: 테스트 및 빌드하기
+        run: ./gradlew clean build
+
+      - name: AWS 리소스에 접근하도록 돕는 AWS credentials 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: ECR에 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker 이미지 생성
+        run: docker build -t palgoosam-api-server .
+
+      - name: Docker 이미지에 태그 붙이기
+        run: docker tag palgoosam-api-server ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
+
+      - name: ECR에 Docker 이미지 Push
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
+
+      - name: Install netcat for connection testing
+        run: sudo apt-get update && sudo apt-get install -y netcat
+
+      - name: EIC 터널 생성 및 배포
+        run: |
+          # EIC 터널 생성 (백그라운드 실행)
+          aws ec2-instance-connect open-tunnel \
+            --instance-connect-endpoint-id ${{ secrets.AWS_EIC_ENDPOINT }} \
+            --remote-port ${{ CLIENT_SSH_PORT }} \
+            --local-port ${{ EC2_SSH_PORT }} \
+            --instance-id ${{ secrets.AWS_EC2_ID }} &
+          
+          TUNNEL_PID=$!
+          echo "Tunnel PID: $TUNNEL_PID"
+          
+          # 터널 연결 대기
+          echo "Waiting for tunnel to establish..."
+          for i in {1..30}; do
+            if nc -z localhost ${{ EC2_SSH_PORT }}; then
+              echo "SSH tunnel is ready!"
+              break
+            fi
+            echo "Waiting for tunnel... ($i/30)"
+            sleep 2
+          done
+          
+          if ! nc -z localhost ${{ EC2_SSH_PORT }}; then
+            echo "Failed to establish SSH tunnel"
+            kill $TUNNEL_PID 2>/dev/null || true
+            exit 1
+          fi
+
+      - name: SSH로 EC2에 접속하기 (EIC 터널 사용)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: localhost
+          port: ${{ EC2_SSH_PORT }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.AWS_EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            docker stop palgoosam-api-server || true
+            docker rm palgoosam-api-server || true
+            docker pull ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
+            docker run -d --name palgoosam-api-server -p ${{ secrets.PALGOOSAM_API_SERVER_PORT }}:${{ secrets.PALGOOSAM_API_SERVER_PORT }} ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
