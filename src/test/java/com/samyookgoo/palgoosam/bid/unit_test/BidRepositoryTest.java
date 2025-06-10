@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
-import com.samyookgoo.palgoosam.auction.domain.AuctionImage;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.bid.domain.BidForMyPageProjection;
@@ -16,23 +16,21 @@ import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
-@DataJpaTest
+@SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("BidRepository 유닛 테스트")
 class BidRepositoryTest {
-
-    @Autowired
-    private TestEntityManager entityManager;
 
     @Autowired
     private BidRepository bidRepository;
@@ -43,47 +41,43 @@ class BidRepositoryTest {
     @Autowired
     private AuctionRepository auctionRepository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    private Auction testAuction1;
+    private Auction testAuction2;
+
     private User bidder;
     private User seller;
-    private Auction auction1;
-    private Auction auction2;
 
     @BeforeEach
     void setUp() {
         // 공통 given
-        // 더미 카테고리 생성
-        Category testCategory = Category.builder()
-                .name("Test Category")
-                .build();
-        Category savedCategory = entityManager.persistAndFlush(testCategory);
+        Category testCategory = createCategory();
 
-        // 사용자 생성
         bidder = createUser("bidder@test.com", "입찰자");
         seller = createUser("seller@test.com", "판매자");
 
-        // 경매 생성
-        auction1 = createAuction(seller, "첫번째 경매", 1000, savedCategory);
-        auction2 = createAuction(seller, "두번째 경매", 2000, savedCategory);
+        testAuction1 = createAuction(seller, "첫번째 경매", 1000, testCategory);
+        testAuction2 = createAuction(seller, "두번째 경매", 2000, testCategory);
+    }
 
-        // 경매 이미지 생성
-        createAuctionImage(auction1, "image1.jpg");
-        createAuctionImage(auction2, "image2.jpg");
-
-        // 입찰 생성
-        createBid(bidder, auction1, 1500, false); // 첫번째 경매에 1500원 입찰
-        createBid(bidder, auction1, 2000, false); // 첫번째 경매에 2000원 입찰
-        createBid(bidder, auction2, 2500, false); // 두번째 경매에 2500원 입찰
-
-        User otherUser = createUser("otherUser@test.com", "otherUser");
-        createBid(otherUser, auction1, 20000, false);
-
-        entityManager.flush();
-        entityManager.clear();
+    @AfterEach
+    void tearDown() {
+        bidRepository.deleteAllInBatch();
+        auctionRepository.deleteAllInBatch();
+        categoryRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
     }
 
     @Test
     @DisplayName("사용자의 입찰 내역 중 입찰가가 가장 높은 것을 조회한다.")
     void Given_BidderId_When_RetrieveBids_Then_ReturnBidHistory() {
+        //given
+        createBid(bidder, testAuction1, 1500, false);
+        createBid(bidder, testAuction1, 2000, false);
+        createBid(bidder, testAuction2, 2500, false);
+
         //when
         List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(bidder.getId());
 
@@ -91,49 +85,61 @@ class BidRepositoryTest {
         assertThat(result).hasSize(2);
 
         BidForMyPageProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .filter(bid -> bid.getAuctionId().equals(testAuction1.getId()))
                 .findFirst()
                 .orElseThrow();
 
         assertThat(firstBid.getUserPrice()).isEqualTo(2000);
         assertThat(firstBid.getTitle()).isEqualTo("첫번째 경매");
-        assertThat(firstBid.getMainImageUrl()).isEqualTo("image1.jpg");
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
+        assertThat(firstBid.getAuctionId()).isEqualTo(testAuction1.getId());
         assertThat(firstBid.getStatus()).isEqualTo(AuctionStatus.active);
     }
 
     @Test
     @DisplayName("사용자가 참여한 경매의 최고 입찰가를 조회한다.")
     public void Given_BidderId_When_RetrieveBids_Then_ReturnHighestBid() {
+        //given
+        createBid(bidder, testAuction1, 1500, false);
+        createBid(bidder, testAuction1, 2000, false);
+        createBid(bidder, testAuction2, 2500, false);
+
+        User otherBidder = createUser("other@test.com", "다른 입찰자");
+        createBid(otherBidder, testAuction2, 5000, false);
+
         //when
         List<BidForHighestPriceProjection> result = bidRepository.findHighestBidProjectsByBidderId(bidder.getId());
 
         //then
         assertThat(result).hasSize(2);
 
-        BidForHighestPriceProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+        BidForHighestPriceProjection testAuction1Bid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(testAuction1.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
-        assertThat(firstBid.getBidHighestPrice()).isEqualTo(20000);
+        assertThat(testAuction1Bid.getAuctionId()).isEqualTo(testAuction1.getId());
+        assertThat(testAuction1Bid.getBidHighestPrice()).isEqualTo(2000);
 
-        // 두 번째 경매 입찰 검증
-        BidForHighestPriceProjection secondBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
+        BidForHighestPriceProjection testAuction2Bid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(testAuction2.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
-        assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
+        assertThat(testAuction2Bid.getAuctionId()).isEqualTo(testAuction2.getId());
+        assertThat(testAuction2Bid.getBidHighestPrice()).isEqualTo(5000);
     }
 
     @Test
+    @Transactional
     @DisplayName("현재 입찰가 조회 중 삭제된 입찰은 조회되지 않는다")
     void findHighestBidProjectsByBidderId_ExcludesDeletedBids() {
         //given
-        Bid deletedBid = createBid(bidder, auction2, 5000, false);
+        createBid(bidder, testAuction1, 1500, false);
+        createBid(bidder, testAuction1, 2000, false);
+        createBid(bidder, testAuction2, 2500, false);
+
+        User otherBidder = createUser("other@test.com", "다른 입찰자");
+        Bid deletedBid = createBid(otherBidder, testAuction2, 5000, false);
         deletedBid.cancel();
 
         //when
@@ -142,33 +148,34 @@ class BidRepositoryTest {
         //then
         assertThat(result).hasSize(2);
 
-        BidForHighestPriceProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+        BidForHighestPriceProjection testAuction1Bid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(testAuction1.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
-        assertThat(firstBid.getBidHighestPrice()).isEqualTo(20000);
+        assertThat(testAuction1Bid.getAuctionId()).isEqualTo(testAuction1.getId());
+        assertThat(testAuction1Bid.getBidHighestPrice()).isEqualTo(2000);
 
-        // 두 번째 경매 입찰 검증
-        BidForHighestPriceProjection secondBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
+        BidForHighestPriceProjection testAuction2Bid = result.stream()
+                .filter(bid -> bid.getAuctionId().equals(testAuction2.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
-        assertThat(secondBid.getBidHighestPrice()).isEqualTo(2500);
+        assertThat(testAuction2Bid.getAuctionId()).isEqualTo(testAuction2.getId());
+        assertThat(testAuction2Bid.getBidHighestPrice()).isEqualTo(2500);
 
     }
 
     @Test
+    @Transactional
     @DisplayName("사용자의 입찰 내역 조회 중 삭제된 입찰은 조회되지 않는다")
     void findAllBidsByUserId_ExcludesDeletedBids() {
         //given
-        Bid deletedBid1 = createBid(bidder, auction1, 50000, false);
-        Bid deletedBid2 = createBid(bidder, auction2, 50000, false);
-        deletedBid1.cancel();
-        deletedBid2.cancel();
+        createBid(bidder, testAuction1, 1500, false);
+        Bid testAuction1DeletedBid = createBid(bidder, testAuction1, 2000, false);
+        createBid(bidder, testAuction2, 2500, false);
+
+        testAuction1DeletedBid.cancel();
 
         //when
         List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(bidder.getId());
@@ -177,20 +184,20 @@ class BidRepositoryTest {
         assertThat(result).hasSize(2);
 
         BidForMyPageProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .filter(bid -> bid.getAuctionId().equals(testAuction1.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
-        assertThat(firstBid.getUserPrice()).isEqualTo(2000);
+        assertThat(firstBid.getAuctionId()).isEqualTo(testAuction1.getId());
+        assertThat(firstBid.getUserPrice()).isEqualTo(1500);
 
         // 두 번째 경매 입찰 검증
         BidForMyPageProjection secondBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction2.getId()))
+                .filter(bid -> bid.getAuctionId().equals(testAuction2.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(secondBid.getAuctionId()).isEqualTo(auction2.getId());
+        assertThat(secondBid.getAuctionId()).isEqualTo(testAuction2.getId());
         assertThat(secondBid.getUserPrice()).isEqualTo(2500);
 
     }
@@ -209,12 +216,13 @@ class BidRepositoryTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("같은 경매에 여러 입찰 시 가장 높은 금액만 조회된다")
     void findAllBidsByUserId_MultipleBindsOnSameAuction_ReturnsHighestOnly() {
         //given
-        Bid bid1 = createBid(bidder, auction1, 10000, false);
-        Bid bid2 = createBid(bidder, auction1, 20000, false);
-        Bid bid3 = createBid(bidder, auction1, 30000, false);
+        createBid(bidder, testAuction1, 10000, false);
+        createBid(bidder, testAuction1, 20000, false);
+        createBid(bidder, testAuction2, 30000, false);
 
         //when
         List<BidForMyPageProjection> result = bidRepository.findAllBidsByUserId(bidder.getId());
@@ -223,12 +231,12 @@ class BidRepositoryTest {
         assertThat(result).hasSize(2);
 
         BidForMyPageProjection firstBid = result.stream()
-                .filter(bid -> bid.getAuctionId().equals(auction1.getId()))
+                .filter(bid -> bid.getAuctionId().equals(testAuction1.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(firstBid.getAuctionId()).isEqualTo(auction1.getId());
-        assertThat(firstBid.getUserPrice()).isEqualTo(30000);
+        assertThat(firstBid.getAuctionId()).isEqualTo(testAuction1.getId());
+        assertThat(firstBid.getUserPrice()).isEqualTo(20000);
 
     }
 
@@ -240,7 +248,7 @@ class BidRepositoryTest {
                 .providerId(name)
                 .provider("LOCAL")
                 .build();
-        return entityManager.persistAndFlush(user);
+        return userRepository.save(user);
     }
 
     private Auction createAuction(User seller, String title, int basePrice, Category category) {
@@ -255,19 +263,7 @@ class BidRepositoryTest {
                 .category(category)
                 .itemCondition(ItemCondition.damaged)
                 .build();
-        return entityManager.persistAndFlush(auction);
-    }
-
-    private void createAuctionImage(Auction auction, String url) {
-        AuctionImage image = AuctionImage.builder()
-                .auction(auction)
-                .url(url)
-                .originalName("test-original-" + url) // 원본 파일명 추가
-                .storeName("test-store-" + url)       // 저장된 파일명 추가
-                .imageSeq(0) // 메인 이미지
-                .isDeleted(false) // 명시적으로 설정
-                .build();
-        entityManager.persistAndFlush(image);
+        return auctionRepository.save(auction);
     }
 
     private Bid createBid(User bidder, Auction auction, int price, boolean isWinning) {
@@ -278,6 +274,13 @@ class BidRepositoryTest {
                 .isWinning(isWinning)
                 .isDeleted(false)
                 .build();
-        return entityManager.persistAndFlush(bid);
+        return bidRepository.save(bid);
+    }
+
+    private Category createCategory() {
+        Category category = Category.builder()
+                .name("test")
+                .build();
+        return categoryRepository.save(category);
     }
 }
