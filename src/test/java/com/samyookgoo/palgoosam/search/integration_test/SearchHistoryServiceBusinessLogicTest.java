@@ -9,6 +9,7 @@ import com.samyookgoo.palgoosam.search.repository.SearchHistoryRepository;
 import com.samyookgoo.palgoosam.search.service.SearchHistoryService;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.exception.UserForbiddenException;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -17,22 +18,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureTestEntityManager
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional
 @DisplayName("SearchHistory 비즈니스 로직 테스트")
 class SearchHistoryServiceBusinessLogicTest {
-
-    @Autowired
-    private TestEntityManager entityManager;
 
     @Autowired
     private SearchHistoryRepository searchHistoryRepository;
@@ -40,11 +35,15 @@ class SearchHistoryServiceBusinessLogicTest {
     @Autowired
     private SearchHistoryService searchHistoryService;
 
-    private User tester;
+    @Autowired
+    private UserRepository userRepository;
+
+    private User currentUser;
+
 
     @BeforeEach
     void beforeEach() {
-        tester = createUser("test@test.com", "tester");
+        currentUser = createUser("test@test.com", "currentUser");
     }
 
     @Test
@@ -52,37 +51,37 @@ class SearchHistoryServiceBusinessLogicTest {
     public void recordUserSearch_ExistingKeywords_IncrementsSearchCount() {
         //given
         String keyword1 = "test1";
-        SearchHistory searchHistory1 = createSearchHistory(keyword1, tester);
+        SearchHistory searchHistory1 = createSearchHistory(keyword1, currentUser);
 
         String keyword2 = "test2";
-        SearchHistory searchHistory2 = createSearchHistory(keyword2, tester);
+        SearchHistory searchHistory2 = createSearchHistory(keyword2, currentUser);
 
         String keyword3 = "test3";
-        SearchHistory searchHistory3 = createSearchHistory(keyword3, tester);
+        SearchHistory searchHistory3 = createSearchHistory(keyword3, currentUser);
 
         List<SearchHistory> searchHistoryList = List.of(searchHistory1, searchHistory2, searchHistory3);
         List<SearchHistory> searchHistories = new ArrayList<>(searchHistoryList);
         searchHistoryRepository.saveAll(searchHistories);
 
         //when
-        searchHistoryService.recordUserSearch(createSearchHistoryCreateRequestDto(keyword1), tester);
-        searchHistoryService.recordUserSearch(createSearchHistoryCreateRequestDto(keyword2), tester);
+        searchHistoryService.recordUserSearch(createSearchHistoryCreateRequestDto(keyword1), currentUser);
+        searchHistoryService.recordUserSearch(createSearchHistoryCreateRequestDto(keyword2), currentUser);
 
         //then
-        SearchHistory updatedSearchHistory1 = searchHistoryRepository.findByKeywordAndUserId(keyword1, tester.getId())
-                .orElseThrow();
+        SearchHistory updatedSearchHistory1 = searchHistoryRepository.findByKeywordAndUserId(keyword1,
+                currentUser.getId()).orElseThrow();
         Assertions.assertThat(updatedSearchHistory1.getKeyword()).isEqualTo(keyword1);
         Assertions.assertThat(updatedSearchHistory1.getSearchCount()).isEqualTo(2L);
         Assertions.assertThat(updatedSearchHistory1.getIsDeleted()).isFalse();
 
-        SearchHistory updatedSearchHistory2 = searchHistoryRepository.findByKeywordAndUserId(keyword2, tester.getId())
-                .orElseThrow();
+        SearchHistory updatedSearchHistory2 = searchHistoryRepository.findByKeywordAndUserId(keyword2,
+                currentUser.getId()).orElseThrow();
         Assertions.assertThat(updatedSearchHistory2.getKeyword()).isEqualTo(keyword2);
         Assertions.assertThat(updatedSearchHistory2.getSearchCount()).isEqualTo(2L);
         Assertions.assertThat(updatedSearchHistory2.getIsDeleted()).isFalse();
 
-        SearchHistory notUpdatedSearchHistory = searchHistoryRepository.findByKeywordAndUserId(keyword3, tester.getId())
-                .orElseThrow();
+        SearchHistory notUpdatedSearchHistory = searchHistoryRepository.findByKeywordAndUserId(keyword3,
+                currentUser.getId()).orElseThrow();
         Assertions.assertThat(notUpdatedSearchHistory.getKeyword()).isEqualTo(keyword3);
         Assertions.assertThat(notUpdatedSearchHistory.getSearchCount()).isEqualTo(1L);
         Assertions.assertThat(notUpdatedSearchHistory.getIsDeleted()).isFalse();
@@ -97,10 +96,10 @@ class SearchHistoryServiceBusinessLogicTest {
 
         //when
 
-        searchHistoryService.recordUserSearch(requestDto, tester);
+        searchHistoryService.recordUserSearch(requestDto, currentUser);
 
         //then
-        SearchHistory created = searchHistoryRepository.findByKeywordAndUserId(keyword, tester.getId())
+        SearchHistory created = searchHistoryRepository.findByKeywordAndUserId(keyword, currentUser.getId())
                 .orElseThrow();
         Assertions.assertThat(created.getKeyword()).isEqualTo(keyword);
         Assertions.assertThat(created.getSearchCount()).isEqualTo(1L);
@@ -112,20 +111,20 @@ class SearchHistoryServiceBusinessLogicTest {
     public void getSearchHistory_ActiveRecords_ReturnsInReverseOrder() {
         //given
         String keyword1 = "test1";
-        SearchHistory searchHistory1 = createSearchHistory(keyword1, tester);
+        SearchHistory searchHistory1 = createSearchHistory(keyword1, currentUser);
 
         String keyword2 = "test2";
-        SearchHistory searchHistory2 = createSearchHistory(keyword2, tester);
+        SearchHistory searchHistory2 = createSearchHistory(keyword2, currentUser);
 
         String keyword3 = "test3";
-        SearchHistory searchHistory3 = createSearchHistory(keyword3, tester);
+        SearchHistory searchHistory3 = createSearchHistory(keyword3, currentUser);
 
         List<SearchHistory> searchHistoryList = List.of(searchHistory1, searchHistory2, searchHistory3);
         List<SearchHistory> searchHistories = new ArrayList<>(searchHistoryList);
         saveInOrder(searchHistories);
 
         //when
-        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(currentUser);
 
         //then
         Assertions.assertThat(result).extracting("keyword")
@@ -140,13 +139,13 @@ class SearchHistoryServiceBusinessLogicTest {
         List<SearchHistory> searchHistories = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             String keyword = "test" + i;
-            searchHistories.add(createSearchHistory(keyword, tester));
+            searchHistories.add(createSearchHistory(keyword, currentUser));
 
         }
         searchHistoryRepository.saveAll(searchHistories);
 
         //when
-        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(currentUser);
 
         //then
         Assertions.assertThat(result).hasSize(10);
@@ -159,13 +158,13 @@ class SearchHistoryServiceBusinessLogicTest {
         List<SearchHistory> searchHistories = new ArrayList<>();
         for (int i = 0; i < 11; i++) {
             String keyword = "test" + i;
-            searchHistories.add(createSearchHistory(keyword, tester));
+            searchHistories.add(createSearchHistory(keyword, currentUser));
 
         }
         searchHistoryRepository.saveAll(searchHistories);
 
         //when
-        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(currentUser);
 
         //then
         Assertions.assertThat(result).hasSize(10);
@@ -179,11 +178,11 @@ class SearchHistoryServiceBusinessLogicTest {
     public void deleteSearchHistory_ValidUser_SoftDeletesRecord() {
         //given
         String keyword1 = "test";
-        SearchHistory searchHistory = createSearchHistory(keyword1, tester);
+        SearchHistory searchHistory = createSearchHistory(keyword1, currentUser);
         SearchHistory saved = searchHistoryRepository.save(searchHistory);
 
         //when
-        searchHistoryService.deleteSearchHistory(saved.getId(), tester);
+        searchHistoryService.deleteSearchHistory(saved.getId(), currentUser);
 
         //then
         SearchHistory deleted = searchHistoryRepository.findById(saved.getId()).orElseThrow();
@@ -197,18 +196,20 @@ class SearchHistoryServiceBusinessLogicTest {
     public void deleteSearchHistory_UnauthorizedUser_ThrowsForbiddenException() {
         //given
         String keyword1 = "test";
-        SearchHistory searchHistory = createSearchHistory(keyword1, tester);
+        SearchHistory searchHistory = createSearchHistory(keyword1, currentUser);
         SearchHistory saved = searchHistoryRepository.save(searchHistory);
 
         User unAuthorizedUser = createUser("unAuth@test.com", "unAuth");
 
         //when
-        UserForbiddenException userForbiddenException = org.junit.jupiter.api.Assertions.assertThrows(
-                UserForbiddenException.class,
+        Throwable thrown = Assertions.catchThrowable(
                 () -> searchHistoryService.deleteSearchHistory(saved.getId(), unAuthorizedUser));
 
         //then
-        Assertions.assertThat(userForbiddenException.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN);
+        Assertions.assertThat(thrown).isInstanceOf(UserForbiddenException.class)
+                .hasMessageContaining(ErrorCode.FORBIDDEN.getMessage())
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FORBIDDEN);
     }
 
     @Test
@@ -217,14 +218,14 @@ class SearchHistoryServiceBusinessLogicTest {
         //given
 
         //when
-        SearchHistoryNotFoundException searchHistoryNotFoundException = org.junit.jupiter.api.Assertions.assertThrows(
-                SearchHistoryNotFoundException.class,
-                () -> searchHistoryService.deleteSearchHistory(1L, tester));
+        Throwable thrown = Assertions.catchThrowable(
+                () -> searchHistoryService.deleteSearchHistory(1L, currentUser));
 
         //then
-        Assertions.assertThat(searchHistoryNotFoundException.getErrorCode())
+        Assertions.assertThat(thrown).isInstanceOf(SearchHistoryNotFoundException.class)
+                .hasMessageContaining(ErrorCode.SEARCH_HISTORY_NOT_FOUND.getMessage())
+                .extracting("errorCode")
                 .isEqualTo(ErrorCode.SEARCH_HISTORY_NOT_FOUND);
-
     }
 
     @Test
@@ -233,7 +234,7 @@ class SearchHistoryServiceBusinessLogicTest {
         //given
 
         //when
-        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(currentUser);
 
         //then
         Assertions.assertThat(result).isEmpty();
@@ -244,13 +245,13 @@ class SearchHistoryServiceBusinessLogicTest {
     public void getSearchHistory_WithDeletedRecords_ExcludesDeletedOnes() {
         //given
         String keyword1 = "saved1";
-        SearchHistory searchHistory1 = createSearchHistory(keyword1, tester);
+        SearchHistory searchHistory1 = createSearchHistory(keyword1, currentUser);
 
         String keyword2 = "deleted";
-        SearchHistory searchHistory2 = createSearchHistory(keyword2, tester);
+        SearchHistory searchHistory2 = createSearchHistory(keyword2, currentUser);
 
         String keyword3 = "saved2";
-        SearchHistory searchHistory3 = createSearchHistory(keyword3, tester);
+        SearchHistory searchHistory3 = createSearchHistory(keyword3, currentUser);
 
         List<SearchHistory> searchHistoryList = List.of(searchHistory1, searchHistory2, searchHistory3);
         List<SearchHistory> searchHistories = new ArrayList<>(searchHistoryList);
@@ -259,7 +260,7 @@ class SearchHistoryServiceBusinessLogicTest {
         searchHistoryRepository.delete(searchHistory3);
 
         //when
-        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(tester);
+        List<SearchHistoryResponseDto> result = searchHistoryService.getSearchHistory(currentUser);
 
         //then
         Assertions.assertThat(result).extracting("keyword")
@@ -276,7 +277,7 @@ class SearchHistoryServiceBusinessLogicTest {
                 .providerId(name)
                 .provider("LOCAL")
                 .build();
-        return entityManager.persistAndFlush(user);
+        return userRepository.save(user);
     }
 
     private SearchHistory createSearchHistory(String keyword, User user) {
@@ -296,7 +297,6 @@ class SearchHistoryServiceBusinessLogicTest {
     public void saveInOrder(List<SearchHistory> entities) {
         entities.forEach(entity -> {
             searchHistoryRepository.save(entity);
-            entityManager.flush();
         });
     }
 }
