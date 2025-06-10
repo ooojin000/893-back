@@ -55,8 +55,8 @@ jobs:
           # EIC 터널 생성 (백그라운드 실행)
           aws ec2-instance-connect open-tunnel \
             --instance-connect-endpoint-id ${{ secrets.AWS_EIC_ENDPOINT }} \
-            --remote-port ${{ CLIENT_SSH_PORT }} \
-            --local-port ${{ EC2_SSH_PORT }} \
+            --remote-port ${{ secrets.CLIENT_SSH_PORT }} \
+            --local-port ${{ secrets.EC2_SSH_PORT }} \
             --instance-id ${{ secrets.AWS_EC2_ID }} &
           
           TUNNEL_PID=$!
