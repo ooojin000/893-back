@@ -188,3 +188,4 @@ dist
 
 src/main/resources/firebase-admin-sdk.json
 src/main/resources/application.yml
+src/main/resources/properties/

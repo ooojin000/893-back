@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,7 +66,6 @@ public class BidController {
     }
 
     @CancelBidApi
-    @CrossOrigin(origins = "http://localhost:3000")
     @PatchMapping("/{auctionId}/bids/{bidId}")
     public BaseResponse<String> cancel(
             @Parameter(name = "auctionId", description = "경매 ID", required = true)
