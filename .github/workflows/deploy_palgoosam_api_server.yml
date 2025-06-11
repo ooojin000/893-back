@@ -83,6 +83,14 @@ jobs:
             exit 1
           fi
 
+      - name: 터널 상태 재확인
+        run: |
+          echo "터널 프로세스 상태:"
+          ps aux | grep ec2-instance-connect || echo "터널 프로세스 없음"
+          
+          echo "포트 연결 테스트:"
+          nc -zv 127.0.0.1 ${{ secrets.EC2_SSH_PORT }} || echo "포트 연결 실패"
+
       - name: SSH로 EC2에 접속하기 (EIC 터널 사용)
         uses: appleboy/ssh-action@v1.0.3
         with:
