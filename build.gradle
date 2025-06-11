@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.5'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.samyookgoo'
@@ -23,18 +24,94 @@ repositories {
     mavenCentral()
 }
 
+jacoco {
+    toolVersion = "0.8.13"
+    layout.buildDirectory.dir("reports/jacoco")
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = false
+        csv.required = true
+        html.required = true
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/*Application*',
+                    '**/exception/**',
+                    '**/config/**',
+            ])
+        }))
+    }
+
+    finalizedBy 'jacocoTestCoverageVerification'
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.30
+            }
+
+            excludes = [
+                    '**.*Application*',
+                    '**.exception.**',
+                    '**.aop.**',
+                    '**.config.**',
+            ]
+        }
+    }
+}
+
 dependencies {
+    implementation 'com.google.firebase:firebase-admin:9.4.3'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // OAuth 2.0
+    implementation "org.springframework.boot:spring-boot-starter-oauth2-client"
+
+    // JJWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.h2database:h2'
+    testImplementation 'org.mockito:mockito-core:4.3.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // AWS
+    implementation 'software.amazon.awssdk:s3:2.31.51'
+    implementation 'software.amazon.awssdk:auth:2.31.51'
+    implementation 'software.amazon.awssdk:regions:2.31.51'
+    implementation 'software.amazon.awssdk:core:2.31.51'
+
+    //h2
+    runtimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty "spring.profiles.active", "test"
 }
