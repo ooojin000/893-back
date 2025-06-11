@@ -31,12 +31,9 @@ jobs:
       - name: application.yml 파일 만들기
         run: |
           cat > ./src/main/resources/application.yml << 'EOF'
-          ${{ secrets.APPLICATION_PROPERTIES }}
+          ${{ vars.APPLICATION_YML }}
           EOF
-
-      - name: application.yml 파일 만들기
-        run: echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./src/main/resources/application.yml
-
+          
       - name: yml, properties 확인
         run: |
           cat ./src/main/resources/application.yml
