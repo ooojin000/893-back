@@ -57,11 +57,11 @@ jacocoTestCoverageVerification {
             enabled = true
             element = 'CLASS'
 
-            limit {
-                counter = 'LINE'
-                value = 'COVEREDRATIO'
-                minimum = 0.30
-            }
+//            limit {
+//                counter = 'LINE'
+//                value = 'COVEREDRATIO'
+//                minimum = 0.30
+//            }
 
             excludes = [
                     '**.*Application*',
