@@ -161,3 +161,4 @@ jobs:
 #            docker rm 893-back-container || true
 #            docker pull ${{ steps.login-ecr.outputs.registry }}/893-back:latest
 #            docker run -d --name 893-back-container -p ${{ secrets.PALGOOSAM_API_SERVER_PORT }}:${{ secrets.PALGOOSAM_API_SERVER_PORT }} ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+    
