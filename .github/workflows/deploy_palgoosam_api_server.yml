@@ -43,13 +43,13 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Docker 이미지 생성
-        run: docker build -t palgoosam-api-server .
+        run: docker build -t 893-back .
 
       - name: Docker 이미지에 태그 붙이기
-        run: docker tag palgoosam-api-server ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
+        run: docker tag 893-back ${{ steps.login-ecr.outputs.registry }}/893-back:latest
 
       - name: ECR에 Docker 이미지 Push
-        run: docker push ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/893-back:latest
 
       - name: Install netcat for connection testing
         run: sudo apt-get update && sudo apt-get install -y netcat
@@ -67,7 +67,7 @@ jobs:
           
           echo "Waiting for tunnel to establish..."
           for i in {1..30}; do
-            if nc -z localhost ${{ EC2_SSH_PORT }}; then
+            if nc -z localhost ${{ secrets.EC2_SSH_PORT }}; then
               echo "SSH tunnel is ready!"
               break
             fi
@@ -75,7 +75,7 @@ jobs:
             sleep 2
           done
           
-          if ! nc -z localhost ${{ EC2_SSH_PORT }}; then
+          if ! nc -z localhost ${{ secrets.EC2_SSH_PORT }}; then
             echo "Failed to establish SSH tunnel"
             kill $TUNNEL_PID 2>/dev/null || true
             exit 1
@@ -85,12 +85,12 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: localhost
-          port: ${{ EC2_SSH_PORT }}
+          port: ${{ secrets.EC2_SSH_PORT }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
           script_stop: true
           script: |
-            docker stop palgoosam-api-server || true
-            docker rm palgoosam-api-server || true
-            docker pull ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
-            docker run -d --name palgoosam-api-server -p ${{ secrets.PALGOOSAM_API_SERVER_PORT }}:${{ secrets.PALGOOSAM_API_SERVER_PORT }} ${{ steps.login-ecr.outputs.registry }}/palgoosam-api-server:latest
+            docker stop 893-back-container || true
+            docker rm 893-back-container || true
+            docker pull ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+            docker run -d --name 893-back-container -p ${{ secrets.PALGOOSAM_API_SERVER_PORT }}:${{ secrets.PALGOOSAM_API_SERVER_PORT }} ${{ steps.login-ecr.outputs.registry }}/893-back:latest
