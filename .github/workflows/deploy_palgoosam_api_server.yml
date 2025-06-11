@@ -91,28 +91,74 @@ jobs:
           echo "포트 연결 테스트:"
           nc -zv 127.0.0.1 ${{ secrets.EC2_SSH_PORT }} || echo "포트 연결 실패"
 
-      - name: SSH로 EC2에 접속하기 (EIC 터널 사용)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: host.docker.internal
-          port: ${{ secrets.EC2_SSH_PORT }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          script_stop: true
-          debug: true
-          timeout: 60s
-          script: |
-            echo "연결 성공!"
-            whoami
-        
-            echo "=== Docker 권한 확인 ==="
-            docker ps || echo "Docker ps failed - checking with sudo"
-            sudo docker ps || echo "Sudo docker ps also failed"
-            
-            echo "=== 기존 컨테이너 확인 ==="
-            docker container ls -a | grep 893-back || echo "No existing container"
-            
-            docker stop 893-back-container || true
-            docker rm 893-back-container || true
-            docker pull ${{ steps.login-ecr.outputs.registry }}/893-back:latest
-            docker run -d --name 893-back-container -p ${{ secrets.PALGOOSAM_API_SERVER_PORT }}:${{ secrets.PALGOOSAM_API_SERVER_PORT }} ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+      - name: 직접 SSH로 배포
+        run: |
+          echo "${{ secrets.AWS_EC2_SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          
+          # 변수 미리 설정
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          SERVER_PORT="${{ secrets.PALGOOSAM_API_SERVER_PORT }}"
+          AWS_REGION="${{ secrets.AWS_REGION }}"
+          
+          ssh -o StrictHostKeyChecking=no \
+              -i /tmp/ssh_key \
+              -p 2222 \
+              ${{ secrets.EC2_USERNAME }}@127.0.0.1 << EOF
+          
+          echo "=== 배포 시작 ==="
+          
+          # ECR 로그인
+          aws ecr get-login-password --region ${AWS_REGION} | \
+            docker login --username AWS --password-stdin ${ECR_REGISTRY}
+          
+          # 기존 컨테이너 정리
+          docker stop 893-back-container || true
+          docker rm 893-back-container || true
+          
+          # 새 이미지 풀 및 실행
+          docker pull ${ECR_REGISTRY}/893-back:latest
+          docker run -d --name 893-back-container \
+            -p ${SERVER_PORT}:${SERVER_PORT} \
+            ${ECR_REGISTRY}/893-back:latest
+          
+          echo "=== 배포 완료 ==="
+          docker ps | grep 893-back
+          
+          EOF
+          
+          rm /tmp/ssh_key
+
+#      - name: SSH로 EC2에 접속하기 (EIC 터널 사용)
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: host.docker.internal
+#          port: ${{ secrets.EC2_SSH_PORT }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.AWS_EC2_SSH_KEY }}
+#          script_stop: true
+#          debug: true
+#          script: |
+#            echo "=== 시스템 정보 ==="
+#            whoami
+#            id
+#
+#            echo "=== Docker 설치 확인 ==="
+#            which docker || echo "Docker not found"
+#            docker --version || echo "Docker version failed"
+#
+#            echo "=== Docker 서비스 상태 ==="
+#            sudo systemctl status docker || echo "Docker service status failed"
+#
+#            echo "=== Docker 권한 확인 ==="
+#            docker ps || echo "Docker ps failed - checking with sudo"
+#            sudo docker ps || echo "Sudo docker ps also failed"
+#
+#            echo "=== 기존 컨테이너 확인 ==="
+#            docker container ls -a | grep 893-back || echo "No existing container"
+#
+#            docker stop 893-back-container || true
+#            docker rm 893-back-container || true
+#            docker pull ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+#            docker run -d --name 893-back-container -p ${{ secrets.PALGOOSAM_API_SERVER_PORT }}:${{ secrets.PALGOOSAM_API_SERVER_PORT }} ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+    
