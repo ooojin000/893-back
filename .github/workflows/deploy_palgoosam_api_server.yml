@@ -101,6 +101,24 @@ jobs:
           script_stop: true
           debug: true
           script: |
+            echo "=== 시스템 정보 ==="
+            whoami
+            id
+            
+            echo "=== Docker 설치 확인 ==="
+            which docker || echo "Docker not found"
+            docker --version || echo "Docker version failed"
+            
+            echo "=== Docker 서비스 상태 ==="
+            sudo systemctl status docker || echo "Docker service status failed"
+            
+            echo "=== Docker 권한 확인 ==="
+            docker ps || echo "Docker ps failed - checking with sudo"
+            sudo docker ps || echo "Sudo docker ps also failed"
+            
+            echo "=== 기존 컨테이너 확인 ==="
+            docker container ls -a | grep 893-back || echo "No existing container"
+            
             docker stop 893-back-container || true
             docker rm 893-back-container || true
             docker pull ${{ steps.login-ecr.outputs.registry }}/893-back:latest
