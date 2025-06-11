@@ -100,18 +100,11 @@ jobs:
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
           script_stop: true
           debug: true
+          timeout: 60s
           script: |
-            echo "=== 시스템 정보 ==="
+            echo "연결 성공!"
             whoami
-            id
-            
-            echo "=== Docker 설치 확인 ==="
-            which docker || echo "Docker not found"
-            docker --version || echo "Docker version failed"
-            
-            echo "=== Docker 서비스 상태 ==="
-            sudo systemctl status docker || echo "Docker service status failed"
-            
+        
             echo "=== Docker 권한 확인 ==="
             docker ps || echo "Docker ps failed - checking with sudo"
             sudo docker ps || echo "Sudo docker ps also failed"
