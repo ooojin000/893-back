@@ -26,7 +26,6 @@ import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
 import com.samyookgoo.palgoosam.auction.exception.AuctionUpdateLockedException;
 import com.samyookgoo.palgoosam.auction.exception.CategoryNotFoundException;
 import com.samyookgoo.palgoosam.auction.file.FileStore;
-import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionSearchRepository;
@@ -36,6 +35,7 @@ import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.exception.BidNotFoundException;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
+import com.samyookgoo.palgoosam.common.s3.S3Service;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
@@ -58,7 +58,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -74,9 +73,10 @@ public class AuctionService {
     private final AuthService authService;
     private final PaymentRepository paymentRepository;
     private final AuctionSearchRepository auctionSearchRepository;
+    private final S3Service s3Service;
 
     @Transactional
-    public AuctionCreateResponse createAuction(AuctionCreateRequest request, List<ResultFileStore> resultFileStores) {
+    public AuctionCreateResponse createAuction(AuctionCreateRequest request) {
         User user = getValidatedCurrentUser();
 
         Category category = getValidatedCategory(request.getCategory().getId());
@@ -92,10 +92,10 @@ public class AuctionService {
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
 
-        validateImageFiles(resultFileStores);
-        List<AuctionImageResponse> imageResponses = saveAuctionImages(resultFileStores, auction);
+        validateImageFiles(request.getImageKeys());
+        List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImageKeys(), auction);
 
-        return AuctionCreateResponse.from(auction, imageResponses, category,
+        return AuctionCreateResponse.of(auction, imageResponses, category,
                 request.getStartDelay(), request.getDurationTime());
     }
 
@@ -107,7 +107,15 @@ public class AuctionService {
 
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
         List<AuctionImageResponse> imageResponses = images.stream()
-                .map(AuctionImageResponse::from)
+                .map(image -> {
+                    try {
+                        String url = s3Service.getPresignedUrl(image.getStoreName()).getPresignedUrl();
+                        return AuctionImageResponse.from(url, image.getImageSeq());
+                    } catch (Exception e) {
+                        log.warn("Presigned URL 생성 실패: {}", image.getStoreName(), e);
+                        return AuctionImageResponse.from(null, image.getImageSeq()); // or 빈 이미지 URL
+                    }
+                })
                 .collect(Collectors.toList());
 
         AuctionImageResponse mainImage = getMainImage(imageResponses);
@@ -162,7 +170,10 @@ public class AuctionService {
         List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
 
         List<AuctionImageResponse> imageResponses = images.stream()
-                .map(AuctionImageResponse::from)
+                .map(image -> {
+                    String url = s3Service.getPresignedUrl(image.getStoreName()).getPresignedUrl();
+                    return AuctionImageResponse.from(url, image.getImageSeq());
+                })
                 .collect(Collectors.toList());
 
         AuctionImageResponse mainImage = imageResponses.stream()
@@ -186,8 +197,7 @@ public class AuctionService {
     }
 
     @Transactional
-    public AuctionUpdateResponse updateAuction(Long auctionId, AuctionUpdateRequest request,
-                                               List<MultipartFile> images) {
+    public AuctionUpdateResponse updateAuction(Long auctionId, AuctionUpdateRequest request) {
         Auction auction = getValidatedAuction(auctionId);
         User user = getValidatedCurrentUser();
 
@@ -243,7 +253,16 @@ public class AuctionService {
         Map<Long, AuctionImage> existingImageMap = existingImages.stream()
                 .collect(Collectors.toMap(AuctionImage::getId, Function.identity()));
 
+        List<String> imageKeys = request.getImageKeys() != null ? request.getImageKeys() : List.of();
         List<AuctionImageRequest> imageRequests = request.getImages() != null ? request.getImages() : List.of();
+
+        long newImageCount = imageRequests.stream()
+                .filter(img -> img.getImageId() == null)
+                .count();
+
+        if (newImageCount != imageKeys.size()) {
+            throw new IllegalArgumentException("새 이미지 개수와 이미지 키 개수가 일치하지 않습니다.");
+        }
 
         boolean hasMainImage = imageRequests.stream()
                 .anyMatch(img -> img.getImageSeq() != null && img.getImageSeq() == 0);
@@ -257,19 +276,16 @@ public class AuctionService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+        List<AuctionImageResponse> imageResponses = new ArrayList<>();
+        int newKeyIndex = 0;
+
         List<AuctionImage> imagesToDelete = existingImages.stream()
                 .filter(img -> !requestedIds.contains(img.getId()))
                 .collect(Collectors.toList());
 
         for (AuctionImage image : imagesToDelete) {
             auctionImageRepository.delete(image);
-            fileStore.delete(image.getStoreName());
         }
-
-        List<ResultFileStore> storedFiles = fileStore.storeFiles(images);
-        int newFileIndex = 0;
-
-        List<AuctionImageResponse> imageResponses = new ArrayList<>();
 
         for (AuctionImageRequest imageRequest : imageRequests) {
             Long imageId = imageRequest.getImageId();
@@ -278,13 +294,32 @@ public class AuctionService {
             if (imageId != null && existingImageMap.containsKey(imageId)) {
                 AuctionImage existing = existingImageMap.get(imageId);
                 existing.setImageSeq(imageSeq);
-                imageResponses.add(AuctionImageResponse.from(existing));
+                imageResponses.add(
+                        AuctionImageResponse.from(s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(),
+                                imageSeq));
 
-            } else {
-                ResultFileStore file = storedFiles.get(newFileIndex++);
-                AuctionImage newImage = ResultFileStore.toEntity(file, auction, imageSeq);
+            } else if (imageId == null && newKeyIndex < imageKeys.size()) {
+
+                String newKey = imageKeys.get(newKeyIndex++);
+                String presignedUrl = s3Service.getPresignedUrl(newKey).getPresignedUrl();
+
+                AuctionImage newImage = AuctionImage.builder()
+                        .auction(auction)
+                        .storeName(newKey)
+                        .originalName(imageRequest.getOriginalName())
+                        .url(presignedUrl)
+                        .imageSeq(imageSeq)
+                        .build();
                 auctionImageRepository.save(newImage);
-                imageResponses.add(AuctionImageResponse.from(newImage));
+
+                log.info("저장된 이미지 key(storeName) = {}", newImage.getStoreName());
+
+                imageResponses.add(AuctionImageResponse.from(
+                        s3Service.getPresignedUrl(newKey).getPresignedUrl(),
+                        imageSeq
+                ));
+            } else {
+                throw new IllegalArgumentException("새 이미지 개수와 이미지 키 개수가 일치하지 않음");
             }
         }
 
@@ -447,25 +482,40 @@ public class AuctionService {
                 .orElse(null);
     }
 
-    private List<AuctionImageResponse> saveAuctionImages(List<ResultFileStore> files, Auction auction) {
-        return IntStream.range(0, files.size())
-                .mapToObj(i -> saveSingleAuctionImage(files.get(i), auction, i))
+    private List<AuctionImageResponse> saveAuctionImages(List<AuctionImageRequest> images, Auction auction) {
+        return IntStream.range(0, images.size())
+                .mapToObj(i -> {
+                    AuctionImageRequest info = images.get(i);
+                    return saveSingleAuctionImage(info.getStoreName(), info.getOriginalName(), auction, i);
+                })
                 .toList();
     }
 
-    private AuctionImageResponse saveSingleAuctionImage(ResultFileStore file, Auction auction, int order) {
+    private AuctionImageResponse saveSingleAuctionImage(String imageKey, String originalName, Auction auction,
+                                                        int order) {
         try {
-            AuctionImage image = ResultFileStore.toEntity(file, auction, order);
+
+            String presignedUrl = s3Service.getPresignedUrl(imageKey).getPresignedUrl();
+
+            AuctionImage image = AuctionImage.builder()
+                    .auction(auction)
+                    .storeName(imageKey)
+                    .originalName(originalName)
+                    .imageSeq(order)
+                    .url(presignedUrl)
+                    .build();
+
             auctionImageRepository.save(image);
-            return AuctionImageResponse.from(image);
+
+            return AuctionImageResponse.from(presignedUrl, image.getImageSeq());
         } catch (Exception e) {
             log.error("이미지 저장 실패: {}", e.getMessage(), e);
             throw new AuctionImageException(ErrorCode.AUCTION_IMAGE_SAVE_FAILED);
         }
     }
 
-    private void validateImageFiles(List<ResultFileStore> files) {
-        if (files == null || files.isEmpty()) {
+    private void validateImageFiles(List<AuctionImageRequest> imageKeys) {
+        if (imageKeys == null || imageKeys.isEmpty()) {
             throw new AuctionImageException(ErrorCode.AUCTION_MAIN_IMAGE_REQUIRED);
         }
     }
@@ -479,7 +529,7 @@ public class AuctionService {
     }
 
     private void softDeleteAuctionImages(Long auctionId) {
-        List<AuctionImage> images = auctionImageRepository.findByAuctionId(auctionId);
+        List<AuctionImage> images = auctionImageRepository.findByAuctionIdAndIsDeletedFalse(auctionId);
 
         images.forEach(image -> {
             try {
@@ -487,7 +537,7 @@ public class AuctionService {
                     image.setIsDeleted(true);
                     auctionImageRepository.save(image);
                 } else {
-                    fileStore.delete(image.getStoreName());
+                    s3Service.deleteObject(image.getStoreName());
                     auctionImageRepository.delete(image);
                 }
             } catch (Exception e) {
