@@ -93,6 +93,11 @@ jobs:
           script_stop: true
           debug: true
           script: |
+            echo "터널 프로세스 상태:"
+            ps aux | grep ec2-instance-connect || echo "터널 프로세스 없음"
+            
+            echo "포트 연결 테스트:"
+            nc -zv 127.0.0.1 ${{ secrets.EC2_SSH_PORT }} || echo "포트 연결 실패"
             docker stop 893-back-container || true
             docker rm 893-back-container || true
             docker pull ${{ steps.login-ecr.outputs.registry }}/893-back:latest
