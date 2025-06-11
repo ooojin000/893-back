@@ -2,7 +2,7 @@ package com.samyookgoo.palgoosam.search.unit_test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.search.domain.SearchHistory;
@@ -74,11 +74,13 @@ class SearchHistoryEntityTest {
                 .build();
 
         //when
-        UserForbiddenException userForbiddenException = assertThrows(UserForbiddenException.class,
-                () -> target.checkPermission(userWithoutPermission.getId()));
+        Throwable thrown = catchThrowable(() -> target.checkPermission(userWithoutPermission.getId()));
 
         //then
-        assertThat(userForbiddenException.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN);
+        assertThat(thrown).isInstanceOf(UserForbiddenException.class)
+                .hasMessage(ErrorCode.FORBIDDEN.getMessage())
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FORBIDDEN);
     }
 
     @Test
@@ -128,13 +130,14 @@ class SearchHistoryEntityTest {
                 .isDeleted(true)
                 .user(user)
                 .build();
-
         //when
-        SearchHistoryBadRequestException badRequestException = assertThrows(SearchHistoryBadRequestException.class,
-                target::checkDeletable);
+        Throwable thrown = catchThrowable(target::checkDeletable);
 
         //then
-        assertThat(badRequestException.getErrorCode()).isEqualTo(ErrorCode.SEARCH_HISTORY_ALREADY_DELETED_BAD_REQUEST);
+        assertThat(thrown).isInstanceOf(SearchHistoryBadRequestException.class)
+                .hasMessage(ErrorCode.SEARCH_HISTORY_ALREADY_DELETED_BAD_REQUEST.getMessage())
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.SEARCH_HISTORY_ALREADY_DELETED_BAD_REQUEST);
     }
 
 }

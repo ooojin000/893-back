@@ -6,7 +6,9 @@ import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.Category;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
+import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
@@ -16,24 +18,23 @@ import com.samyookgoo.palgoosam.user.dto.UserAuctionsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserBidsResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserInfoResponseDto;
 import com.samyookgoo.palgoosam.user.dto.UserPaymentsResponseDto;
+import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import com.samyookgoo.palgoosam.user.service.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureTestEntityManager
-@Transactional
 @DisplayName("UserService 비즈니스 로직 테스트")
 class UserServiceBusinessLogicTest {
 
@@ -47,13 +48,34 @@ class UserServiceBusinessLogicTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private UserRepository userRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private ScrapRepository scrapRepository;
+
+    @Autowired
+    private BidRepository bidRepository;
 
     private User currentUser;
+    private Category testCategory;
 
     @BeforeEach
     void setUp() {
         currentUser = createUser("currentUser@test.com", "currentUser");
+        testCategory = createCategory();
+    }
+
+    @AfterEach
+    void tearDown() {
+        scrapRepository.deleteAllInBatch();
+        paymentRepository.deleteAllInBatch();
+        bidRepository.deleteAllInBatch();
+        auctionRepository.deleteAllInBatch();
+        categoryRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
     }
 
     @Test
@@ -79,8 +101,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자는 여러 경매에 대한 입찰 내역을 조회할 수 있다.")
     public void getUserBids_SeveralAuctions_ReturnBids() {
         //given
-        Category testCategory = createCategory();
-
         String email = "seller@test.com";
         String name = "seller";
 
@@ -118,7 +138,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자의 입찰 내역 중 현재 입찰가를 정상적으로 조회할 수 있다.")
     public void getUserBids_MultipleAuctions_MapsHighestBidsCorrectly() {
         //given
-        Category testCategory = createCategory();
 
         String email = "seller@test.com";
         String name = "seller";
@@ -165,7 +184,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자의 입찰 내역이 없으면 빈 리스트를 조회한다.")
     public void getUserBids_NeverPlaceBid_ReturnEmptyBidList() {
         //given
-        Category testCategory = createCategory();
 
         String email = "seller@test.com";
         String name = "seller";
@@ -189,8 +207,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자는 판매 등록한 경매를 조회할 수 있다.")
     public void getUserAuctions_SeveralAuctions_ReturnAuctions() {
         //given
-        Category testCategory = createCategory();
-
         String title = "test";
         Integer basePrice = 1000;
         String description = "test auction";
@@ -218,8 +234,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자가 등록한 경매에 입찰 내역이 없다면 현재 입찰가를 0원으로 조회한다.")
     public void getUserAuctions_AuctionsWithoutBids_ReturnsHighestBidAsZero() {
         //given
-        Category testCategory = createCategory();
-
         String title = "test";
         Integer basePrice = 1000;
         String description = "test auction";
@@ -244,10 +258,10 @@ class UserServiceBusinessLogicTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("사용자가 등록한 경매에 입찰 내역이 있다면 삭제되지 않은 가장 높은 입찰 내역을 기준으로 조회한다.")
     public void getUserAuctions_AuctionsWithBids_ReturnsHighestNonDeletedBid() {
         //given
-        Category testCategory = createCategory();
 
         String title = "test";
         Integer basePrice = 1000;
@@ -298,7 +312,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자는 스크랩(찜)한 경매를 조회할 수 있다.")
     public void getUserScraps_SeveralAuctions_ReturnAuctions() {
         //given
-        Category testCategory = createCategory();
 
         String title = "test";
         Integer basePrice = 1000;
@@ -330,7 +343,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자가 스크랩(찜)한 경매의 입찰 내역이 없으면 현재 입찰가는 0원이다.")
     public void getUserScraps_ScrapedAuctionsWithoutBids_ReturnsHighestBidAsZero() {
         //given
-        Category testCategory = createCategory();
 
         String title = "test";
         Integer basePrice = 1000;
@@ -359,11 +371,10 @@ class UserServiceBusinessLogicTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("사용자가 스크랩(찜)한 경매의 삭제되지 않은 입찰 내역이 있으면 현재 입찰가는 최고가이다.")
     public void getUserScraps_ScrapedAuctionsWithValidBids_ReturnsHighestActiveBid() {
         //given
-        Category testCategory = createCategory();
-
         String title = "test";
         Integer basePrice = 1000;
         String description = "test auction";
@@ -403,10 +414,10 @@ class UserServiceBusinessLogicTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("스크랩한 경매가 없으면 빈 리스트를 조회한다.")
     public void getUserScraps_NeverScrapedAuction_ReturnsEmptyList() {
         //given
-        Category testCategory = createCategory();
 
         String email = "seller@test.com";
         String name = "seller";
@@ -430,7 +441,6 @@ class UserServiceBusinessLogicTest {
     @DisplayName("사용자는 결제 내역을 조회할 수 있다.")
     public void getUserPayments_ValidUser_ReturnsPaymentHistory() {
         //given
-        Category testCategory = createCategory();
 
         String email = "seller@test.com";
         String name = "seller";
@@ -482,14 +492,14 @@ class UserServiceBusinessLogicTest {
                 .providerId(name)
                 .provider("LOCAL")
                 .build();
-        return entityManager.persistAndFlush(user);
+        return userRepository.save(user);
     }
 
     private Category createCategory() {
         Category testCategory = Category.builder()
                 .name("Test Category")
                 .build();
-        return entityManager.persistAndFlush(testCategory);
+        return categoryRepository.save(testCategory);
     }
 
     private Auction createAuction(String title, Integer basePrice, String description, Category category, User seller) {
@@ -508,7 +518,7 @@ class UserServiceBusinessLogicTest {
                 .endTime(endAt)
                 .build();
 
-        return entityManager.persistAndFlush(auction);
+        return auctionRepository.save(auction);
     }
 
     private Scrap createScrap(User scraper, Auction auction) {
@@ -516,7 +526,7 @@ class UserServiceBusinessLogicTest {
                 .user(scraper)
                 .auction(auction)
                 .build();
-        return entityManager.persistAndFlush(scrap);
+        return scrapRepository.save(scrap);
     }
 
     private Bid createBid(User bidder, Auction auction, int price, boolean isWinning) {
@@ -527,7 +537,7 @@ class UserServiceBusinessLogicTest {
                 .isWinning(isWinning)
                 .isDeleted(false)
                 .build();
-        return entityManager.persistAndFlush(bid);
+        return bidRepository.save(bid);
     }
 
     private Payment createPayment(User buyer, User seller, Auction auction, Integer itemPrice, Integer deliveryFee) {
@@ -548,6 +558,6 @@ class UserServiceBusinessLogicTest {
                 .status(PaymentStatus.PAID)
                 .approvedAt(LocalDateTime.now())
                 .build();
-        return entityManager.persistAndFlush(payment);
+        return paymentRepository.save(payment);
     }
 }

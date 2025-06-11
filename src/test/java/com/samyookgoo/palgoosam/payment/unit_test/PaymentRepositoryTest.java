@@ -4,28 +4,27 @@ import com.samyookgoo.palgoosam.auction.constant.AuctionStatus;
 import com.samyookgoo.palgoosam.auction.constant.ItemCondition;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.domain.Category;
+import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
+import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.payment.constant.PaymentStatus;
 import com.samyookgoo.palgoosam.payment.domain.Payment;
 import com.samyookgoo.palgoosam.payment.domain.PaymentForMyPageProjection;
 import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureTestEntityManager
-@Transactional
 @DisplayName("PaymentRepository 유닛 테스트")
 class PaymentRepositoryTest {
 
@@ -33,20 +32,35 @@ class PaymentRepositoryTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private AuctionRepository auctionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private User currentUser;
+    private Category testCategory;
 
     @BeforeEach
     void setUp() {
+        testCategory = createCategory();
         currentUser = createUser("currentUser@test.com", "currentUser");
+    }
+
+    @AfterEach
+    void tearDown() {
+        paymentRepository.deleteAllInBatch();
+        auctionRepository.deleteAllInBatch();
+        categoryRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
     }
 
     @Test
     @DisplayName("사용자의 결제 내역을 모두 조회한다.")
     public void findAllPaymentForMyPageProjectionByBuyerId_ValidBuyer_ReturnsAllPayments() {
         //given
-        Category testCategory = createCategory();
 
         String email = "seller@test.com";
         String name = "seller";
@@ -97,7 +111,7 @@ class PaymentRepositoryTest {
         Category testCategory = Category.builder()
                 .name("Test Category")
                 .build();
-        return entityManager.persistAndFlush(testCategory);
+        return categoryRepository.save(testCategory);
     }
 
     private Auction createAuction(String title, Integer basePrice, String description, Category category, User seller) {
@@ -116,7 +130,7 @@ class PaymentRepositoryTest {
                 .endTime(endAt)
                 .build();
 
-        return entityManager.persistAndFlush(auction);
+        return auctionRepository.save(auction);
     }
 
     private User createUser(String email, String name) {
@@ -127,7 +141,7 @@ class PaymentRepositoryTest {
                 .providerId(name)
                 .provider("LOCAL")
                 .build();
-        return entityManager.persistAndFlush(user);
+        return userRepository.save(user);
     }
 
     private Payment createPayment(User buyer, User seller, Auction auction, Integer itemPrice, Integer deliveryFee) {
@@ -148,6 +162,6 @@ class PaymentRepositoryTest {
                 .status(PaymentStatus.PAID)
                 .approvedAt(LocalDateTime.now())
                 .build();
-        return entityManager.persistAndFlush(payment);
+        return paymentRepository.save(payment);
     }
 }

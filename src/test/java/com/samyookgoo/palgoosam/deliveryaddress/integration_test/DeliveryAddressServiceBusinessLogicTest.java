@@ -12,40 +12,44 @@ import com.samyookgoo.palgoosam.deliveryaddress.repository.DeliveryAddressReposi
 import com.samyookgoo.palgoosam.deliveryaddress.service.DeliveryAddressService;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
+import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureTestEntityManager
-@Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("DeliveryAddressService 비즈니스 로직 테스트")
 class DeliveryAddressServiceBusinessLogicTest {
-    @Autowired
-    private TestEntityManager entityManager;
-
     @Autowired
     private DeliveryAddressService deliveryAddressService;
 
     @Autowired
     private DeliveryAddressRepository deliveryAddressRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private User currentUser;
+
 
     @BeforeEach
     void setUp() {
         currentUser = createUser("currentUser@test.com", "currentUser");
+    }
+
+    @AfterEach
+    void tearDown() {
+        deliveryAddressRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
     }
 
     @Test
@@ -55,8 +59,8 @@ class DeliveryAddressServiceBusinessLogicTest {
         String deliveryName = "deliveryName";
         String phoneNumber = "010-1234-5678";
         Boolean isDefault = true;
-        DeliveryAddress created1 = createDeliveryAddress(currentUser, deliveryName, phoneNumber, isDefault);
-        DeliveryAddress created2 = createDeliveryAddress(currentUser, deliveryName, phoneNumber, !isDefault);
+        createDeliveryAddress(currentUser, deliveryName, phoneNumber, isDefault);
+        createDeliveryAddress(currentUser, deliveryName, phoneNumber, !isDefault);
 
         //when
         List<DeliveryAddressResponseDto> addressResponseDtoList = deliveryAddressService.getUserDeliveryAddresses(
@@ -251,7 +255,7 @@ class DeliveryAddressServiceBusinessLogicTest {
                 .providerId(name)
                 .provider("LOCAL")
                 .build();
-        return entityManager.persistAndFlush(user);
+        return userRepository.save(user);
     }
 
     private DeliveryAddress createDeliveryAddress(User tester, String name, String phoneNumber, Boolean isDefault) {
@@ -265,7 +269,7 @@ class DeliveryAddressServiceBusinessLogicTest {
                 .isDefault(isDefault)
                 .build();
 
-        return entityManager.persistAndFlush(deliveryAddress);
+        return deliveryAddressRepository.save(deliveryAddress);
     }
 
     private DeliveryAddressRequestDto createDeliveryAddressRequestDto(String name, String phoneNumber,
