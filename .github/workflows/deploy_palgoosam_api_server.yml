@@ -94,7 +94,7 @@ jobs:
       - name: SSH로 EC2에 접속하기 (EIC 터널 사용)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 127.0.0.1
+          host: host.docker.internal
           port: ${{ secrets.EC2_SSH_PORT }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
