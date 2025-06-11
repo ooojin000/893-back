@@ -25,7 +25,6 @@ import com.samyookgoo.palgoosam.auction.exception.AuctionInvalidStateException;
 import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
 import com.samyookgoo.palgoosam.auction.exception.AuctionUpdateLockedException;
 import com.samyookgoo.palgoosam.auction.exception.CategoryNotFoundException;
-import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.repository.AuctionImageRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.AuctionSearchRepository;
@@ -68,7 +67,6 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final CategoryRepository categoryRepository;
     private final ScrapRepository scrapRepository;
-    private final FileStore fileStore;
     private final BidRepository bidRepository;
     private final AuthService authService;
     private final PaymentRepository paymentRepository;
