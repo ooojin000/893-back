@@ -103,7 +103,7 @@ jobs:
           
           ssh -o StrictHostKeyChecking=no \
               -i /tmp/ssh_key \
-              -p 2222 \
+              -p ${{ secrets.EC2_SSH_PORT }} \
               ${{ secrets.EC2_USERNAME }}@127.0.0.1 << EOF
           
           echo "=== 배포 시작 ==="
