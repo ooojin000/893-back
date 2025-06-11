@@ -22,11 +22,17 @@ jobs:
       - name: 폴더 구조 생성
         run: mkdir -p ./src/main/resources/properties
 
-      - name: application.yml 파일 만들기
-        run: echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./src/main/resources/application.yml
-
       - name: env.production.properties 파일 만들기
-        run: echo "${{ secrets.ENV_PRODUCTION_PROPERTIES }}" > ./src/main/resources/properties/env.production.properties
+        run: |
+          cat > ./src/main/resources/properties/env.production.properties << 'EOF'
+          ${{ secrets.ENV_PRODUCTION_PROPERTIES }}
+          EOF
+          
+      - name: application.yml 파일 만들기
+        run: |
+          cat > ./src/main/resources/application.yml << 'EOF'
+          ${{ secrets.APPLICATION_PROPERTIES }}
+          EOF
 
       - name: 테스트 및 빌드하기
         run: |
