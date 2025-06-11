@@ -16,7 +16,6 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.RelatedAuctionResponse;
-import com.samyookgoo.palgoosam.auction.file.FileStore;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,7 +41,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuctionController {
 
     private final AuctionService auctionService;
-    private final FileStore fileStore;
 
     @AuctionSearchApi
     @GetMapping("/search")
