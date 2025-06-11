@@ -45,7 +45,7 @@ public class AuctionImage {
     @Column(nullable = false)
     private Integer imageSeq;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 2048)
     private String url;
 
     @Builder.Default
