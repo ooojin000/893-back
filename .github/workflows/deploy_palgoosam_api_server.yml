@@ -29,7 +29,9 @@ jobs:
         run: echo "${{ secrets.ENV_PRODUCTION_PROPERTIES }}" > ./src/main/resources/properties/env.production.properties
 
       - name: 테스트 및 빌드하기
-        run: ./gradlew clean build
+        run: |
+          chmod 755 ./gradlew 
+          ./gradlew clean build
 
       - name: AWS 리소스에 접근하도록 돕는 AWS credentials 설정
         uses: aws-actions/configure-aws-credentials@v4
