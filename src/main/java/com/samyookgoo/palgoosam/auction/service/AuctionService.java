@@ -90,7 +90,6 @@ public class AuctionService {
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
 
-//        validateImageFiles(request.getImageKeys());
         List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImages(), auction);
 
         return AuctionCreateResponse.of(auction, imageResponses, category,
@@ -107,8 +106,7 @@ public class AuctionService {
         List<AuctionImageResponse> imageResponses = images.stream()
                 .map(image -> {
                     try {
-                        String url = s3Service.getPresignedUrl(image.getStoreName()).getPresignedUrl();
-                        return AuctionImageResponse.from(url, image.getImageSeq());
+                        return AuctionImageResponse.from(image.getUrl(), image.getImageSeq());
                     } catch (Exception e) {
                         log.warn("Presigned URL 생성 실패: {}", image.getStoreName(), e);
                         return AuctionImageResponse.from(null, image.getImageSeq()); // or 빈 이미지 URL
