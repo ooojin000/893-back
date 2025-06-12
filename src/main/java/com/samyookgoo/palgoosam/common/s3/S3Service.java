@@ -32,7 +32,7 @@ public class S3Service {
     @Value("${cloud.aws.region.static}")
     private String region;
 
-    @Value("${cloud.aws.s3.presign-duration-minutes:10}")
+    @Value("${cloud.aws.s3.presign-duration-minutes:30}")
     private long presignDurationMinutes;
 
     public S3PresignedResponse createPresignedUrl(S3PresignedRequest request) {
@@ -44,6 +44,7 @@ public class S3Service {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(storeFileName)
+                    .contentType(request.getContentType())
                     .build();
 
             // Presigned URL 생성

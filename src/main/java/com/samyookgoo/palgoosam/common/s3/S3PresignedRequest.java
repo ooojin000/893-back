@@ -11,4 +11,5 @@ import lombok.Setter;
 public class S3PresignedRequest {
     @NotBlank
     private String fileName;
+    private String contentType;
 }

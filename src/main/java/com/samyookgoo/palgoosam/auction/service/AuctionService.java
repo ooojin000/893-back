@@ -90,8 +90,8 @@ public class AuctionService {
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
 
-        validateImageFiles(request.getImageKeys());
-        List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImageKeys(), auction);
+//        validateImageFiles(request.getImageKeys());
+        List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImages(), auction);
 
         return AuctionCreateResponse.of(auction, imageResponses, category,
                 request.getStartDelay(), request.getDurationTime());
@@ -251,16 +251,7 @@ public class AuctionService {
         Map<Long, AuctionImage> existingImageMap = existingImages.stream()
                 .collect(Collectors.toMap(AuctionImage::getId, Function.identity()));
 
-        List<String> imageKeys = request.getImageKeys() != null ? request.getImageKeys() : List.of();
         List<AuctionImageRequest> imageRequests = request.getImages() != null ? request.getImages() : List.of();
-
-        long newImageCount = imageRequests.stream()
-                .filter(img -> img.getImageId() == null)
-                .count();
-
-        if (newImageCount != imageKeys.size()) {
-            throw new IllegalArgumentException("새 이미지 개수와 이미지 키 개수가 일치하지 않습니다.");
-        }
 
         boolean hasMainImage = imageRequests.stream()
                 .anyMatch(img -> img.getImageSeq() != null && img.getImageSeq() == 0);
@@ -275,49 +266,44 @@ public class AuctionService {
                 .collect(Collectors.toSet());
 
         List<AuctionImageResponse> imageResponses = new ArrayList<>();
-        int newKeyIndex = 0;
 
         List<AuctionImage> imagesToDelete = existingImages.stream()
                 .filter(img -> !requestedIds.contains(img.getId()))
                 .collect(Collectors.toList());
 
         for (AuctionImage image : imagesToDelete) {
+            s3Service.deleteObject(image.getStoreName());
             auctionImageRepository.delete(image);
         }
 
         for (AuctionImageRequest imageRequest : imageRequests) {
             Long imageId = imageRequest.getImageId();
             Integer imageSeq = imageRequest.getImageSeq();
+            String storeName = imageRequest.getStoreName();
 
             if (imageId != null && existingImageMap.containsKey(imageId)) {
                 AuctionImage existing = existingImageMap.get(imageId);
                 existing.setImageSeq(imageSeq);
-                imageResponses.add(
-                        AuctionImageResponse.from(s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(),
-                                imageSeq));
 
-            } else if (imageId == null && newKeyIndex < imageKeys.size()) {
+                imageResponses.add(AuctionImageResponse.from(
+                        s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(), imageSeq));
 
-                String newKey = imageKeys.get(newKeyIndex++);
-                String presignedUrl = s3Service.getPresignedUrl(newKey).getPresignedUrl();
+            } else if (imageId == null && storeName != null) {
+                String presignedUrl = s3Service.getPresignedUrl(storeName).getPresignedUrl();
 
                 AuctionImage newImage = AuctionImage.builder()
                         .auction(auction)
-                        .storeName(newKey)
+                        .storeName(storeName)
                         .originalName(imageRequest.getOriginalName())
                         .url(presignedUrl)
                         .imageSeq(imageSeq)
                         .build();
                 auctionImageRepository.save(newImage);
 
-                log.info("저장된 이미지 key(storeName) = {}", newImage.getStoreName());
+                imageResponses.add(AuctionImageResponse.from(presignedUrl, imageSeq));
 
-                imageResponses.add(AuctionImageResponse.from(
-                        s3Service.getPresignedUrl(newKey).getPresignedUrl(),
-                        imageSeq
-                ));
             } else {
-                throw new IllegalArgumentException("새 이미지 개수와 이미지 키 개수가 일치하지 않음");
+                throw new IllegalArgumentException("storeName이 누락된 새 이미지입니다.");
             }
         }
 
@@ -481,6 +467,10 @@ public class AuctionService {
     }
 
     private List<AuctionImageResponse> saveAuctionImages(List<AuctionImageRequest> images, Auction auction) {
+        if (images == null || images.isEmpty()) {
+            throw new AuctionImageException(ErrorCode.AUCTION_MAIN_IMAGE_REQUIRED);
+        }
+
         return IntStream.range(0, images.size())
                 .mapToObj(i -> {
                     AuctionImageRequest info = images.get(i);
@@ -492,7 +482,6 @@ public class AuctionService {
     private AuctionImageResponse saveSingleAuctionImage(String imageKey, String originalName, Auction auction,
                                                         int order) {
         try {
-
             String presignedUrl = s3Service.getPresignedUrl(imageKey).getPresignedUrl();
 
             AuctionImage image = AuctionImage.builder()
@@ -509,12 +498,6 @@ public class AuctionService {
         } catch (Exception e) {
             log.error("이미지 저장 실패: {}", e.getMessage(), e);
             throw new AuctionImageException(ErrorCode.AUCTION_IMAGE_SAVE_FAILED);
-        }
-    }
-
-    private void validateImageFiles(List<AuctionImageRequest> imageKeys) {
-        if (imageKeys == null || imageKeys.isEmpty()) {
-            throw new AuctionImageException(ErrorCode.AUCTION_MAIN_IMAGE_REQUIRED);
         }
     }
 
