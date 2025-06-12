@@ -128,6 +128,7 @@ jobs:
           # 기존 컨테이너 정리
           docker stop 893-back-container || true
           docker rm 893-back-container || true
+          docker system prune -a -f || true
           
           # 새 이미지 풀 및 실행
           docker pull ${ECR_REGISTRY}/893-back:latest
