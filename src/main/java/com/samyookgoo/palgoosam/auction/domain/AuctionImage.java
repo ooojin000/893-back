@@ -33,7 +33,6 @@ public class AuctionImage {
     @JoinColumn(name = "auction_id", nullable = false)
     private Auction auction;
 
-    @Column(nullable = false, length = 255)
     private String originalName;
 
     @Column(nullable = false, length = 255)
@@ -45,9 +44,9 @@ public class AuctionImage {
     @Column(nullable = false)
     private Integer imageSeq;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 2048)
     private String url;
-
+    
     @Builder.Default
     @Column(nullable = false)
     private Boolean isDeleted = false;

@@ -30,11 +30,12 @@ public class SecurityConfig {
     @Value("${VERCEL_FRONTEND_URL}")
     private String frontendUrl;
 
+    private final String healthCheck = "/api/health-check";
+
     @Bean
     @Order(1)
     public SecurityFilterChain publicChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/swagger-ui/**", "/swagger/**", "/v3/api-docs/**")
+        http.securityMatcher(healthCheck, "/swagger-ui/**", "/swagger/**", "/v3/api-docs/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()

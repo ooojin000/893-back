@@ -16,8 +16,6 @@ import com.samyookgoo.palgoosam.auction.dto.response.AuctionSearchResponseDto;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdatePageResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.AuctionUpdateResponse;
 import com.samyookgoo.palgoosam.auction.dto.response.RelatedAuctionResponse;
-import com.samyookgoo.palgoosam.auction.file.FileStore;
-import com.samyookgoo.palgoosam.auction.file.ResultFileStore;
 import com.samyookgoo.palgoosam.auction.service.AuctionService;
 import com.samyookgoo.palgoosam.common.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,10 +30,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 @RequiredArgsConstructor
 @RestController
@@ -44,7 +41,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class AuctionController {
 
     private final AuctionService auctionService;
-    private final FileStore fileStore;
 
     @AuctionSearchApi
     @GetMapping("/search")
@@ -57,17 +53,9 @@ public class AuctionController {
     @AuctionCreateApi
     @PostMapping
     public ResponseEntity<BaseResponse<AuctionCreateResponse>> createAuction(
-            @RequestPart("request") @Valid AuctionCreateRequest request,
-            @RequestPart("images") List<MultipartFile> images) {
+            @RequestBody @Valid AuctionCreateRequest request) {
 
-        if (images == null || images.size() < 1 || images.size() > 10) {
-            return ResponseEntity.badRequest()
-                    .body(BaseResponse.error("이미지는 최소 1개, 최대 10개까지 업로드 가능합니다.", null));
-        }
-
-        List<ResultFileStore> storedImages = fileStore.storeFiles(images);
-        AuctionCreateResponse response = auctionService.createAuction(request, storedImages);
-
+        AuctionCreateResponse response = auctionService.createAuction(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(BaseResponse.success("경매 상품 등록 성공", response));
     }
@@ -99,10 +87,9 @@ public class AuctionController {
     public ResponseEntity<BaseResponse<AuctionUpdateResponse>> updateAuction(
             @Parameter(name = "auctionId", description = "수정할 경매 상품 ID", required = true)
             @PathVariable Long auctionId,
-            @RequestPart(value = "request", required = false) AuctionUpdateRequest request,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images
+            @RequestBody AuctionUpdateRequest request
     ) {
-        AuctionUpdateResponse updated = auctionService.updateAuction(auctionId, request, images);
+        AuctionUpdateResponse updated = auctionService.updateAuction(auctionId, request);
         return ResponseEntity.ok(
                 BaseResponse.success("경매 상품 수정 성공", updated)
         );
