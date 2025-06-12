@@ -9,8 +9,8 @@ import com.samyookgoo.palgoosam.auction.projection.DashboardProjection;
 import com.samyookgoo.palgoosam.auction.projection.RankingAuction;
 import com.samyookgoo.palgoosam.auction.projection.RecentAuction;
 import com.samyookgoo.palgoosam.auction.projection.SubCategoryBestItem;
-import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.auction.projection.UpcomingAuction;
+import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -47,8 +47,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                   AND a.endTime <= :now
             """)
     int updateStatusToCompleted(@Param("now") LocalDateTime now);
-
-    long countByStatus(AuctionStatus status);
 
     @Query("""
             SELECT 
@@ -121,7 +119,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                 WHERE mid.id = :subCategoryId AND a.status IN ('pending', 'active')
                 ORDER BY (SELECT COUNT(s.id) FROM Scrap s WHERE s.auction.id = a.id) DESC, a.id ASC
             """)
-    List<SubCategoryBestItem> findTop3BySubCategoryId(@Param("subCategoryId") Long subCategoryId, Pageable pageable);
+    List<SubCategoryBestItem> findTop50BySubCategoryId(@Param("subCategoryId") Long subCategoryId, Pageable pageable);
 
 
     @Query(value = """
@@ -160,7 +158,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             GROUP BY a.id
             """, nativeQuery = true)
     List<BidForHighestPriceProjection> findHighestBidProjectsByScraperId(@Param("userId") Long id);
-    
+
     @Query(value = """
             SELECT 
                 (SELECT COUNT(*) FROM user) AS totalUserCount,
