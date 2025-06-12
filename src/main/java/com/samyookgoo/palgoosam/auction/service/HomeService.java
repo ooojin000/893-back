@@ -198,8 +198,8 @@ public class HomeService {
 
         return subCategoryList.stream()
                 .map(sub -> {
-                    List<SubCategoryBestItem> itemProjections = auctionRepository.findTop3BySubCategoryId(sub.getId(),
-                            PageRequest.of(0, 3));
+                    List<SubCategoryBestItem> itemProjections = auctionRepository.findTop50BySubCategoryId(sub.getId(),
+                            PageRequest.of(0, 50));
                     List<AuctionScrapCount> scrapCounts = scrapRepository.countGroupedByAuctionIds(
                             itemProjections.stream().map(SubCategoryBestItem::getAuctionId).toList()
                     );
