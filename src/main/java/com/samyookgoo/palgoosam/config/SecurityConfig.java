@@ -82,7 +82,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of(frontendUrl));
+        cfg.setAllowedOrigins(List.of(frontendUrl,
+                "https://www.palgoosam.store",
+                "https://*.palgoosam.store",
+                "https://palgoosam.store")
+        );
         cfg.setAllowCredentials(true);
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
