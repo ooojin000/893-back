@@ -42,5 +42,5 @@ public class AuctionCreateRequest {
 
     @NotNull
     @Size(min = 1, max = 10, message = "이미지는 1개 이상 10개 이하로 업로드 가능합니다.")
-    private List<AuctionImageRequest> imageKeys; // Presigned로 업로드한 S3 key 리스트
+    private List<AuctionImageRequest> images; // Presigned로 업로드한 S3 key 리스트
 }

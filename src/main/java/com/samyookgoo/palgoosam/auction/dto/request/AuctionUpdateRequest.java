@@ -40,7 +40,5 @@ public class AuctionUpdateRequest {
     private CategoryRequest category;
 
     @Size(min = 1, max = 10, message = "이미지는 최소 1개, 최대 10개까지 가능합니다")
-    private List<String> imageKeys;
-
     private List<AuctionImageRequest> images; // 전체 이미지 시퀀스와 ID 정보
 }

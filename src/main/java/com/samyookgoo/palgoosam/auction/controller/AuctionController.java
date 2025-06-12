@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -53,7 +53,7 @@ public class AuctionController {
     @AuctionCreateApi
     @PostMapping
     public ResponseEntity<BaseResponse<AuctionCreateResponse>> createAuction(
-            @RequestPart("request") @Valid AuctionCreateRequest request) {
+            @RequestBody @Valid AuctionCreateRequest request) {
 
         AuctionCreateResponse response = auctionService.createAuction(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -87,7 +87,7 @@ public class AuctionController {
     public ResponseEntity<BaseResponse<AuctionUpdateResponse>> updateAuction(
             @Parameter(name = "auctionId", description = "수정할 경매 상품 ID", required = true)
             @PathVariable Long auctionId,
-            @RequestPart(value = "request", required = false) AuctionUpdateRequest request
+            @RequestBody AuctionUpdateRequest request
     ) {
         AuctionUpdateResponse updated = auctionService.updateAuction(auctionId, request);
         return ResponseEntity.ok(
