@@ -5,7 +5,6 @@ import com.samyookgoo.palgoosam.auth.JwtAuthenticationFilter;
 import com.samyookgoo.palgoosam.auth.JwtTokenProvider;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -27,8 +26,8 @@ public class SecurityConfig {
     private final OAuth2AuthenticationFailureHandler failureHandler;
     private final JwtTokenProvider jwtProvider;
 
-    @Value("${frontend.url}")
-    private String frontendUrl;
+//    @Value("${frontend.url}")
+//    private String frontendUrl;
 
     private final String healthCheck = "/api/health-check";
 
@@ -81,6 +80,8 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigSource() {
+        String frontendUrl = "https://www.palgoosam.store";
+        
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of(frontendUrl,
                 "https://893-front.vercel.app",
