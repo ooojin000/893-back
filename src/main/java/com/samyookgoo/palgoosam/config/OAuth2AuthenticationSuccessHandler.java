@@ -75,6 +75,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
+                .domain("palgoosam.store")
                 .maxAge(jwtProvider.getAccessValidityMs() / 1000)
                 .sameSite("None")   // TODO 추후 "Lax"로 변경
                 .build();
@@ -83,6 +84,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .httpOnly(true)
                 .secure(true)
                 .path("/auth/refresh")
+                .domain("palgoosam.store")
                 .maxAge(jwtProvider.getRefreshValidityMs() / 1000)
                 .sameSite("None")
                 .build();
