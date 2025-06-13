@@ -83,7 +83,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of(frontendUrl,
-                "https://www.palgoosam.store",
+                "https://893-front.vercel.app",
                 "https://*.palgoosam.store",
                 "https://palgoosam.store")
         );
