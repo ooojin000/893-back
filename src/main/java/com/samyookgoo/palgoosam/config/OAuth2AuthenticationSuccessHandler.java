@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -28,8 +27,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final UserJwtTokenRepository userJwtTokenRepository;
     private final UserRepository userRepository;
 
-    @Value("${frontend.url}")
-    private String frontendUrl;
+//    @Value("${frontend.url}")
+//    private String frontendUrl;
 
     @Override
     @Transactional
@@ -92,6 +91,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         res.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 4) 프론트로 리다이렉트
+        String frontendUrl = "https://www.palgoosam.store";
         log.info("OAuth2 login success - frontendUrl redirect: {}", frontendUrl);
         res.sendRedirect(frontendUrl + "?loginSuccess");
     }
