@@ -27,7 +27,7 @@ public class SecurityConfig {
     private final OAuth2AuthenticationFailureHandler failureHandler;
     private final JwtTokenProvider jwtProvider;
 
-    @Value("${VERCEL_FRONTEND_URL}")
+    @Value("${frontend.url}")
     private String frontendUrl;
 
     private final String healthCheck = "/api/health-check";
