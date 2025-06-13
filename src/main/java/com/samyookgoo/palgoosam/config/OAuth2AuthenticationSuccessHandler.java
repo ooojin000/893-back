@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
@@ -26,7 +28,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final UserJwtTokenRepository userJwtTokenRepository;
     private final UserRepository userRepository;
 
-    @Value("${VERCEL_FRONTEND_URL}")
+    @Value("${frontend.url}")
     private String frontendUrl;
 
     @Override
@@ -90,6 +92,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         res.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 4) 프론트로 리다이렉트
+        log.info("OAuth2 login success - frontendUrl redirect: {}", frontendUrl);
         res.sendRedirect(frontendUrl + "?loginSuccess");
     }
 }
