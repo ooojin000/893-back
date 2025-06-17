@@ -90,7 +90,6 @@ public class AuctionService {
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
 
-//        validateImageFiles(request.getImageKeys());
         List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImages(), auction);
 
         return AuctionCreateResponse.of(auction, imageResponses, category,
@@ -107,11 +106,12 @@ public class AuctionService {
         List<AuctionImageResponse> imageResponses = images.stream()
                 .map(image -> {
                     try {
-                        String url = s3Service.getPresignedUrl(image.getStoreName()).getPresignedUrl();
-                        return AuctionImageResponse.from(url, image.getImageSeq());
+                        return AuctionImageResponse.from(image.getId(), image.getStoreName(), image.getUrl(),
+                                image.getImageSeq());
                     } catch (Exception e) {
                         log.warn("Presigned URL 생성 실패: {}", image.getStoreName(), e);
-                        return AuctionImageResponse.from(null, image.getImageSeq()); // or 빈 이미지 URL
+                        return AuctionImageResponse.from(image.getId(), image.getStoreName(), null,
+                                image.getImageSeq()); // or 빈 이미지 URL
                     }
                 })
                 .collect(Collectors.toList());
@@ -169,8 +169,8 @@ public class AuctionService {
 
         List<AuctionImageResponse> imageResponses = images.stream()
                 .map(image -> {
-                    String url = s3Service.getPresignedUrl(image.getStoreName()).getPresignedUrl();
-                    return AuctionImageResponse.from(url, image.getImageSeq());
+                    return AuctionImageResponse.from(image.getId(), image.getStoreName(), image.getUrl(),
+                            image.getImageSeq());
                 })
                 .collect(Collectors.toList());
 
@@ -286,7 +286,11 @@ public class AuctionService {
                 existing.setImageSeq(imageSeq);
 
                 imageResponses.add(AuctionImageResponse.from(
-                        s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(), imageSeq));
+                        imageId,
+                        storeName,
+                        s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(),
+                        imageSeq
+                ));
 
             } else if (imageId == null && storeName != null) {
                 String presignedUrl = s3Service.getPresignedUrl(storeName).getPresignedUrl();
@@ -300,7 +304,7 @@ public class AuctionService {
                         .build();
                 auctionImageRepository.save(newImage);
 
-                imageResponses.add(AuctionImageResponse.from(presignedUrl, imageSeq));
+                imageResponses.add(AuctionImageResponse.from(imageId, storeName, presignedUrl, imageSeq));
 
             } else {
                 throw new IllegalArgumentException("storeName이 누락된 새 이미지입니다.");
@@ -494,7 +498,11 @@ public class AuctionService {
 
             auctionImageRepository.save(image);
 
-            return AuctionImageResponse.from(presignedUrl, image.getImageSeq());
+            return AuctionImageResponse.from(
+                    image.getId(),
+                    image.getStoreName(),
+                    presignedUrl,
+                    image.getImageSeq());
         } catch (Exception e) {
             log.error("이미지 저장 실패: {}", e.getMessage(), e);
             throw new AuctionImageException(ErrorCode.AUCTION_IMAGE_SAVE_FAILED);

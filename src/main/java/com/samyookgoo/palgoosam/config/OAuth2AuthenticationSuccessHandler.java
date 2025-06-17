@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
@@ -26,8 +27,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final UserJwtTokenRepository userJwtTokenRepository;
     private final UserRepository userRepository;
 
-    @Value("${VERCEL_FRONTEND_URL}")
-    private String frontendUrl;
+//    @Value("${frontend.url}")
+//    private String frontendUrl;
 
     @Override
     @Transactional
@@ -74,6 +75,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
+                .domain("palgoosam.store")
                 .maxAge(jwtProvider.getAccessValidityMs() / 1000)
                 .sameSite("None")   // TODO 추후 "Lax"로 변경
                 .build();
@@ -82,6 +84,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .httpOnly(true)
                 .secure(true)
                 .path("/auth/refresh")
+                .domain("palgoosam.store")
                 .maxAge(jwtProvider.getRefreshValidityMs() / 1000)
                 .sameSite("None")
                 .build();
@@ -90,6 +93,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         res.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 4) 프론트로 리다이렉트
+        String frontendUrl = "https://www.palgoosam.store";
+        log.info("OAuth2 login success - frontendUrl redirect: {}", frontendUrl);
         res.sendRedirect(frontendUrl + "?loginSuccess");
     }
 }

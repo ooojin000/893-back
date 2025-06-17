@@ -106,11 +106,13 @@ public class AuthController {
         // 쿠키 삭제
         ResponseCookie deleteAccess = ResponseCookie.from("accessToken", "")
                 .httpOnly(true).secure(true).path("/")
-                .maxAge(0).sameSite("Lax").build();
+                .domain("palgoosam.store")
+                .maxAge(0).sameSite("None").build();
 
         ResponseCookie deleteRefresh = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true).secure(true).path("/auth/refresh")
-                .maxAge(0).sameSite("Lax").build();
+                .domain("palgoosam.store")
+                .maxAge(0).sameSite("None").build();
 
         res.addHeader(HttpHeaders.SET_COOKIE, deleteAccess.toString());
         res.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
