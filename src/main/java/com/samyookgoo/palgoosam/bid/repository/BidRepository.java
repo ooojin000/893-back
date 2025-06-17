@@ -6,16 +6,25 @@ import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.domain.BidForHighestPriceProjection;
 import com.samyookgoo.palgoosam.bid.domain.BidForMyPageProjection;
 import com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 
 public interface BidRepository extends JpaRepository<Bid, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("SELECT b FROM Bid b WHERE b.auction.id = :auctionId AND b.isDeleted = false ORDER BY b.price DESC LIMIT 1")
+    Optional<Bid> findTopBidByAuctionIdWithLock(Long auctionId);
+    
+    @Query("SELECT b FROM Bid b WHERE b.auction.id = :auctionId AND b.isDeleted = false ORDER BY b.price DESC LIMIT 1")
+    Optional<Bid> findTopBidByAuctionIdOrderByPriceDesc(Long auctionId);
 
     List<Bid> findByAuctionIdOrderByCreatedAtDesc(Long auctionId);
 
