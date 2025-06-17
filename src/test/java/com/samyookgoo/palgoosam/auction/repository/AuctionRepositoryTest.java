@@ -249,20 +249,15 @@ class AuctionRepositoryTest {
     @Test
     void testFindTop50BySubCategoryId() {
         // given
+        LocalDateTime now = LocalDateTime.now();
         Category mainCategory = categoryRepository.save(createCategory("전자기기", null));
         Category subCategory = categoryRepository.save(createCategory("모바일", mainCategory));
+        User seller = userRepository.save(createUser("seller@test.com", "판매자"));
 
         for (int i = 0; i < 50; i++) {
-            Auction auction = Auction.builder()
-                    .title("Auction " + i)
-                    .category(subCategory)
-                    .basePrice(100000)
-                    .status(active)
-                    .itemCondition(ItemCondition.brand_new)
-                    .startTime(LocalDateTime.now().plusMinutes(i))
-                    .endTime(LocalDateTime.now().plusMinutes(i + 10))
-                    .createdAt(LocalDateTime.now())
-                    .build();
+            Auction auction = createAuction(subCategory, seller, now.plusMinutes(i), now.plusMinutes(i + 10), pending,
+                    now.minusMinutes(i));
+
             auctionRepository.save(auction);
             auctionImageRepository.save(createAuctionImage(auction, "image" + i));
         }
