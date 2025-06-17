@@ -15,11 +15,15 @@ import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse;
 import com.samyookgoo.palgoosam.global.exception.ErrorCode;
 import com.samyookgoo.palgoosam.user.domain.User;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +33,18 @@ public class BidService {
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
     private final SseService sseService;
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public boolean acquireBidLock(Long auctionId, int price) {
+        String key = "lock:bid:" + auctionId + ":" + price;
+        Boolean success = redisTemplate.opsForValue().setIfAbsent(key, "LOCKED", Duration.ofSeconds(3));
+        return Boolean.TRUE.equals(success);
+    }
+
+    public void releaseBidLock(Long auctionId, int price) {
+        String key = "lock:bid:" + auctionId + ":" + price;
+        redisTemplate.delete(key);
+    }
 
     @Transactional(readOnly = true)
     public BidOverviewResponse getBidOverview(Long auctionId, User user) {
@@ -74,11 +90,7 @@ public class BidService {
                 .orElseThrow(AuctionNotFoundException::new);
 
         LocalDateTime now = LocalDateTime.now();
-        Bid newBid = createValidatedBid(auction, user, price, now);
-
-        deactivatePreviousWinningBid(auctionId);
-
-        bidRepository.save(newBid);
+        Bid newBid = placeBidWithValidation(auction, user, price, now);
 
         BidEventResponse event = createBidEventResponse(auctionId, newBid, false);
         broadcastBidEvent(auctionId, event);
@@ -130,34 +142,34 @@ public class BidService {
         return bidRepository.existsByAuctionIdAndBidderIdAndIsDeletedTrue(auctionId, userId);
     }
 
-    private Bid createValidatedBid(Auction auction, User user, int price, LocalDateTime now) {
+    private Bid placeBidWithValidation(Auction auction, User user, int price, LocalDateTime now) {
         if (price > 1_000_000_000) {
             throw new BidBadRequestException(ErrorCode.BID_EXCEEDS_MAXIMUM);
         }
 
         auction.validateBidConditions(user.getId(), price, now);
-        validatePriceIsHighest(auction.getId(), price);
 
-        return Bid.placeBy(auction, user, price);
-    }
+        Optional<Bid> winningBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
 
-    private void deactivatePreviousWinningBid(Long auctionId) {
-        bidRepository.findTopValidBidByAuctionId(auctionId)
-                .ifPresent(prev -> prev.setIsWinning(false));
+        winningBid.ifPresent(bid -> {
+            bid.validatePriceIsHigherThan(price);
+            bid.lose();
+        });
+
+        Bid newBid = Bid.placeBy(auction, user, price);
+
+        try {
+            return bidRepository.save(newBid);
+        } catch (DataIntegrityViolationException e) {
+            throw new BidBadRequestException(ErrorCode.BID_NOT_HIGHEST);
+        }
     }
 
     private void activateNewWinningBid(Long auctionId) {
         bidRepository.findTopValidBidByAuctionId(auctionId)
-                .ifPresent(newWinner -> newWinner.setIsWinning(true));
+                .ifPresent(Bid::win);
     }
 
-
-    private void validatePriceIsHighest(Long auctionId, int price) {
-        Integer highestPrice = bidRepository.findMaxBidPriceByAuctionId(auctionId);
-        if (highestPrice != null && price <= highestPrice) {
-            throw new BidBadRequestException(ErrorCode.BID_NOT_HIGHEST);
-        }
-    }
 
     private BidEventResponse createBidEventResponse(Long auctionId, Bid bid, boolean isCancelled) {
         BidStatsResponse bidStats = getBidStatsByAuctionId(auctionId);
@@ -174,7 +186,7 @@ public class BidService {
         return bidRepository.findBidStatsByAuctionId(auctionId);
     }
 
-    private void broadcastBidEvent(Long auctionId, BidEventResponse event) {
+    public void broadcastBidEvent(Long auctionId, BidEventResponse event) {
         sseService.broadcastBidUpdate(auctionId, event);
     }
 }
