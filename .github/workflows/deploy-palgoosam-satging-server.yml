@@ -75,7 +75,7 @@ jobs:
             --instance-connect-endpoint-id ${{ secrets.AWS_EIC_ENDPOINT }} \
             --remote-port ${{ secrets.CLIENT_SSH_PORT }} \
             --local-port ${{ secrets.EC2_STAGING_SSH_PORT }} \
-            --instance-id ${{ secrets.AWS_EC2_ID }} &
+            --instance-id ${{ secrets.AWS_EC2_STAGING_ID }} &
           
           TUNNEL_PID=$!
           echo "Tunnel PID: $TUNNEL_PID"
