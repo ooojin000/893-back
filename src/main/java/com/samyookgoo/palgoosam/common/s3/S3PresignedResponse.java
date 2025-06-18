@@ -1,6 +1,5 @@
 package com.samyookgoo.palgoosam.common.s3;
 
-import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -17,5 +16,5 @@ import lombok.Setter;
 public class S3PresignedResponse {
     private String presignedUrl;
     private String storeName;
-    private Instant expirationTime;
+    private String publicUrl;
 }
