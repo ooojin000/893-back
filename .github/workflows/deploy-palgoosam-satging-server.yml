@@ -58,13 +58,13 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Docker 이미지 생성
-        run: docker build -t 893-back .
+        run: docker build -t 893-back-staging .
 
       - name: Docker 이미지에 태그 붙이기
-        run: docker tag 893-back ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+        run: docker tag 893-back-staging ${{ steps.login-ecr.outputs.registry }}/893-back-staging:latest
 
       - name: ECR에 Docker 이미지 Push
-        run: docker push ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/893-back-staging:latest
 
       - name: Install netcat for connection testing
         run: sudo apt-get update && sudo apt-get install -y netcat-openbsd
@@ -131,10 +131,10 @@ jobs:
           docker system prune -a -f || true
           
           # 새 이미지 풀 및 실행
-          docker pull ${ECR_REGISTRY}/893-back:latest
+          docker pull ${ECR_REGISTRY}/893-back-staging:latest
           docker run -d --name 893-back-container \
             -p ${SERVER_PORT}:${SERVER_PORT} \
-            ${ECR_REGISTRY}/893-back:latest
+            ${ECR_REGISTRY}/893-back-staging:latest
           
           echo "=== 배포 완료 ==="
           docker ps | grep 893-back
