@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +73,12 @@ public class AuctionService {
     private final PaymentRepository paymentRepository;
     private final AuctionSearchRepository auctionSearchRepository;
     private final S3Service s3Service;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    @Value("${cloud.aws.region.static}")
+    private String region;
 
     @Transactional
     public AuctionCreateResponse createAuction(AuctionCreateRequest request) {
@@ -285,29 +292,31 @@ public class AuctionService {
                 AuctionImage existing = existingImageMap.get(imageId);
                 existing.setImageSeq(imageSeq);
 
+                String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + existing.getStoreName();
+
                 imageResponses.add(AuctionImageResponse.from(
                         imageId,
                         storeName,
-                        s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(),
+                        publicUrl,
                         imageSeq
                 ));
 
             } else if (imageId == null && storeName != null) {
-                String presignedUrl = s3Service.getPresignedUrl(storeName).getPresignedUrl();
+                String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + storeName;
 
                 AuctionImage newImage = AuctionImage.builder()
                         .auction(auction)
                         .storeName(storeName)
                         .originalName(imageRequest.getOriginalName())
-                        .url(presignedUrl)
+                        .url(publicUrl)
                         .imageSeq(imageSeq)
                         .build();
                 auctionImageRepository.save(newImage);
 
-                imageResponses.add(AuctionImageResponse.from(imageId, storeName, presignedUrl, imageSeq));
+                imageResponses.add(AuctionImageResponse.from(imageId, storeName, publicUrl, imageSeq));
 
             } else {
-                throw new IllegalArgumentException("storeName이 누락된 새 이미지입니다.");
+                throw new IllegalArgumentException("imageId와 storeName 중 하나는 반드시 있어야 합니다.");
             }
         }
 
@@ -486,14 +495,14 @@ public class AuctionService {
     private AuctionImageResponse saveSingleAuctionImage(String imageKey, String originalName, Auction auction,
                                                         int order) {
         try {
-            String presignedUrl = s3Service.getPresignedUrl(imageKey).getPresignedUrl();
+            String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + imageKey;
 
             AuctionImage image = AuctionImage.builder()
                     .auction(auction)
                     .storeName(imageKey)
                     .originalName(originalName)
                     .imageSeq(order)
-                    .url(presignedUrl)
+                    .url(publicUrl)
                     .build();
 
             auctionImageRepository.save(image);
@@ -501,7 +510,7 @@ public class AuctionService {
             return AuctionImageResponse.from(
                     image.getId(),
                     image.getStoreName(),
-                    presignedUrl,
+                    publicUrl,
                     image.getImageSeq());
         } catch (Exception e) {
             log.error("이미지 저장 실패: {}", e.getMessage(), e);
