@@ -126,13 +126,13 @@ jobs:
             docker login --username AWS --password-stdin ${ECR_REGISTRY}
           
           # 기존 컨테이너 정리
-          docker stop 893-back-container || true
-          docker rm 893-back-container || true
+          docker stop 893-back-staging-container || true
+          docker rm 893-back-staging-container || true
           docker system prune -a -f || true
           
           # 새 이미지 풀 및 실행
           docker pull ${ECR_REGISTRY}/893-back-staging:latest
-          docker run -d --name 893-back-container \
+          docker run -d --name 893-back-staging-container \
             -p ${SERVER_PORT}:${SERVER_PORT} \
             ${ECR_REGISTRY}/893-back-staging:latest
           
