@@ -106,7 +106,7 @@ jobs:
 
       - name: 직접 SSH로 배포
         run: |
-          echo "${{ secrets.EC2_STAGING_SSH_PORT }}" > /tmp/ssh_key
+          echo "${{ secrets.AWS_EC2_STAGING_SSH_KEY }}" > /tmp/ssh_key
           chmod 600 /tmp/ssh_key
           
           # 변수 미리 설정
