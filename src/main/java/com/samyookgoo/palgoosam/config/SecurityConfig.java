@@ -57,6 +57,7 @@ public class SecurityConfig {
                         // 프리플라이트 OPTIONS 전역 허용 , TODO 추후 삭제
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
+                                "/actuator/**",
                                 "/api/auctions",
                                 "/api/auctions/**",
                                 "/api/home/**",
@@ -81,7 +82,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigSource() {
         String frontendUrl = "https://www.palgoosam.store";
-        
+
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(List.of(frontendUrl,
                 "https://893-front.vercel.app",

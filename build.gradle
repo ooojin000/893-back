@@ -107,6 +107,15 @@ dependencies {
     implementation 'software.amazon.awssdk:regions:2.31.51'
     implementation 'software.amazon.awssdk:core:2.31.51'
 
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    //actuator 추가
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    //prometheus
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     //h2
     runtimeOnly 'com.h2database:h2'
 }
