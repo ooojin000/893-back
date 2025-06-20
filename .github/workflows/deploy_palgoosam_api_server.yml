@@ -27,13 +27,13 @@ jobs:
           cat > ./src/main/resources/properties/env.production.properties << 'EOF'
           ${{ secrets.ENV_PRODUCTION_PROPERTIES }}
           EOF
-          
+
       - name: application.yml 파일 만들기
         run: |
           cat > ./src/main/resources/application.yml << 'EOF'
           ${{ vars.APPLICATION_YML }}
           EOF
-          
+
       - name: yml, properties 확인
         run: |
           cat ./src/main/resources/application.yml
@@ -132,8 +132,12 @@ jobs:
           
           # 새 이미지 풀 및 실행
           docker pull ${ECR_REGISTRY}/893-back:latest
+          
+          mkdir -p ./logs
+
           docker run -d --name 893-back-container \
             -p ${SERVER_PORT}:${SERVER_PORT} \
+            -v ./logs:/app/logs \
             ${ECR_REGISTRY}/893-back:latest
           
           echo "=== 배포 완료 ==="

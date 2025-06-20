@@ -131,10 +131,14 @@ jobs:
           docker system prune -a -f || true
           
           # 새 이미지 풀 및 실행
-          docker pull ${ECR_REGISTRY}/893-back-staging:latest
-          docker run -d --name 893-back-staging-container \
+          docker pull ${ECR_REGISTRY}/893-back:latest
+          
+          mkdir -p ./logs
+
+          docker run -d --name 893-back-container \
             -p ${SERVER_PORT}:${SERVER_PORT} \
-            ${ECR_REGISTRY}/893-back-staging:latest
+            -v ./logs:/app/logs \
+            ${ECR_REGISTRY}/893-back:latest
           
           echo "=== 배포 완료 ==="
           docker ps | grep 893-back
