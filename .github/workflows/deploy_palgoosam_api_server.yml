@@ -131,6 +131,8 @@ jobs:
           docker system prune -a -f || true
           
           # 새 이미지 풀 및 실행
+          cd /home/ubuntu
+
           docker pull ${ECR_REGISTRY}/893-back:latest
           
           mkdir -p ./logs
