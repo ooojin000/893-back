@@ -13,11 +13,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 public class SseService {
-    private final Map<Long, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    private final Map<Long, List<SseEmitter>> bidEmitters = new ConcurrentHashMap<>();
+    private final Map<Long, SseEmitter> userEmitters = new ConcurrentHashMap<>();
 
     public SseEmitter subscribe(Long auctionId) {
         SseEmitter emitter = new SseEmitter(Duration.ofMinutes(30).toMillis());
-        emitters.computeIfAbsent(auctionId, id -> new CopyOnWriteArrayList<>()).add(emitter);
+        bidEmitters.computeIfAbsent(auctionId, id -> new CopyOnWriteArrayList<>()).add(emitter);
 
         emitter.onCompletion(() -> removeEmitter(auctionId, emitter));
         emitter.onTimeout(() -> removeEmitter(auctionId, emitter));
@@ -31,8 +32,38 @@ public class SseService {
         return emitter;
     }
 
+    public SseEmitter subscribePersonal(Long userId) {
+        SseEmitter emitter = new SseEmitter(Duration.ofMinutes(30).toMillis());
+        userEmitters.put(userId, emitter);
+
+        emitter.onCompletion(() -> userEmitters.remove(userId));
+        emitter.onTimeout(() -> userEmitters.remove(userId));
+
+        try {
+            emitter.send(SseEmitter.event().name("connect").data("connected"));
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+        }
+
+        return emitter;
+    }
+
+    public void sendBidResultToUser(Long userId, Object result) {
+        SseEmitter emitter = userEmitters.get(userId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("bid-result")
+                        .data(result));
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+                userEmitters.remove(userId);
+            }
+        }
+    }
+
     public void broadcastBidUpdate(Long auctionId, BidEventResponse response) {
-        List<SseEmitter> sseEmitters = emitters.getOrDefault(auctionId, new ArrayList<>());
+        List<SseEmitter> sseEmitters = bidEmitters.getOrDefault(auctionId, new ArrayList<>());
         List<SseEmitter> deadEmitters = new ArrayList<>();
 
         sseEmitters.forEach(emitter -> {
@@ -50,6 +81,12 @@ public class SseService {
     }
 
     private void removeEmitter(Long auctionId, SseEmitter emitter) {
-        emitters.getOrDefault(auctionId, List.of()).remove(emitter);
+        List<SseEmitter> emitters = bidEmitters.get(auctionId);
+        if (emitters != null) {
+            emitters.remove(emitter);
+            if (emitters.isEmpty()) {
+                bidEmitters.remove(auctionId);
+            }
+        }
     }
 }
