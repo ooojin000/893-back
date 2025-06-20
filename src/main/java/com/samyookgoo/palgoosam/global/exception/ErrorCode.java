@@ -42,6 +42,8 @@ public enum ErrorCode {
     BID_CANCEL_LIMIT_EXCEEDED(400, "BID_010", "입찰 취소는 1회까지만 가능합니다."),
     WINNING_BID_NOT_FOUND(400, "BID_011", "낙찰된 입찰이 존재하지 않습니다."),
     BID_EXCEEDS_MAXIMUM(400, "BID_012", "입찰 금액은 최대 10억까지 가능합니다."),
+    BID_LOCK_FAILED(409, "BID_013", "입찰 처리를 위한 락 획득에 실패했습니다."),
+    BID_INVALID_STATE(400, "BID_014", "입찰 재시도 중 인터럽트가 발생했습니다."),
 
     // FCM
     FCM_TOKEN_MISSING(404, "FCM_001", "토큰이 없습니다."),
