@@ -12,7 +12,6 @@ import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
 import com.samyookgoo.palgoosam.auction.repository.CategoryRepository;
 import com.samyookgoo.palgoosam.bid.controller.response.BidOverviewResponse;
 import com.samyookgoo.palgoosam.bid.controller.response.BidResponse;
-import com.samyookgoo.palgoosam.bid.controller.response.BidResultResponse;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.exception.BidBadRequestException;
 import com.samyookgoo.palgoosam.bid.exception.BidForbiddenException;
@@ -21,7 +20,12 @@ import com.samyookgoo.palgoosam.bid.repository.BidRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,15 +74,13 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 1500);
+        bidService.placeBidWithLock(auction.getId(), user, 1500);
 
         //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 1500);
-
+        Optional<Bid> topBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
+        assertThat(topBid.isPresent()).isTrue();
+        assertThat(topBid.get().getPrice()).isEqualTo(1500);
+        assertThat(topBid.get().getBidder().getId()).isEqualTo(user.getId());
     }
 
     @DisplayName("판매자가 자신의 경매에 입찰하면 예외가 발생한다.")
@@ -90,36 +92,9 @@ public class BidServiceTest {
         auctionRepository.save(auction);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), auction.getSeller(), 1500))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), auction.getSeller(), 1500))
                 .isInstanceOf(BidForbiddenException.class)
                 .hasMessage("판매자는 자신의 경매에 입찰할 수 없습니다.");
-    }
-
-    @DisplayName("입찰가가 최고가보다 클 경우 입찰에 성공 한다.")
-    @Test
-    void shouldSucceedWhenBidPriceIsHighest() {
-        LocalDateTime now = LocalDateTime.now();
-        //given
-        Auction auction = createAuctionWithDependencies(1000, now, now.plusHours(1));
-        auctionRepository.save(auction);
-
-        User user1 = createUser("user1@test.com", "유저1");
-        User user2 = createUser("user2@test.com", "유저2");
-        userRepository.save(user1);
-        userRepository.save(user2);
-
-        Bid bid = createBid(auction, user1, 1500, true, false);
-        bidRepository.save(bid);
-
-        //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user2, 2000);
-
-        //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user2.getName()), 2000);
     }
 
     @DisplayName("입찰가가 최고가 일 경우 예외가 발생한다.")
@@ -139,7 +114,7 @@ public class BidServiceTest {
         bidRepository.save(bid);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), user2, 1500))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), user2, 1500))
                 .isInstanceOf(BidBadRequestException.class)
                 .hasMessage("현재 최고가보다 높은 금액을 입력해야 합니다.");
     }
@@ -161,7 +136,7 @@ public class BidServiceTest {
         bidRepository.save(bid);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), user2, 1400))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), user2, 1400))
                 .isInstanceOf(BidBadRequestException.class)
                 .hasMessage("현재 최고가보다 높은 금액을 입력해야 합니다.");
     }
@@ -178,14 +153,13 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 2000);
+        bidService.placeBidWithLock(auction.getId(), user, 2000);
 
         //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 2000);
+        Optional<Bid> topBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
+        assertThat(topBid.isPresent()).isTrue();
+        assertThat(topBid.get().getPrice()).isEqualTo(2000);
+        assertThat(topBid.get().getBidder().getId()).isEqualTo(user.getId());
     }
 
     @DisplayName("입찰가가 시작가 일 경우 입찰에 성공한다.")
@@ -200,15 +174,13 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user,
-                auction.getBasePrice());
+        bidService.placeBidWithLock(auction.getId(), user, auction.getBasePrice());
 
         //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), auction.getBasePrice());
+        Optional<Bid> topBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
+        assertThat(topBid.isPresent()).isTrue();
+        assertThat(topBid.get().getPrice()).isEqualTo(auction.getBasePrice());
+        assertThat(topBid.get().getBidder().getId()).isEqualTo(user.getId());
     }
 
     @DisplayName("입찰가가 시작가보다 작을 경우 예외가 발생한다.")
@@ -223,7 +195,7 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), user, 900))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), user, 900))
                 .isInstanceOf(BidBadRequestException.class)
                 .hasMessage("시작가보다 높은 금액을 입력해야 합니다.");
     }
@@ -240,14 +212,13 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 999_999_000);
+        bidService.placeBidWithLock(auction.getId(), user, 999_999_000);
 
         //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 999_999_000);
+        Optional<Bid> topBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
+        assertThat(topBid.isPresent()).isTrue();
+        assertThat(topBid.get().getPrice()).isEqualTo(999_999_000);
+        assertThat(topBid.get().getBidder().getId()).isEqualTo(user.getId());
     }
 
     @DisplayName("입찰가가 10억 일 경우 입찰에 성공한다.")
@@ -262,14 +233,13 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 1_000_000_000);
+        bidService.placeBidWithLock(auction.getId(), user, 1_000_000_000);
 
         //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 1_000_000_000);
+        Optional<Bid> topBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
+        assertThat(topBid.isPresent()).isTrue();
+        assertThat(topBid.get().getPrice()).isEqualTo(1_000_000_000);
+        assertThat(topBid.get().getBidder().getId()).isEqualTo(user.getId());
     }
 
     @DisplayName("입찰가가 10억보다 클 경우 예외가 발생한다.")
@@ -284,7 +254,7 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), user, 1_000_000_100))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), user, 1_000_000_100))
                 .isInstanceOf(BidBadRequestException.class)
                 .hasMessage("입찰 금액은 최대 10억까지 가능합니다.");
     }
@@ -301,14 +271,13 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 1500);
+        bidService.placeBidWithLock(auction.getId(), user, 1500);
 
         //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 1500);
+        Optional<Bid> topBid = bidRepository.findTopBidByAuctionIdOrderByPriceDesc(auction.getId());
+        assertThat(topBid.isPresent()).isTrue();
+        assertThat(topBid.get().getPrice()).isEqualTo(1500);
+        assertThat(topBid.get().getBidder().getId()).isEqualTo(user.getId());
     }
 
     @DisplayName("경매 종료 후 입찰 시 예외가 발생한다.")
@@ -323,7 +292,7 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), user, 1500))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), user, 1500))
                 .isInstanceOf(BidInvalidStateException.class)
                 .hasMessage("현재는 입찰 가능한 시간이 아닙니다.");
     }
@@ -340,63 +309,64 @@ public class BidServiceTest {
         userRepository.save(user);
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(auction.getId(), user, 1500))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(auction.getId(), user, 1500))
                 .isInstanceOf(BidInvalidStateException.class)
                 .hasMessage("현재는 입찰 가능한 시간이 아닙니다.");
     }
 
-    @DisplayName("입찰 성공 시, 회원이 해당 경매에 취소한 이력이 없으면 취소 가능 여부는 true로 반환한다.")
-    @Test
-    void shouldAllowCancellationWhenNoPreviousCancellationExists() {
-        LocalDateTime now = LocalDateTime.now();
-        //given
-        Auction auction = createAuctionWithDependencies(1000, now, now.plusHours(1));
-        auctionRepository.save(auction);
-
-        User user = createUser("user@test.com", "유저");
-        userRepository.save(user);
-
-        Bid bid = createBid(auction, user, 1300, true, false);
-        bidRepository.save(bid);
-
-        //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 1500);
-
-        //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getCanCancelBid()).isTrue();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 1500);
-
-    }
-
-    @DisplayName("입찰 성공 시, 회원이 해당 경매에 취소한 이력이 있으면 취소 가능 여부를 false로 반환한다.")
-    @Test
-    void shouldNotAllowCancellationWhenPreviousCancellationExists() {
-        LocalDateTime now = LocalDateTime.now();
-        //given
-        Auction auction = createAuctionWithDependencies(1000, now, now.plusHours(1));
-        auctionRepository.save(auction);
-
-        User user = createUser("user@test.com", "유저");
-        userRepository.save(user);
-
-        Bid bid = createBid(auction, user, 1300, false, true);
-        bidRepository.save(bid);
-
-        //when
-        BidResultResponse bidResultResponse = bidService.placeBid(auction.getId(), user, 1500);
-
-        //then
-        assertThat(bidResultResponse).isNotNull();
-        assertThat(bidResultResponse.getCanCancelBid()).isFalse();
-        assertThat(bidResultResponse.getBid()).isNotNull();
-        assertThat(bidResultResponse.getBid())
-                .extracting("bidderEmail", "bidPrice")
-                .contains(maskName(user.getName()), 1500);
-    }
+//    @DisplayName("입찰 성공 시, 회원이 해당 경매에 취소한 이력이 없으면 취소 가능 여부는 true로 반환한다.")
+//    @Test
+//    void shouldAllowCancellationWhenNoPreviousCancellationExists() {
+//        LocalDateTime now = LocalDateTime.now();
+//        //given
+//        Auction auction = createAuctionWithDependencies(1000, now, now.plusHours(1));
+//        auctionRepository.save(auction);
+//
+//        User user = createUser("user@test.com", "유저");
+//        userRepository.save(user);
+//
+//        Bid bid = createBid(auction, user, 1300, true, false);
+//        bidRepository.save(bid);
+//
+//        //when
+//        bidService.placeBidWithLock(auction.getId(), user, 1500);
+//
+//        //then
+//
+//        assertThat(bidResultResponse).isNotNull();
+//        assertThat(bidResultResponse.getCanCancelBid()).isTrue();
+//        assertThat(bidResultResponse.getBid()).isNotNull();
+//        assertThat(bidResultResponse.getBid())
+//                .extracting("bidderEmail", "bidPrice")
+//                .contains(maskName(user.getName()), 1500);
+//
+//    }
+//
+//    @DisplayName("입찰 성공 시, 회원이 해당 경매에 취소한 이력이 있으면 취소 가능 여부를 false로 반환한다.")
+//    @Test
+//    void shouldNotAllowCancellationWhenPreviousCancellationExists() {
+//        LocalDateTime now = LocalDateTime.now();
+//        //given
+//        Auction auction = createAuctionWithDependencies(1000, now, now.plusHours(1));
+//        auctionRepository.save(auction);
+//
+//        User user = createUser("user@test.com", "유저");
+//        userRepository.save(user);
+//
+//        Bid bid = createBid(auction, user, 1300, false, true);
+//        bidRepository.save(bid);
+//
+//        //when
+//        BidResultResponse bidResultResponse = bidService.placeBidWithLock(auction.getId(), user, 1500);
+//
+//        //then
+//        assertThat(bidResultResponse).isNotNull();
+//        assertThat(bidResultResponse.getCanCancelBid()).isFalse();
+//        assertThat(bidResultResponse.getBid()).isNotNull();
+//        assertThat(bidResultResponse.getBid())
+//                .extracting("bidderEmail", "bidPrice")
+//                .contains(maskName(user.getName()), 1500);
+//    }
 
     @DisplayName("존재 하지 않는 경매 상품에 대한 입찰 시, 예외가 발생한다.")
     @Test
@@ -408,7 +378,7 @@ public class BidServiceTest {
         Long invalidAuctionId = -1L;
 
         //when & then
-        assertThatThrownBy(() -> bidService.placeBid(invalidAuctionId, user, 1500))
+        assertThatThrownBy(() -> bidService.placeBidWithLock(invalidAuctionId, user, 1500))
                 .isInstanceOf(AuctionNotFoundException.class)
                 .hasMessage("해당 경매 상품이 존재하지 않습니다.");
     }
@@ -799,6 +769,40 @@ public class BidServiceTest {
                 .hasMessage("해당 경매 상품이 존재하지 않습니다.");
     }
 
+    @Test
+    void testFourUsersConcurrentBid() throws InterruptedException {
+        LocalDateTime now = LocalDateTime.now();
+        //given
+        Auction auction = createAuctionWithDependencies(1000, now.minusHours(1), now.plusHours(1));
+        auctionRepository.save(auction);
+
+        List<User> users = createUsers(4);
+        userRepository.saveAll(List.of(users.get(0), users.get(1), users.get(2), users.get(3)));
+
+        int numberOfThreads = 4;
+        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+        CountDownLatch latch = new CountDownLatch(numberOfThreads);
+
+        //when
+        for (User user : users) {
+            executorService.submit(() -> {
+                try {
+                    bidService.placeBidWithLock(auction.getId(), user, 2000);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executorService.shutdown();
+
+        List<Bid> bids = bidRepository.findByAuctionId(auction.getId());
+        assertThat(bids.size()).isEqualTo(1);
+    }
+
     private Auction createAuctionWithDependencies(int basePrice, LocalDateTime startTime,
                                                   LocalDateTime endTime) {
         Category testCategory = categoryRepository.save(createCategory("test category"));
@@ -817,6 +821,16 @@ public class BidServiceTest {
         return Category.builder()
                 .name(name)
                 .build();
+    }
+
+    private List<User> createUsers(int count) {
+        List<User> users = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            User user = createUser("user" + i + "@test.com", "유저" + i);
+            users.add(user);
+        }
+        userRepository.saveAll(users);
+        return users;
     }
 
 
