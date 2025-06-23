@@ -25,7 +25,7 @@ public class RedisKeyExpirationListener extends KeyExpirationEventMessageListene
     @Override
     public void onMessage(Message message, byte[] pattern) {
         String expiredKey = message.toString();
-        log.info("⏰ Redis 키 만료 이벤트 수신: {}", expiredKey);
+        log.info("@@@@@ Redis 키 만료 이벤트 수신: {}", expiredKey);
 
         if (expiredKey.startsWith("auction:trigger:start:")) {
             Long id = Long.parseLong(expiredKey.split(":")[3]);

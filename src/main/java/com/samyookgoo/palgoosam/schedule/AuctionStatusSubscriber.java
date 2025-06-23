@@ -35,7 +35,7 @@ public class AuctionStatusSubscriber implements MessageListener {
             );
 
             sseService.broadcastStatusUpdate(auctionId, event);
-            log.info("🔔 상태 전환 이벤트 수신 → auctionId={}, status={}", auctionId, status);
+            log.info("@@@@@ 상태 전환 이벤트 수신 auctionId={}, status={}", auctionId, status);
 
 
         } catch (JsonProcessingException e) {
