@@ -77,8 +77,7 @@ public class BidService {
                 .build();
     }
 
-
-    public void placeBidWithLock(Long auctionId, int price) {
+    public void placeBidWithLock(Long auctionId, User user, int price) {
         String lockKey = "lock:bid:" + auctionId;
         String uniqueId = UUID.randomUUID().toString();
 
@@ -91,7 +90,7 @@ public class BidService {
                     return;
                 }
 
-                bidExecutorService.placeBid(auctionId, price, new LockInfo(lockKey, innerUniqueId));
+                bidExecutorService.placeBid(auctionId, user, price, new LockInfo(lockKey, innerUniqueId));
 
             }, SecurityContextHolder.getContext());
 
@@ -100,7 +99,7 @@ public class BidService {
             return;
         }
 
-        bidExecutorService.placeBid(auctionId, price, new LockInfo(lockKey, uniqueId));
+        bidExecutorService.placeBid(auctionId, user, price, new LockInfo(lockKey, uniqueId));
     }
 
     @Transactional

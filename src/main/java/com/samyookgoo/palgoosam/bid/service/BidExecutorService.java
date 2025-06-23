@@ -3,7 +3,6 @@ package com.samyookgoo.palgoosam.bid.service;
 import com.samyookgoo.palgoosam.auction.domain.Auction;
 import com.samyookgoo.palgoosam.auction.exception.AuctionNotFoundException;
 import com.samyookgoo.palgoosam.auction.repository.AuctionRepository;
-import com.samyookgoo.palgoosam.auth.service.AuthService;
 import com.samyookgoo.palgoosam.bid.domain.Bid;
 import com.samyookgoo.palgoosam.bid.exception.BidBadRequestException;
 import com.samyookgoo.palgoosam.bid.repository.BidRepository;
@@ -30,13 +29,10 @@ public class BidExecutorService {
 
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
-    private final AuthService authService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public void placeBid(Long auctionId, int price, LockInfo lockInfo) {
-        User user = authService.getAuthorizedUser(authService.getCurrentUser());
-
+    public void placeBid(Long auctionId, User user, int price, LockInfo lockInfo) {
         try {
             Auction auction = auctionRepository.findById(auctionId)
                     .orElseThrow(AuctionNotFoundException::new);
