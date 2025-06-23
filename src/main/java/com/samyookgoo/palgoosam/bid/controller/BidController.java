@@ -55,7 +55,8 @@ public class BidController {
             )
             @Valid @RequestBody BidRequest request
     ) {
-        bidService.placeBidWithLock(auctionId, request.getPrice());
+        User user = authService.getAuthorizedUser(authService.getCurrentUser());
+        bidService.placeBidWithLock(auctionId, user, request.getPrice());
         return BaseResponse.success("입찰 요청 완료");
     }
 
