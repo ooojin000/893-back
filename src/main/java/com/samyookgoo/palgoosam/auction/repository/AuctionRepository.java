@@ -30,24 +30,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findByParentCategoryIdAndStatus(@Param("parentId") Long parentId,
                                                   @Param("status") AuctionStatus status);
 
-    @Modifying
-    @Query("""
-                UPDATE Auction a
-                SET a.status = 'active'
-                WHERE a.status = 'pending'
-                  AND a.startTime <= :now
-            """)
-    int updateStatusToActive(@Param("now") LocalDateTime now);
-
-    @Modifying
-    @Query("""
-                UPDATE Auction a
-                SET a.status = 'completed'
-                WHERE a.status = 'active'
-                  AND a.endTime <= :now
-            """)
-    int updateStatusToCompleted(@Param("now") LocalDateTime now);
-
     @Query("""
             SELECT 
                  a.id AS auctionId, 
@@ -168,4 +150,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     DashboardProjection getDashboardCounts();
 
     List<AuctionStatus> status(AuctionStatus status);
+
+    List<Auction> findByStatusAndStartTimeBefore(AuctionStatus status, LocalDateTime startTimeBefore);
+
+    List<Auction> findByStatusAndEndTimeBefore(AuctionStatus status, LocalDateTime endTimeBefore);
 }

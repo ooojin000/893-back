@@ -43,6 +43,8 @@ import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,12 +52,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +80,7 @@ public class AuctionService {
     private final PaymentRepository paymentRepository;
     private final AuctionSearchRepository auctionSearchRepository;
     private final S3Service s3Service;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -96,6 +104,9 @@ public class AuctionService {
 
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
+
+        setRedisStartTrigger(auction.getId(), auction.getStartTime());
+        setRedisEndTrigger(auction.getId(), auction.getEndTime());
 
         List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImages(), auction);
 
@@ -320,6 +331,9 @@ public class AuctionService {
             }
         }
 
+        setRedisStartTrigger(auction.getId(), auction.getStartTime());
+        setRedisEndTrigger(auction.getId(), auction.getEndTime());
+
         CategoryResponse categoryResponse = (request.getCategory() != null)
                 ? CategoryResponse.from(request.getCategory())
                 : CategoryResponse.from(category);
@@ -350,6 +364,7 @@ public class AuctionService {
 
         if (auction.getStartTime().minusMinutes(10).isAfter(now)) {
             softDeleteAuction(auctionId, auction);
+            deleteRedisTriggers(auctionId);
             return;
         }
 
@@ -361,6 +376,7 @@ public class AuctionService {
 
             if (!hasValidBids || allCancelled) {
                 softDeleteAuction(auctionId, auction);
+                deleteRedisTriggers(auctionId);
                 return;
             }
 
@@ -377,6 +393,7 @@ public class AuctionService {
             }
 
             softDeleteAuction(auctionId, auction);
+            deleteRedisTriggers(auctionId);
             return;
         }
 
@@ -582,5 +599,30 @@ public class AuctionService {
                         .build()
         ).toList();
         return new AuctionSearchResponseDto(auctionCount, resultDtoList);
+    }
+
+    private void setRedisStartTrigger(Long auctionId, LocalDateTime startTime) {
+        String redisKey = "auction:trigger:start:" + auctionId;
+        long secondsUntilStart = Duration.between(LocalDateTime.now(), startTime).getSeconds();
+
+        if (secondsUntilStart > 0) {
+            stringRedisTemplate.opsForValue().set(redisKey, "경매 시작", secondsUntilStart, TimeUnit.SECONDS);
+        }
+    }
+
+    private void setRedisEndTrigger(Long auctionId, LocalDateTime endTime) {
+        String redisKey = "auction:trigger:end:" + auctionId;
+        long secondsUntilEnd = Duration.between(LocalDateTime.now(), endTime).getSeconds();
+        if (secondsUntilEnd > 0) {
+            stringRedisTemplate.opsForValue()
+                    .set(redisKey, "경매 종료", secondsUntilEnd, TimeUnit.SECONDS);
+        }
+    }
+
+    private void deleteRedisTriggers(Long auctionId) {
+        String startKey = "auction:trigger:start:" + auctionId;
+        String endKey = "auction:trigger:end:" + auctionId;
+        stringRedisTemplate.delete(startKey);
+        stringRedisTemplate.delete(endKey);
     }
 }
