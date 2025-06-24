@@ -1,6 +1,7 @@
 package com.samyookgoo.palgoosam.schedule;
 
 import com.samyookgoo.palgoosam.auction.service.AuctionStatusService;
+import com.samyookgoo.palgoosam.common.event.LockReleaseSubscriber;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +21,9 @@ public class RedisListenerConfig {
     private final AuctionStatusService auctionStatusService;
     private final AuctionStatusPublisher statusPublisher;
     private final AuctionStatusSubscriber statusSubscriber;
+    private final LockReleaseSubscriber lockReleaseSubscriber;
     private final ChannelTopic auctionStatusTopic;
+    private final ChannelTopic lockReleaseTopic;
 
     @Bean
     public RedisMessageListenerContainer redisContainer() {
@@ -31,6 +34,8 @@ public class RedisListenerConfig {
 
         adapter.setSerializer(new GenericJackson2JsonRedisSerializer());
         container.addMessageListener(adapter, auctionStatusTopic);
+
+        container.addMessageListener(lockReleaseSubscriber, lockReleaseTopic);
 
         return container;
     }
