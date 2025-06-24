@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Service
 public class SseService {
     private final Map<Long, List<SseEmitter>> bidEmitters = new ConcurrentHashMap<>();
+    private final Map<Long, SseEmitter> userEmitters = new ConcurrentHashMap<>();
     private final ScheduledExecutorService heartbeatExecutor = Executors.newScheduledThreadPool(1);
 
     public SseEmitter subscribe(Long auctionId) {
@@ -34,6 +35,36 @@ public class SseService {
         }
 
         return emitter;
+    }
+
+    public SseEmitter subscribePersonal(Long userId) {
+        SseEmitter emitter = new SseEmitter(Duration.ofMinutes(30).toMillis());
+        userEmitters.put(userId, emitter);
+
+        emitter.onCompletion(() -> userEmitters.remove(userId));
+        emitter.onTimeout(() -> userEmitters.remove(userId));
+
+        try {
+            emitter.send(SseEmitter.event().name("connect").data("connected"));
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+        }
+
+        return emitter;
+    }
+
+    public void sendBidResultToUser(Long userId, Object result) {
+        SseEmitter emitter = userEmitters.get(userId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("bid-result")
+                        .data(result));
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+                userEmitters.remove(userId);
+            }
+        }
     }
 
     public void broadcastBidUpdate(Long auctionId, BidEventResponse response) {
@@ -72,7 +103,13 @@ public class SseService {
     }
 
     private void removeEmitter(Long auctionId, SseEmitter emitter) {
-        bidEmitters.getOrDefault(auctionId, List.of()).remove(emitter);
+      List<SseEmitter> emitters = bidEmitters.get(auctionId);
+        if (emitters != null) {
+            emitters.remove(emitter);
+            if (emitters.isEmpty()) {
+                bidEmitters.remove(auctionId);
+            }
+        }
     }
 
     @PostConstruct
