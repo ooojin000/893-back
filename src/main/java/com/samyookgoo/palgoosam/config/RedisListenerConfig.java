@@ -1,7 +1,10 @@
-package com.samyookgoo.palgoosam.schedule;
+package com.samyookgoo.palgoosam.config;
 
 import com.samyookgoo.palgoosam.auction.service.AuctionStatusService;
 import com.samyookgoo.palgoosam.common.event.LockReleaseSubscriber;
+import com.samyookgoo.palgoosam.schedule.AuctionStatusPublisher;
+import com.samyookgoo.palgoosam.schedule.AuctionStatusSubscriber;
+import com.samyookgoo.palgoosam.schedule.RedisKeyExpirationListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
