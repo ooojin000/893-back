@@ -85,10 +85,7 @@ public class HomeService {
 
     @Transactional(readOnly = true)
     public List<TopBidResponse> getTopBid() {
-        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
-        Pageable topFive = PageRequest.of(0, 5);
-
-        List<TopWinningBid> topWinningBidList = bidRepository.findTop5WinningBids(sevenDaysAgo, topFive);
+        List<TopWinningBid> topWinningBidList = bidRepository.findTop5WinningBids();
 
         List<Long> auctionIds = topWinningBidList.stream()
                 .map(TopWinningBid::getAuctionId)
