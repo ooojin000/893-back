@@ -51,25 +51,29 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     @Query("SELECT b.auction.id AS auctionId, COUNT(b.id) AS bidCount FROM Bid b WHERE b.auction.id IN :auctionIds GROUP BY b.auction.id")
     List<AuctionBidCount> countBidsByAuctionIds(@Param("auctionIds") List<Long> auctionIds);
 
-
-    @Query("""
-            SELECT
-                a.id AS auctionId,
-                a.title AS title,
-                a.basePrice AS basePrice,
-                MAX(b.price) AS itemPrice,
-                img.url AS thumbnailUrl,
-                b.bidder.name AS buyer
-            FROM Bid b
-            JOIN b.auction a
-            LEFT JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
-            WHERE b.isWinning = true
-              AND a.status = 'COMPLETED'
-              AND a.endTime >= :sevenDaysAgo
-            GROUP BY a.id, a.title, a.basePrice, img.url, b.bidder.name
-            ORDER BY itemPrice DESC
-            """)
-    List<TopWinningBid> findTop5WinningBids(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo, Pageable pageable);
+    @Query(value = """
+    SELECT
+        b.auction_id AS auctionId,
+        a.title AS title,
+        a.base_price AS basePrice,
+        b.price AS itemPrice,
+        u.name AS buyer,
+        img.url AS thumbnailUrl
+    FROM (
+             SELECT b.auction_id, b.price, b.bidder_id
+             FROM bid b
+                      JOIN auction a ON b.auction_id = a.id
+             WHERE b.is_winning = true
+               AND a.status = 'COMPLETED'
+               AND a.end_time >= NOW() - INTERVAL 7 DAY
+             ORDER BY b.price DESC
+             LIMIT 5
+         ) AS b
+             JOIN auction a ON a.id = b.auction_id
+             JOIN user u ON u.id = b.bidder_id
+             JOIN auction_image img ON img.auction_id = a.id AND img.image_seq = 0
+    """, nativeQuery = true)
+    List<TopWinningBid> findTop5WinningBids();
 
     @Query("""
                 SELECT new com.samyookgoo.palgoosam.bid.service.response.BidStatsResponse(

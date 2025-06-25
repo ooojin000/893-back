@@ -22,7 +22,7 @@ public class AuctionStatusScheduler {
     private final AuctionStatusService auctionStatusService;
     private final AuctionStatusPublisher statusPublisher;
 
-    @Scheduled(fixedRate = 60000)  // 1분마다 실행
+    @Scheduled(fixedRate = 300000)  // 5분마다 실행
     @Transactional
     public void FallbackAuctionStatus() {
         LocalDateTime now = LocalDateTime.now();
