@@ -71,7 +71,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
          ) AS b
              JOIN auction a ON a.id = b.auction_id
              JOIN user u ON u.id = b.bidder_id
-             LEFT JOIN auction_image img ON img.auction_id = a.id AND img.image_seq = 0
+             JOIN auction_image img ON img.auction_id = a.id AND img.image_seq = 0
     """, nativeQuery = true)
     List<TopWinningBid> findTop5WinningBids();
 
