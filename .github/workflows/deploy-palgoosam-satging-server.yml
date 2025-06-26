@@ -1,9 +1,9 @@
-name: Deploy To EC2
+name: Deploy To Staging Server
 
 on:
   push:
     branches:
-      - main
+      - develop
   workflow_dispatch: # 수동 실행을 허용하는 이벤트
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       - name: env.production.properties 파일 만들기
         run: |
           cat > ./src/main/resources/properties/env.production.properties << 'EOF'
-          ${{ secrets.ENV_PRODUCTION_PROPERTIES }}
+          ${{ secrets.ENV_STAGING_PROPERTIES }}
           EOF
 
       - name: application.yml 파일 만들기
@@ -58,13 +58,13 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Docker 이미지 생성
-        run: docker build -t 893-back .
+        run: docker build -t 893-back-staging .
 
       - name: Docker 이미지에 태그 붙이기
-        run: docker tag 893-back ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+        run: docker tag 893-back-staging ${{ steps.login-ecr.outputs.registry }}/893-back-staging:latest
 
       - name: ECR에 Docker 이미지 Push
-        run: docker push ${{ steps.login-ecr.outputs.registry }}/893-back:latest
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/893-back-staging:latest
 
       - name: Install netcat for connection testing
         run: sudo apt-get update && sudo apt-get install -y netcat-openbsd
@@ -74,15 +74,15 @@ jobs:
           aws ec2-instance-connect open-tunnel \
             --instance-connect-endpoint-id ${{ secrets.AWS_EIC_ENDPOINT }} \
             --remote-port ${{ secrets.CLIENT_SSH_PORT }} \
-            --local-port ${{ secrets.EC2_SSH_PORT }} \
-            --instance-id ${{ secrets.AWS_EC2_ID }} &
+            --local-port ${{ secrets.EC2_STAGING_SSH_PORT }} \
+            --instance-id ${{ secrets.AWS_EC2_STAGING_ID }} &
           
           TUNNEL_PID=$!
           echo "Tunnel PID: $TUNNEL_PID"
           
           echo "Waiting for tunnel to establish..."
           for i in {1..30}; do
-            if nc -z 127.0.0.1 ${{ secrets.EC2_SSH_PORT }}; then
+            if nc -z 127.0.0.1 ${{ secrets.EC2_STAGING_SSH_PORT }}; then
               echo "SSH tunnel is ready!"
               break
             fi
@@ -90,7 +90,7 @@ jobs:
             sleep 2
           done
           
-          if ! nc -z 127.0.0.1 ${{ secrets.EC2_SSH_PORT }}; then
+          if ! nc -z 127.0.0.1 ${{ secrets.EC2_STAGING_SSH_PORT }}; then
             echo "Failed to establish SSH tunnel"
             kill $TUNNEL_PID 2>/dev/null || true
             exit 1
@@ -102,11 +102,11 @@ jobs:
           ps aux | grep ec2-instance-connect || echo "터널 프로세스 없음"
           
           echo "포트 연결 테스트:"
-          nc -zv 127.0.0.1 ${{ secrets.EC2_SSH_PORT }} || echo "포트 연결 실패"
+          nc -zv 127.0.0.1 ${{ secrets.EC2_STAGING_SSH_PORT }} || echo "포트 연결 실패"
 
       - name: 직접 SSH로 배포
         run: |
-          echo "${{ secrets.AWS_EC2_SSH_KEY }}" > /tmp/ssh_key
+          echo "${{ secrets.AWS_EC2_STAGING_SSH_KEY }}" > /tmp/ssh_key
           chmod 600 /tmp/ssh_key
           
           # 변수 미리 설정
@@ -116,7 +116,7 @@ jobs:
           
           ssh -o StrictHostKeyChecking=no \
               -i /tmp/ssh_key \
-              -p ${{ secrets.EC2_SSH_PORT }} \
+              -p ${{ secrets.EC2_STAGING_SSH_PORT }} \
               ${{ secrets.EC2_USERNAME }}@127.0.0.1 << EOF
           
           echo "=== 배포 시작 ==="
@@ -126,21 +126,21 @@ jobs:
             docker login --username AWS --password-stdin ${ECR_REGISTRY}
           
           # 기존 컨테이너 정리
-          docker stop 893-back-container || true
-          docker rm 893-back-container || true
+          docker stop 893-back-staging-container || true
+          docker rm 893-back-staging-container || true
           docker system prune -a -f || true
           
           # 새 이미지 풀 및 실행
           cd /home/ubuntu
-
-          docker pull ${ECR_REGISTRY}/893-back:latest
+          
+          docker pull ${ECR_REGISTRY}/893-back-staging:latest       
           
           mkdir -p ./logs
 
-          docker run -d --name 893-back-container \
+          docker run -d --name 893-back-staging-container \
             -p ${SERVER_PORT}:${SERVER_PORT} \
             -v ./logs:/app/logs \
-            ${ECR_REGISTRY}/893-back:latest
+            ${ECR_REGISTRY}/893-back-staging:latest
           
           echo "=== 배포 완료 ==="
           docker ps | grep 893-back

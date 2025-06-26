@@ -30,24 +30,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Auction> findByParentCategoryIdAndStatus(@Param("parentId") Long parentId,
                                                   @Param("status") AuctionStatus status);
 
-    @Modifying
-    @Query("""
-                UPDATE Auction a
-                SET a.status = 'active'
-                WHERE a.status = 'pending'
-                  AND a.startTime <= :now
-            """)
-    int updateStatusToActive(@Param("now") LocalDateTime now);
-
-    @Modifying
-    @Query("""
-                UPDATE Auction a
-                SET a.status = 'completed'
-                WHERE a.status = 'active'
-                  AND a.endTime <= :now
-            """)
-    int updateStatusToCompleted(@Param("now") LocalDateTime now);
-
     @Query("""
             SELECT 
                  a.id AS auctionId, 
@@ -58,7 +40,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                  ai.url AS thumbnailUrl, 
                  a.startTime AS startTime
             FROM Auction a
-            LEFT JOIN AuctionImage ai ON ai.auction.id = a.id AND ai.imageSeq = 0
+            JOIN AuctionImage ai ON ai.auction.id = a.id AND ai.imageSeq = 0
             WHERE a.status = :status AND a.startTime > CURRENT_TIMESTAMP
             ORDER BY a.startTime ASC
             """)
@@ -73,7 +55,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                 a.basePrice AS basePrice,
                 ai.url AS thumbnailUrl
             FROM Auction a
-            LEFT JOIN AuctionImage ai ON ai.auction.id = a.id AND ai.imageSeq = 0
+            JOIN AuctionImage ai ON ai.auction.id = a.id AND ai.imageSeq = 0
             WHERE a.status IN :statuses
             ORDER BY a.createdAt DESC
             """)
@@ -84,7 +66,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             SELECT a.id AS auctionId, a.title AS title, a.description AS description,
                    a.itemCondition AS itemCondition, img.url AS thumbnailUrl
             FROM Auction a
-            LEFT JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
+            JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
             WHERE a.id IN :auctionIds
             """)
     List<RankingAuction> findRankingByIds(@Param("auctionIds") List<Long> auctionIds);
@@ -114,9 +96,10 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                        img.url AS thumbnailUrl, a.startTime AS startTime
                 FROM Auction a
                 JOIN a.category c
-                JOIN c.parent mid
-                LEFT JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
-                WHERE mid.id = :subCategoryId AND a.status IN ('pending', 'active')
+                JOIN c.parent sub
+                JOIN AuctionImage img ON img.auction.id = a.id AND img.imageSeq = 0
+                WHERE sub.id = :subCategoryId
+                    AND a.status IN ('pending', 'active')
                 ORDER BY (SELECT COUNT(s.id) FROM Scrap s WHERE s.auction.id = a.id) DESC, a.id ASC
             """)
     List<SubCategoryBestItem> findTop50BySubCategoryId(@Param("subCategoryId") Long subCategoryId, Pageable pageable);
@@ -168,4 +151,8 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     DashboardProjection getDashboardCounts();
 
     List<AuctionStatus> status(AuctionStatus status);
+
+    List<Auction> findByStatusAndStartTimeBefore(AuctionStatus status, LocalDateTime startTimeBefore);
+
+    List<Auction> findByStatusAndEndTimeBefore(AuctionStatus status, LocalDateTime endTimeBefore);
 }

@@ -43,6 +43,8 @@ import com.samyookgoo.palgoosam.payment.repository.PaymentRepository;
 import com.samyookgoo.palgoosam.user.domain.User;
 import com.samyookgoo.palgoosam.user.exception.UserNotFoundException;
 import com.samyookgoo.palgoosam.user.repository.ScrapRepository;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,11 +52,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +80,13 @@ public class AuctionService {
     private final PaymentRepository paymentRepository;
     private final AuctionSearchRepository auctionSearchRepository;
     private final S3Service s3Service;
+    private final StringRedisTemplate stringRedisTemplate;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    @Value("${cloud.aws.region.static}")
+    private String region;
 
     @Transactional
     public AuctionCreateResponse createAuction(AuctionCreateRequest request) {
@@ -89,6 +104,9 @@ public class AuctionService {
 
         Auction auction = Auction.from(request, category, user, startTime, endTime);
         auctionRepository.save(auction);
+
+        setRedisStartTrigger(auction.getId(), auction.getStartTime());
+        setRedisEndTrigger(auction.getId(), auction.getEndTime());
 
         List<AuctionImageResponse> imageResponses = saveAuctionImages(request.getImages(), auction);
 
@@ -285,31 +303,36 @@ public class AuctionService {
                 AuctionImage existing = existingImageMap.get(imageId);
                 existing.setImageSeq(imageSeq);
 
+                String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + existing.getStoreName();
+
                 imageResponses.add(AuctionImageResponse.from(
                         imageId,
                         storeName,
-                        s3Service.getPresignedUrl(existing.getStoreName()).getPresignedUrl(),
+                        publicUrl,
                         imageSeq
                 ));
 
             } else if (imageId == null && storeName != null) {
-                String presignedUrl = s3Service.getPresignedUrl(storeName).getPresignedUrl();
+                String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + storeName;
 
                 AuctionImage newImage = AuctionImage.builder()
                         .auction(auction)
                         .storeName(storeName)
                         .originalName(imageRequest.getOriginalName())
-                        .url(presignedUrl)
+                        .url(publicUrl)
                         .imageSeq(imageSeq)
                         .build();
                 auctionImageRepository.save(newImage);
 
-                imageResponses.add(AuctionImageResponse.from(imageId, storeName, presignedUrl, imageSeq));
+                imageResponses.add(AuctionImageResponse.from(imageId, storeName, publicUrl, imageSeq));
 
             } else {
-                throw new IllegalArgumentException("storeName이 누락된 새 이미지입니다.");
+                throw new IllegalArgumentException("imageId와 storeName 중 하나는 반드시 있어야 합니다.");
             }
         }
+
+        setRedisStartTrigger(auction.getId(), auction.getStartTime());
+        setRedisEndTrigger(auction.getId(), auction.getEndTime());
 
         CategoryResponse categoryResponse = (request.getCategory() != null)
                 ? CategoryResponse.from(request.getCategory())
@@ -341,6 +364,7 @@ public class AuctionService {
 
         if (auction.getStartTime().minusMinutes(10).isAfter(now)) {
             softDeleteAuction(auctionId, auction);
+            deleteRedisTriggers(auctionId);
             return;
         }
 
@@ -352,6 +376,7 @@ public class AuctionService {
 
             if (!hasValidBids || allCancelled) {
                 softDeleteAuction(auctionId, auction);
+                deleteRedisTriggers(auctionId);
                 return;
             }
 
@@ -368,6 +393,7 @@ public class AuctionService {
             }
 
             softDeleteAuction(auctionId, auction);
+            deleteRedisTriggers(auctionId);
             return;
         }
 
@@ -486,14 +512,14 @@ public class AuctionService {
     private AuctionImageResponse saveSingleAuctionImage(String imageKey, String originalName, Auction auction,
                                                         int order) {
         try {
-            String presignedUrl = s3Service.getPresignedUrl(imageKey).getPresignedUrl();
+            String publicUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + imageKey;
 
             AuctionImage image = AuctionImage.builder()
                     .auction(auction)
                     .storeName(imageKey)
                     .originalName(originalName)
                     .imageSeq(order)
-                    .url(presignedUrl)
+                    .url(publicUrl)
                     .build();
 
             auctionImageRepository.save(image);
@@ -501,7 +527,7 @@ public class AuctionService {
             return AuctionImageResponse.from(
                     image.getId(),
                     image.getStoreName(),
-                    presignedUrl,
+                    publicUrl,
                     image.getImageSeq());
         } catch (Exception e) {
             log.error("이미지 저장 실패: {}", e.getMessage(), e);
@@ -573,5 +599,30 @@ public class AuctionService {
                         .build()
         ).toList();
         return new AuctionSearchResponseDto(auctionCount, resultDtoList);
+    }
+
+    private void setRedisStartTrigger(Long auctionId, LocalDateTime startTime) {
+        String redisKey = "auction:trigger:start:" + auctionId;
+        long secondsUntilStart = Duration.between(LocalDateTime.now(), startTime).getSeconds();
+
+        if (secondsUntilStart > 0) {
+            stringRedisTemplate.opsForValue().set(redisKey, "경매 시작", secondsUntilStart, TimeUnit.SECONDS);
+        }
+    }
+
+    private void setRedisEndTrigger(Long auctionId, LocalDateTime endTime) {
+        String redisKey = "auction:trigger:end:" + auctionId;
+        long secondsUntilEnd = Duration.between(LocalDateTime.now(), endTime).getSeconds();
+        if (secondsUntilEnd > 0) {
+            stringRedisTemplate.opsForValue()
+                    .set(redisKey, "경매 종료", secondsUntilEnd, TimeUnit.SECONDS);
+        }
+    }
+
+    private void deleteRedisTriggers(Long auctionId) {
+        String startKey = "auction:trigger:start:" + auctionId;
+        String endKey = "auction:trigger:end:" + auctionId;
+        stringRedisTemplate.delete(startKey);
+        stringRedisTemplate.delete(endKey);
     }
 }
